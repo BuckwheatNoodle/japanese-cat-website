@@ -9,6 +9,9 @@ export function WelcomeToast() {
   const { toast } = useToast()
 
   useEffect(() => {
+    const alreadyShown = sessionStorage.getItem("welcomeToastShown")
+    if (alreadyShown) return
+
     const timer = setTimeout(() => {
       toast({
         title: "美雪からのメッセージ♪",
@@ -22,11 +25,12 @@ export function WelcomeToast() {
         ),
         duration: 8000,
       })
-    }, 1000) // ページ読み込み1秒後に表示
+      sessionStorage.setItem("welcomeToastShown", "true")
+    }, 1000)
 
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // 空の依存配列でマウント時に一度だけ実行
+  }, [])
 
   return null // このコンポーネント自体は何も描画しない
 }

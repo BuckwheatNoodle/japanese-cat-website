@@ -1,9 +1,9 @@
 "use client"
 
-import { Cat } from "lucide-react"
+import { Cat, Volume2, VolumeX } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { assetPath } from "@/lib/utils"
 
 export function Header() {
   const [isMusicEnabled, setIsMusicEnabled] = useState(false)
@@ -62,7 +62,7 @@ export function Header() {
   return (
     <>
       <audio ref={audioRef} preload="auto">
-        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fat-cat-374614-1v0O6r6qoCY7y4T7VTdCdh7JuxPg2T.mp3" type="audio/mpeg" />
+        <source src={assetPath("/sounds/bgm.mp3")} type="audio/mpeg" />
       </audio>
 
       <header className="sticky top-0 z-50 w-full py-4 md:py-5 bg-[#FDEEDC]/80 border-b-2 border-[#EAD8C0] backdrop-blur-sm">

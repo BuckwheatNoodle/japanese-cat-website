@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { M_PLUS_Rounded_1c } from "next/font/google"
 import "./globals.css"
-import { cn } from "@/lib/utils"
+import { cn, assetPath } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 
 const fontRounded = M_PLUS_Rounded_1c({
@@ -24,7 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontRounded.variable)}>
+      <body
+        className={cn("min-h-screen bg-background font-sans antialiased", fontRounded.variable)}
+        style={{ "--cursor-url": `url("${assetPath("/cathand.png")}")` } as React.CSSProperties}
+      >
         {children}
         <Toaster />
       </body>

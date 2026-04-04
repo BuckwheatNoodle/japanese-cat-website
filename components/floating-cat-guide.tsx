@@ -98,7 +98,11 @@ const GUIDE_MESSAGES = [
 ]
 
 // 効果音ファイルのパス
-const SOUND_FILES = ["https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cute-cat-352656-Rnri0RIn8NP3OkCPcz5gyLo4I1UQ7s.mp3", "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cat-meow-401729-gKtvowGmU1rbCrdlSVrfUhRhlDGGtG.mp3", "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cat-hit-352651-z5C3cfHxnIFQMI5d3vqdWRyZHmbK6Q.mp3"]
+const SOUND_FILES = [
+  assetPath("/sounds/cute-cat.mp3"),
+  assetPath("/sounds/cat-meow.mp3"),
+  assetPath("/sounds/cat-hit.mp3"),
+]
 
 export function FloatingCatGuide() {
   const [renderPos, setRenderPos] = useState({ x: 50, y: 50 })

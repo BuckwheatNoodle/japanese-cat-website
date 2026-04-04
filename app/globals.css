@@ -117,7 +117,7 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    cursor: url("/cathand.png") 12 12, auto;
+    cursor: var(--cursor-url) 12 12, auto;
   }
   body {
     background-color: #fffbf5;
@@ -130,14 +130,14 @@
   a:hover,
   [role="button"]:hover,
   .cursor-pointer:hover {
-    cursor: url("/cathand.png") 12 12, pointer;
+    cursor: var(--cursor-url) 12 12, pointer;
   }
 
   /* テキスト選択時のカーソル */
   input,
   textarea,
   [contenteditable] {
-    cursor: url("/cathand.png") 12 12, text;
+    cursor: var(--cursor-url) 12 12, text;
   }
 }
 

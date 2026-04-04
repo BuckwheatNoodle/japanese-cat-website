@@ -1,17 +1,20 @@
+import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
-import { PictureDiary } from "@/components/picture-diary"
-import { CatGame } from "@/components/cat-game"
-import { CatQuiz } from "@/components/cat-quiz"
-import { CatBreedQuiz } from "@/components/cat-breed-quiz"
-import { ColoringBook } from "@/components/coloring-book"
-import { CatFortune } from "@/components/cat-fortune"
-import { CatMemoryGame } from "@/components/cat-memory-game"
-import { CatSimonGame } from "@/components/cat-simon-game"
 import { SectionDivider } from "@/components/section-divider"
 import { WelcomeToast } from "@/components/welcome-toast"
 import { MiyukiProfile } from "@/components/miyuki-profile"
 import { FloatingCatGuide } from "@/components/floating-cat-guide"
+import { LazySection } from "@/components/lazy-section"
+
+const CatGame = dynamic(() => import("@/components/cat-game").then((m) => m.CatGame))
+const CatQuiz = dynamic(() => import("@/components/cat-quiz").then((m) => m.CatQuiz))
+const CatBreedQuiz = dynamic(() => import("@/components/cat-breed-quiz").then((m) => m.CatBreedQuiz))
+const CatMemoryGame = dynamic(() => import("@/components/cat-memory-game").then((m) => m.CatMemoryGame))
+const CatSimonGame = dynamic(() => import("@/components/cat-simon-game").then((m) => m.CatSimonGame))
+const ColoringBook = dynamic(() => import("@/components/coloring-book").then((m) => m.ColoringBook))
+const CatFortune = dynamic(() => import("@/components/cat-fortune").then((m) => m.CatFortune))
+const PictureDiary = dynamic(() => import("@/components/picture-diary").then((m) => m.PictureDiary))
 
 export default function MiyukiCatPage() {
   return (
@@ -26,37 +29,37 @@ export default function MiyukiCatPage() {
           <MiyukiProfile />
         </div>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.4s" }}>
           <CatGame />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.6s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.6s" }}>
           <CatQuiz />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.8s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "0.8s" }}>
           <CatBreedQuiz />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.0s" }}>
           <CatMemoryGame />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.1s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.1s" }}>
           <CatSimonGame />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.2s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.2s" }}>
           <ColoringBook />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.4s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.4s" }}>
           <CatFortune />
-        </div>
+        </LazySection>
         <SectionDivider />
-        <div className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.6s" }}>
+        <LazySection className="w-full animate-slide-in-bottom" style={{ animationDelay: "1.6s" }}>
           <PictureDiary />
-        </div>
+        </LazySection>
       </main>
       <footer className="w-full py-6 mt-auto text-center text-sm text-[#8A6E59]">
         <p>© 2025 美雪の猫ページ All rights reserved.</p>
