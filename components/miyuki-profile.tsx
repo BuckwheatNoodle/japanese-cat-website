@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Heart } from "lucide-react"
 
@@ -17,7 +18,7 @@ export function MiyukiProfile() {
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
             <div className="flex-shrink-0">
               <Image
-                src="/miyuki-hugging-cat.png"
+                src={assetPath("/miyuki-hugging-cat.png")}
                 alt="猫を抱っこする美雪"
                 width={180}
                 height={180}

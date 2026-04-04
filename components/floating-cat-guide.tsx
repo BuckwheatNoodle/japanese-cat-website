@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 
 const MEOW_SOUNDS = [
   "にゃーん♪",
@@ -370,7 +371,7 @@ export function FloatingCatGuide() {
         {/* 猫本体 */}
         <div className="relative animate-bounce-gentle">
           <Image
-            src="/cute-tabby-waving.png"
+            src={assetPath("/cute-tabby-waving.png")}
             alt="浮遊する猫ガイド"
             width={60}
             height={60}

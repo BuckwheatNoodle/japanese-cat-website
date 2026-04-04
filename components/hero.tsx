@@ -1,11 +1,12 @@
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 
 export function Hero() {
   return (
     <section className="w-full flex flex-col md:flex-row items-center justify-center text-center md:text-left p-6 bg-[#FDEEDC]/80 rounded-2xl shadow-lg border-2 border-dashed border-white/80 animate-slide-in-bottom">
       <div className="md:mr-8 mb-4 md:mb-0 flex-shrink-0">
         <Image
-          src="/miyuki-character.png"
+          src={assetPath("/miyuki-character.png")}
           alt="このページの制作者、美雪のイラスト"
           width={200}
           height={200}

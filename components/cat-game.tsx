@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PawPrint, Heart, Play, RotateCcw, Timer, Trophy } from "lucide-react"
@@ -36,11 +37,11 @@ type FloatingScore = {
 const GAME_DURATION = 20
 
 const TARGET_CONFIG = {
-  tabby: { points: 10, image: "/cute-tabby-sitting.png", lifespan: 5000 },
-  white: { points: 30, image: "/white-cat.png", lifespan: 3500 },
-  black: { points: 50, image: "/black-cat.png", lifespan: 2500 },
-  dog: { points: -20, image: "/dog.png", lifespan: 4000 },
-  poop: { points: -50, image: "/poop-icon.png", lifespan: 4000 },
+  tabby: { points: 10, image: assetPath("/cute-tabby-sitting.png"), lifespan: 5000 },
+  white: { points: 30, image: assetPath("/white-cat.png"), lifespan: 3500 },
+  black: { points: 50, image: assetPath("/black-cat.png"), lifespan: 2500 },
+  dog: { points: -20, image: assetPath("/dog.png"), lifespan: 4000 },
+  poop: { points: -50, image: assetPath("/poop-icon.png"), lifespan: 4000 },
 }
 
 const TARGET_SIZE = 64
@@ -201,7 +202,7 @@ export function CatGame() {
                   style={{ top: `${target.y}px`, left: `${target.x}px` }}
                 >
                   <Image
-                    src={target.image || "/placeholder.svg"}
+                    src={target.image || assetPath("/placeholder.svg")}
                     alt={target.type}
                     width={TARGET_SIZE}
                     height={TARGET_SIZE}

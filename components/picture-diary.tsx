@@ -4,38 +4,39 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
 
 const diaryEntries = [
   {
-    image: "/images/diary-2025-08-10.png",
+    image: assetPath("/images/diary-2025-08-10.png"),
     alt: "2025年8月10日の絵日記",
     title: "今日の猫ちゃん",
   },
   {
-    image: "/images/diary-2025-08-11.png",
+    image: assetPath("/images/diary-2025-08-11.png"),
     alt: "2025年8月11日の絵日記",
     title: "お昼寝タイム",
   },
   {
-    image: "/images/diary-2025-08-12.png",
+    image: assetPath("/images/diary-2025-08-12.png"),
     alt: "2025年8月12日の絵日記",
     title: "遊び時間",
   },
   {
-    image: "/images/diary-2025-08-29.png",
+    image: assetPath("/images/diary-2025-08-29.png"),
     alt: "2025年8月29日の絵日記",
     title: "なおくんとお昼寝",
   },
   {
-    image: "/images/diary-2025-08-30.png",
+    image: assetPath("/images/diary-2025-08-30.png"),
     alt: "2025年8月30日の絵日記",
     title: "巨大化したなおくん",
   },
   {
-    image: "/images/diary-2025-08-31.png",
+    image: assetPath("/images/diary-2025-08-31.png"),
     alt: "2025年8月31日の絵日記",
     title: "夏休み最後の日",
   },
@@ -125,7 +126,7 @@ export function PictureDiary() {
                   <h3 className="text-lg md:text-xl font-bold text-[#8A6E59]">{diaryEntries[currentIndex].title}</h3>
                   <div className="relative">
                     <Image
-                      src={diaryEntries[currentIndex].image || "/placeholder.svg"}
+                      src={diaryEntries[currentIndex].image || assetPath("/placeholder.svg")}
                       alt={diaryEntries[currentIndex].alt}
                       width={350}
                       height={350}

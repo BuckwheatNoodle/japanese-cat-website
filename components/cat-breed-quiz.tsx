@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
+import { assetPath } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -21,42 +22,42 @@ type BreedQuestion = {
 const BREED_QUESTIONS: BreedQuestion[] = [
   {
     id: "persian",
-    imageUrl: "/fluffy-white-persian-cat-with-long-fur-and-flat-fa.jpg",
+    imageUrl: assetPath("/fluffy-white-persian-cat-with-long-fur-and-flat-fa.jpg"),
     correctBreed: "ペルシャ",
     options: ["ペルシャ", "ラグドール", "メインクーン", "ノルウェージャンフォレストキャット"],
     description: "長い毛と平たい顔が特徴的な優雅な猫です",
   },
   {
     id: "siamese",
-    imageUrl: "/siamese-cat-with-blue-eyes-and-cream-colored-body-.jpg",
+    imageUrl: assetPath("/siamese-cat-with-blue-eyes-and-cream-colored-body-.jpg"),
     correctBreed: "シャム",
     options: ["シャム", "ロシアンブルー", "オリエンタルショートヘア", "バーミーズ"],
     description: "青い目とポイントカラーが美しい猫です",
   },
   {
     id: "maine_coon",
-    imageUrl: "/large-maine-coon-cat-with-long-fur-and-tufted-ears.jpg",
+    imageUrl: assetPath("/large-maine-coon-cat-with-long-fur-and-tufted-ears.jpg"),
     correctBreed: "メインクーン",
     options: ["メインクーン", "ノルウェージャンフォレストキャット", "サイベリアン", "ラグドール"],
     description: "大型で房毛のある耳が特徴的な猫です",
   },
   {
     id: "british_shorthair",
-    imageUrl: "/british-shorthair-cat-with-round-face-and-dense-gr.jpg",
+    imageUrl: assetPath("/british-shorthair-cat-with-round-face-and-dense-gr.jpg"),
     correctBreed: "ブリティッシュショートヘア",
     options: ["ブリティッシュショートヘア", "ロシアンブルー", "シャルトリュー", "スコティッシュフォールド"],
     description: "丸い顔と密な被毛が特徴的な猫です",
   },
   {
     id: "ragdoll",
-    imageUrl: "/ragdoll-cat-with-blue-eyes-and-semi-long-colorpoin.jpg",
+    imageUrl: assetPath("/ragdoll-cat-with-blue-eyes-and-semi-long-colorpoin.jpg"),
     correctBreed: "ラグドール",
     options: ["ラグドール", "バーマン", "ヒマラヤン", "ペルシャ"],
     description: "大きくて穏やかな性格の長毛猫です",
   },
   {
     id: "scottish_fold",
-    imageUrl: "/scottish-fold-cat-with-folded-ears-and-round-eyes.jpg",
+    imageUrl: assetPath("/scottish-fold-cat-with-folded-ears-and-round-eyes.jpg"),
     correctBreed: "スコティッシュフォールド",
     options: [
       "スコティッシュフォールド",
@@ -68,42 +69,42 @@ const BREED_QUESTIONS: BreedQuestion[] = [
   },
   {
     id: "russian_blue",
-    imageUrl: "/russian-blue-cat-with-silver-blue-fur-and-green-ey.jpg",
+    imageUrl: assetPath("/russian-blue-cat-with-silver-blue-fur-and-green-ey.jpg"),
     correctBreed: "ロシアンブルー",
     options: ["ロシアンブルー", "シャルトリュー", "ブリティッシュショートヘア", "コラット"],
     description: "銀青色の美しい被毛と緑の目が特徴です",
   },
   {
     id: "abyssinian",
-    imageUrl: "/abyssinian-cat-with-ticked-coat-and-large-ears.jpg",
+    imageUrl: assetPath("/abyssinian-cat-with-ticked-coat-and-large-ears.jpg"),
     correctBreed: "アビシニアン",
     options: ["アビシニアン", "ソマリ", "ベンガル", "オシキャット"],
     description: "ティックドコートと大きな耳が特徴的です",
   },
   {
     id: "bengal",
-    imageUrl: "/bengal-cat-with-leopard-like-spotted-pattern.jpg",
+    imageUrl: assetPath("/bengal-cat-with-leopard-like-spotted-pattern.jpg"),
     correctBreed: "ベンガル",
     options: ["ベンガル", "オシキャット", "エジプシャンマウ", "アビシニアン"],
     description: "ヒョウのような美しい斑点模様が特徴です",
   },
   {
     id: "sphynx",
-    imageUrl: "/hairless-sphynx-cat-with-wrinkled-skin.jpg",
+    imageUrl: assetPath("/hairless-sphynx-cat-with-wrinkled-skin.jpg"),
     correctBreed: "スフィンクス",
     options: ["スフィンクス", "ドンスコイ", "ペテルボルド", "コーニッシュレックス"],
     description: "毛がなく、しわのある皮膚が特徴的な猫です",
   },
   {
     id: "norwegian_forest",
-    imageUrl: "/norwegian-forest-cat-with-long-fur-and-bushy-tail.jpg",
+    imageUrl: assetPath("/norwegian-forest-cat-with-long-fur-and-bushy-tail.jpg"),
     correctBreed: "ノルウェージャンフォレストキャット",
     options: ["ノルウェージャンフォレストキャット", "メインクーン", "サイベリアン", "ラグドール"],
     description: "北欧原産の大型長毛猫です",
   },
   {
     id: "american_shorthair",
-    imageUrl: "/american-shorthair-cat-with-silver-tabby-pattern.jpg",
+    imageUrl: assetPath("/american-shorthair-cat-with-silver-tabby-pattern.jpg"),
     correctBreed: "アメリカンショートヘア",
     options: [
       "アメリカンショートヘア",
@@ -115,56 +116,56 @@ const BREED_QUESTIONS: BreedQuestion[] = [
   },
   {
     id: "birman",
-    imageUrl: "/birman-cat-with-colorpoint-pattern-and-white-paws.jpg",
+    imageUrl: assetPath("/birman-cat-with-colorpoint-pattern-and-white-paws.jpg"),
     correctBreed: "バーマン",
     options: ["バーマン", "ラグドール", "ヒマラヤン", "シャム"],
     description: "白い手袋を履いたような足が特徴的です",
   },
   {
     id: "exotic_shorthair",
-    imageUrl: "/exotic-shorthair-cat-with-flat-face-and-short-dens.jpg",
+    imageUrl: assetPath("/exotic-shorthair-cat-with-flat-face-and-short-dens.jpg"),
     correctBreed: "エキゾチックショートヘア",
     options: ["エキゾチックショートヘア", "ペルシャ", "ブリティッシュショートヘア", "スコティッシュフォールド"],
     description: "ペルシャの短毛版とも呼ばれる猫です",
   },
   {
     id: "oriental_shorthair",
-    imageUrl: "/oriental-shorthair-cat-with-large-ears-and-slender.jpg",
+    imageUrl: assetPath("/oriental-shorthair-cat-with-large-ears-and-slender.jpg"),
     correctBreed: "オリエンタルショートヘア",
     options: ["オリエンタルショートヘア", "シャム", "コーニッシュレックス", "デボンレックス"],
     description: "大きな耳とスレンダーな体型が特徴です",
   },
   {
     id: "turkish_angora",
-    imageUrl: "/turkish-angora-cat-with-silky-white-long-fur.jpg",
+    imageUrl: assetPath("/turkish-angora-cat-with-silky-white-long-fur.jpg"),
     correctBreed: "ターキッシュアンゴラ",
     options: ["ターキッシュアンゴラ", "ペルシャ", "メインクーン", "ノルウェージャンフォレストキャット"],
     description: "絹のような美しい長毛が特徴的です",
   },
   {
     id: "manx",
-    imageUrl: "/manx-cat-with-no-tail-and-round-body.jpg",
+    imageUrl: assetPath("/manx-cat-with-no-tail-and-round-body.jpg"),
     correctBreed: "マンクス",
     options: ["マンクス", "ブリティッシュショートヘア", "アメリカンショートヘア", "スコティッシュフォールド"],
     description: "しっぽがない（または短い）ことで有名な猫です",
   },
   {
     id: "somali",
-    imageUrl: "/somali-cat-with-long-ticked-coat-and-bushy-tail.jpg",
+    imageUrl: assetPath("/somali-cat-with-long-ticked-coat-and-bushy-tail.jpg"),
     correctBreed: "ソマリ",
     options: ["ソマリ", "アビシニアン", "メインクーン", "ノルウェージャンフォレストキャット"],
     description: "アビシニアンの長毛版とも呼ばれます",
   },
   {
     id: "japanese_bobtail",
-    imageUrl: "/japanese-bobtail-cat-with-short-curved-tail.jpg",
+    imageUrl: assetPath("/japanese-bobtail-cat-with-short-curved-tail.jpg"),
     correctBreed: "ジャパニーズボブテイル",
     options: ["ジャパニーズボブテイル", "マンクス", "アメリカンショートヘア", "ブリティッシュショートヘア"],
     description: "短くカーブした尻尾が特徴的な日本原産の猫です",
   },
   {
     id: "cornish_rex",
-    imageUrl: "/cornish-rex-cat-with-curly-coat-and-large-ears.jpg",
+    imageUrl: assetPath("/cornish-rex-cat-with-curly-coat-and-large-ears.jpg"),
     correctBreed: "コーニッシュレックス",
     options: ["コーニッシュレックス", "デボンレックス", "オリエンタルショートヘア", "スフィンクス"],
     description: "カールした被毛と大きな耳が特徴的です",
@@ -334,7 +335,7 @@ export function CatBreedQuiz() {
 
             <div className="bg-white rounded-lg p-4 shadow-md border-2 border-[#EAD8C0]">
               <Image
-                src={currentQuestion.imageUrl || "/placeholder.svg"}
+                src={currentQuestion.imageUrl || assetPath("/placeholder.svg")}
                 alt="猫の品種クイズ"
                 width={300}
                 height={300}
