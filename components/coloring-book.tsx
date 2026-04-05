@@ -361,59 +361,52 @@ export function ColoringBook() {
             ))}
           </div>
 
-          {/* デスクトップ: サイドバー + キャンバス横並び */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2 text-[#8A6E59]">いろ</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {COLOR_PALETTE.map((color) => (
-                    <button key={color} onClick={() => setSelectedColor(color)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
-                      style={{ backgroundColor: color }} />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-[#8A6E59]">どうぐ</h3>
-                <div className="space-y-2">
-                  <Button onClick={() => setTool("paint")} variant={tool === "paint" ? "default" : "outline"}
-                    className={`w-full justify-start ${tool === "paint" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
-                    <Palette className="w-4 h-4 mr-2" />ぬる</Button>
-                  <Button onClick={() => setTool("eyedropper")} variant={tool === "eyedropper" ? "default" : "outline"}
-                    className={`w-full justify-start ${tool === "eyedropper" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
-                    <Pipette className="w-4 h-4 mr-2" />スポイト</Button>
-                  <Button onClick={() => setTool("eraser")} variant={tool === "eraser" ? "default" : "outline"}
-                    className={`w-full justify-start ${tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
-                    <Eraser className="w-4 h-4 mr-2" />けしごむ</Button>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2 text-[#8A6E59]">アクション</h3>
-                <div className="space-y-2">
-                  <Button onClick={handleUndo} disabled={!currentState || currentState.undoStack.length === 0} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4 mr-2" />もどす</Button>
-                  <Button onClick={handleRedo} disabled={!currentState || currentState.redoStack.length === 0} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4 mr-2" />やりなおす</Button>
-                  <Button onClick={handleReset} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4 mr-2" />リセット</Button>
-                  <Button onClick={downloadImage} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4 mr-2" />ほぞん</Button>
-                </div>
+          {/* SVGキャンバス（共通・1つだけ） */}
+          <div className="bg-[#FDEEDC]/30 rounded-lg p-4 min-h-[250px] md:min-h-[400px] flex items-center justify-center mb-4">
+            <div ref={svgContainerRef} className="w-full max-w-md mx-auto cursor-pointer" />
+          </div>
+          <p className="text-sm text-[#8A6E59] mb-4 text-center hidden md:block">ぬりたいところをクリックしてね！</p>
+          <p className="text-sm text-[#8A6E59] mb-4 text-center md:hidden">ぬりたいところをタップしてね！</p>
+
+          {/* デスクトップ: ツール横並び */}
+          <div className="hidden md:flex md:flex-wrap md:gap-4 md:justify-center">
+            <div>
+              <h3 className="font-semibold mb-2 text-[#8A6E59]">いろ</h3>
+              <div className="grid grid-cols-6 gap-2">
+                {COLOR_PALETTE.map((color) => (
+                  <button key={color} onClick={() => setSelectedColor(color)}
+                    className={`w-8 h-8 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
+                    style={{ backgroundColor: color }} />
+                ))}
               </div>
             </div>
-            <div className="md:col-span-3">
-              <div className="bg-[#FDEEDC]/30 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
-                <div ref={svgContainerRef} className="w-full max-w-md mx-auto cursor-pointer" />
+            <div>
+              <h3 className="font-semibold mb-2 text-[#8A6E59]">どうぐ</h3>
+              <div className="flex gap-2">
+                <Button onClick={() => setTool("paint")} variant={tool === "paint" ? "default" : "outline"}
+                  className={tool === "paint" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}>
+                  <Palette className="w-4 h-4 mr-2" />ぬる</Button>
+                <Button onClick={() => setTool("eyedropper")} variant={tool === "eyedropper" ? "default" : "outline"}
+                  className={tool === "eyedropper" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}>
+                  <Pipette className="w-4 h-4 mr-2" />スポイト</Button>
+                <Button onClick={() => setTool("eraser")} variant={tool === "eraser" ? "default" : "outline"}
+                  className={tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}>
+                  <Eraser className="w-4 h-4 mr-2" />けしごむ</Button>
               </div>
-              <p className="text-sm text-[#8A6E59] mt-2 text-center">ぬりたいところをクリックしてね！</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2 text-[#8A6E59]">アクション</h3>
+              <div className="flex gap-2">
+                <Button onClick={handleUndo} disabled={!currentState || currentState.undoStack.length === 0} variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4 mr-2" />もどす</Button>
+                <Button onClick={handleRedo} disabled={!currentState || currentState.redoStack.length === 0} variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4 mr-2" />やりなおす</Button>
+                <Button onClick={handleReset} variant="outline" className="bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4 mr-2" />リセット</Button>
+                <Button onClick={downloadImage} variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4 mr-2" />ほぞん</Button>
+              </div>
             </div>
           </div>
 
-          {/* モバイル: キャンバス → パレット → ツールバー */}
+          {/* モバイル: パレット → ツールバー */}
           <div className="md:hidden">
-            <div className="mb-4">
-              <div className="bg-[#FDEEDC]/30 rounded-lg p-4 min-h-[250px] flex items-center justify-center">
-                <div ref={svgContainerRef} className="w-full max-w-md mx-auto cursor-pointer" />
-              </div>
-              <p className="text-sm text-[#8A6E59] mt-2 text-center">ぬりたいところをタップしてね！</p>
-            </div>
             <div className="mb-3">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {COLOR_PALETTE.map((color) => (
