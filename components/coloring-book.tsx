@@ -361,117 +361,77 @@ export function ColoringBook() {
             ))}
           </div>
 
-          <div className="grid md:grid-cols-4 gap-4">
-            {/* ツールパネル */}
+          {/* デスクトップ: サイドバー + キャンバス横並び */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4">
             <div className="space-y-4">
-              {/* カラーパレット */}
               <div>
                 <h3 className="font-semibold mb-2 text-[#8A6E59]">いろ</h3>
                 <div className="grid grid-cols-4 gap-2">
                   {COLOR_PALETTE.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                        selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
+                    <button key={color} onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
+                      style={{ backgroundColor: color }} />
                   ))}
                 </div>
               </div>
-
-              {/* ツール */}
               <div>
                 <h3 className="font-semibold mb-2 text-[#8A6E59]">どうぐ</h3>
                 <div className="space-y-2">
-                  <Button
-                    onClick={() => setTool("paint")}
-                    variant={tool === "paint" ? "default" : "outline"}
-                    className={`w-full justify-start ${
-                      tool === "paint" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"
-                    }`}
-                  >
-                    <Palette className="w-4 h-4 mr-2" />
-                    ぬる
-                  </Button>
-                  <Button
-                    onClick={() => setTool("eyedropper")}
-                    variant={tool === "eyedropper" ? "default" : "outline"}
-                    className={`w-full justify-start ${
-                      tool === "eyedropper"
-                        ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white"
-                        : "bg-white hover:bg-[#FDEEDC]"
-                    }`}
-                  >
-                    <Pipette className="w-4 h-4 mr-2" />
-                    スポイト
-                  </Button>
-                  <Button
-                    onClick={() => setTool("eraser")}
-                    variant={tool === "eraser" ? "default" : "outline"}
-                    className={`w-full justify-start ${
-                      tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"
-                    }`}
-                  >
-                    <Eraser className="w-4 h-4 mr-2" />
-                    けしごむ
-                  </Button>
+                  <Button onClick={() => setTool("paint")} variant={tool === "paint" ? "default" : "outline"}
+                    className={`w-full justify-start ${tool === "paint" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
+                    <Palette className="w-4 h-4 mr-2" />ぬる</Button>
+                  <Button onClick={() => setTool("eyedropper")} variant={tool === "eyedropper" ? "default" : "outline"}
+                    className={`w-full justify-start ${tool === "eyedropper" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
+                    <Pipette className="w-4 h-4 mr-2" />スポイト</Button>
+                  <Button onClick={() => setTool("eraser")} variant={tool === "eraser" ? "default" : "outline"}
+                    className={`w-full justify-start ${tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC]"}`}>
+                    <Eraser className="w-4 h-4 mr-2" />けしごむ</Button>
                 </div>
               </div>
-
-              {/* アクション */}
               <div>
                 <h3 className="font-semibold mb-2 text-[#8A6E59]">アクション</h3>
                 <div className="space-y-2">
-                  <Button
-                    onClick={handleUndo}
-                    disabled={!currentState || currentState.undoStack.length === 0}
-                    variant="outline"
-                    className="w-full justify-start bg-white hover:bg-[#FDEEDC]"
-                  >
-                    <Undo2 className="w-4 h-4 mr-2" />
-                    もどす
-                  </Button>
-                  <Button
-                    onClick={handleRedo}
-                    disabled={!currentState || currentState.redoStack.length === 0}
-                    variant="outline"
-                    className="w-full justify-start bg-white hover:bg-[#FDEEDC]"
-                  >
-                    <Redo2 className="w-4 h-4 mr-2" />
-                    やりなおす
-                  </Button>
-                  <Button
-                    onClick={handleReset}
-                    variant="outline"
-                    className="w-full justify-start bg-white hover:bg-[#FDEEDC]"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    リセット
-                  </Button>
-                  <Button
-                    onClick={downloadImage}
-                    variant="outline"
-                    className="w-full justify-start bg-white hover:bg-[#FDEEDC]"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    ほぞん
-                  </Button>
+                  <Button onClick={handleUndo} disabled={!currentState || currentState.undoStack.length === 0} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4 mr-2" />もどす</Button>
+                  <Button onClick={handleRedo} disabled={!currentState || currentState.redoStack.length === 0} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4 mr-2" />やりなおす</Button>
+                  <Button onClick={handleReset} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4 mr-2" />リセット</Button>
+                  <Button onClick={downloadImage} variant="outline" className="w-full justify-start bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4 mr-2" />ほぞん</Button>
                 </div>
               </div>
             </div>
-
-            {/* キャンバス */}
             <div className="md:col-span-3">
               <div className="bg-[#FDEEDC]/30 rounded-lg p-4 min-h-[400px] flex items-center justify-center">
                 <div ref={svgContainerRef} className="w-full max-w-md mx-auto cursor-pointer" />
               </div>
-              <p className="text-sm text-[#8A6E59] mt-2 text-center">
-                ぬりたいところをクリックしてね！
-                {currentState && <span className="block text-xs opacity-70">※ 塗った状態は自動で保存されます</span>}
-              </p>
+              <p className="text-sm text-[#8A6E59] mt-2 text-center">ぬりたいところをクリックしてね！</p>
+            </div>
+          </div>
+
+          {/* モバイル: キャンバス → パレット → ツールバー */}
+          <div className="md:hidden">
+            <div className="mb-4">
+              <div className="bg-[#FDEEDC]/30 rounded-lg p-4 min-h-[250px] flex items-center justify-center">
+                <div ref={svgContainerRef} className="w-full max-w-md mx-auto cursor-pointer" />
+              </div>
+              <p className="text-sm text-[#8A6E59] mt-2 text-center">ぬりたいところをタップしてね！</p>
+            </div>
+            <div className="mb-3">
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {COLOR_PALETTE.map((color) => (
+                  <button key={color} onClick={() => setSelectedColor(color)}
+                    className={`w-9 h-9 flex-shrink-0 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
+                    style={{ backgroundColor: color }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setTool("paint")} size="sm" className={`${tool === "paint" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC] text-[#8A6E59]"}`}><Palette className="w-4 h-4 mr-1" />ぬる</Button>
+              <Button onClick={() => setTool("eyedropper")} size="sm" className={`${tool === "eyedropper" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC] text-[#8A6E59]"}`}><Pipette className="w-4 h-4 mr-1" />スポイト</Button>
+              <Button onClick={() => setTool("eraser")} size="sm" className={`${tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC] text-[#8A6E59]"}`}><Eraser className="w-4 h-4 mr-1" />けす</Button>
+              <div className="w-px bg-[#EAD8C0] mx-1" />
+              <Button onClick={handleUndo} size="sm" variant="outline" disabled={!currentState || currentState.undoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4" /></Button>
+              <Button onClick={handleRedo} size="sm" variant="outline" disabled={!currentState || currentState.redoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4" /></Button>
+              <Button onClick={handleReset} size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4" /></Button>
+              <Button onClick={downloadImage} size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4" /></Button>
             </div>
           </div>
         </CardContent>

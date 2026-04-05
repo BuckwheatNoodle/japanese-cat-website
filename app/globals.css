@@ -175,4 +175,8 @@
   .animate-ping-once {
     animation: ping 1s cubic-bezier(0, 0, 0.2, 1);
   }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

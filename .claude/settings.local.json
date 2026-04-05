@@ -19,7 +19,8 @@
       "Bash(NEXT_PUBLIC_BASE_PATH=/japanese-cat-website npm run build)",
       "Bash(git push:*)",
       "Bash(curl:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

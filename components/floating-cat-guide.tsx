@@ -166,7 +166,7 @@ export function FloatingCatGuide() {
     if (typeof window === "undefined") return { width: 400, height: 600 }
     return {
       width: window.innerWidth - 80,
-      height: window.innerHeight - 120,
+      height: window.innerHeight - 200, // ヘッダー + ボトムタブ分を除く
     }
   }
 
