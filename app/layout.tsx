@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { PwaManager } from "@/components/pwa-manager"
 
 export const metadata: Metadata = {
-  title: "美雪の猫ページ｜ねこカフェで遊ぼう",
-  description: "ゲーム、ぬりえ、占い、絵日記を楽しめる、美雪のかわいい猫ページです。",
+  title: "美雪のねこカフェ｜ゲーム・事件記録・猫図鑑",
+  description: "6種のゲーム攻略、配色デザイン、猫占い、分岐ストーリー、笑える絵日記を収録した美雪のねこカフェ。",
   generator: "Next.js",
   manifest: assetPath("/manifest.webmanifest"),
   appleWebApp: { capable: true, title: "美雪ねこカフェ", statusBarStyle: "default" },

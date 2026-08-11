@@ -39,7 +39,7 @@
   gap: 5px;
   margin: 0 0 5px;
   color: var(--skin-coral-strong);
-  font-size: .66rem;
+  font-size: .75rem;
   font-weight: 900;
   letter-spacing: .1em;
 }
@@ -107,7 +107,7 @@
   border-radius: 999px;
   color: var(--skin-ink);
   background: white;
-  font-size: .68rem;
+  font-size: .75rem;
 }
 
 .heroStats span:first-child { background: color-mix(in srgb, var(--skin-butter) 42%, white); }
@@ -152,7 +152,7 @@
   border-radius: 999px;
   color: var(--skin-coral-strong);
   background: color-mix(in srgb, var(--skin-blush) 38%, white);
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -203,9 +203,38 @@
 .missionCard[data-status="claimed"] .missionIcon { color: #47755a; background: var(--skin-mint); }
 .missionIcon svg { width: 21px; height: 21px; }
 
-.missionCopy h4 { margin: 1px 0 2px; color: var(--skin-ink); font-size: .86rem; }
+.missionCharacter {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 3px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--skin-coral-strong);
+  background: color-mix(in srgb, var(--skin-blush) 45%, white);
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.missionCopy h4 { margin: 1px 0 2px; color: var(--skin-ink); font-size: .92rem; line-height: 1.4; }
 .missionCopy h4:focus { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
-.missionCopy > p { margin: 0; color: var(--skin-ink-soft); font-size: .69rem; line-height: 1.45; }
+.missionCopy > p { margin: 0; color: var(--skin-ink-soft); font-size: .82rem; line-height: 1.55; }
+
+.missionCopy > .missionPunchline {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 7px 8px;
+  border: 1px dashed var(--skin-mint-strong);
+  border-radius: 11px;
+  color: var(--skin-ink);
+  background: color-mix(in srgb, var(--skin-mint) 34%, white);
+  font-size: .82rem;
+  line-height: 1.5;
+  font-weight: 800;
+}
+
+.missionPunchline svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--skin-coral-strong); }
 
 .progressRow {
   display: grid;
@@ -227,7 +256,7 @@
 .progressRow progress::-webkit-progress-bar { border-radius: 99px; background: var(--skin-paper-warm); }
 .progressRow progress::-webkit-progress-value { border-radius: 99px; background: var(--skin-coral); }
 .progressRow progress::-moz-progress-bar { border-radius: 99px; background: var(--skin-coral); }
-.progressRow span { color: var(--skin-ink-soft); font-size: .61rem; font-weight: 800; }
+.progressRow span { color: var(--skin-ink-soft); font-size: .75rem; font-weight: 800; white-space: nowrap; }
 
 .rewardArea {
   grid-column: 1 / -1;
@@ -235,6 +264,7 @@
   min-height: 44px;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   padding-top: 7px;
   border-top: 1px dashed color-mix(in srgb, var(--skin-line) 70%, transparent);
@@ -246,13 +276,13 @@
   align-items: center;
   gap: 4px;
   color: var(--skin-coral-strong);
-  font-size: .72rem;
+  font-size: .78rem;
   font-weight: 900;
 }
 
 .rewardArea > strong { color: #47755a; }
 .rewardArea svg { width: 16px; height: 16px; }
-.rewardArea small { color: var(--skin-ink-soft); font-size: .67rem; }
+.rewardArea small { color: var(--skin-ink-soft); font-size: .75rem; }
 
 .rewardArea button {
   display: inline-flex;
@@ -267,7 +297,8 @@
   color: white;
   background: var(--skin-action);
   box-shadow: 0 3px 0 var(--skin-coral-strong);
-  font-size: .74rem;
+  flex: 1 1 120px;
+  font-size: .78rem;
   font-weight: 900;
 }
 
@@ -302,11 +333,11 @@
 }
 
 .entranceCopy { display: grid; align-content: center; gap: 4px; min-width: 0; }
-.entranceEyebrow { display: flex; align-items: center; gap: 4px; color: var(--skin-coral-strong); font-size: .55rem; font-weight: 900; letter-spacing: .07em; }
+.entranceEyebrow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--skin-coral-strong); font-size: .75rem; font-weight: 900; letter-spacing: .04em; }
 .entranceEyebrow svg { width: 14px; height: 14px; }
 .entranceCopy > strong { font-size: .96rem; line-height: 1.3; }
-.entranceCopy > span:not(.entranceEyebrow) { color: var(--skin-ink-soft); font-size: .65rem; line-height: 1.45; }
-.entranceCopy small { justify-self: start; margin-top: 3px; padding: 3px 7px; border-radius: 99px; color: var(--skin-ink); background: rgba(255,255,255,.78); font-size: .58rem; font-weight: 800; }
+.entranceCopy > span:not(.entranceEyebrow) { color: var(--skin-ink-soft); font-size: .82rem; line-height: 1.55; }
+.entranceCopy small { justify-self: start; margin-top: 3px; padding: 3px 7px; border-radius: 99px; color: var(--skin-ink); background: rgba(255,255,255,.78); font-size: .75rem; font-weight: 800; }
 .entranceArrow { width: 20px; height: 20px; color: var(--skin-coral-strong); }
 
 .screenToolbar {
@@ -331,7 +362,7 @@
   border-radius: 13px;
   color: var(--skin-ink);
   background: white;
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -351,7 +382,7 @@
   border-radius: 99px;
   color: var(--skin-coral-strong);
   background: color-mix(in srgb, var(--skin-butter) 52%, white);
-  font-size: .7rem;
+  font-size: .75rem;
 }
 
 .coinPill svg,
@@ -388,6 +419,36 @@
   font-size: .78rem;
   line-height: 1.55;
 }
+
+.roomReaction {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  margin: -2px 0 13px;
+  padding: 11px;
+  border: 2px solid var(--skin-coral);
+  border-radius: 17px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--skin-blush) 34%, white), color-mix(in srgb, var(--skin-butter) 25%, white));
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--skin-coral) 25%, transparent);
+}
+
+.roomReactionIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  color: white;
+  background: var(--skin-action);
+}
+
+.roomReactionIcon svg { width: 21px; height: 21px; }
+.roomReactionCopy { display: grid; gap: 3px; min-width: 0; }
+.roomReactionCopy > strong { color: var(--skin-ink); font-size: .82rem; line-height: 1.35; }
+.roomReactionCopy > span { color: var(--skin-ink-soft); font-size: .85rem; line-height: 1.55; }
+.roomReactionCopy > span:last-child { display: flex; align-items: flex-start; gap: 5px; color: var(--skin-ink); font-weight: 800; }
+.roomReactionCopy > span:last-child svg { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 2px; color: var(--skin-coral-strong); }
 
 .roomLayout { display: grid; gap: 13px; }
 
@@ -442,7 +503,8 @@
   border-radius: 99px;
   color: var(--skin-ink-soft);
   background: rgba(255,255,255,.82);
-  font-size: .55rem;
+  max-width: 100%;
+  font-size: .75rem;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -457,12 +519,12 @@
   box-shadow: var(--skin-shadow-soft);
 }
 
-.clearSlotButton { min-height: 40px; color: var(--skin-coral-strong); font-size: .65rem; }
+.clearSlotButton { min-height: 44px; color: var(--skin-coral-strong); font-size: .75rem; }
 .itemList { display: grid; gap: 8px; }
 
 .itemCard {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 78px;
+  grid-template-columns: 60px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
   min-height: 84px;
@@ -473,13 +535,13 @@
 }
 
 .itemCard[data-equipped] { border: 2px solid var(--skin-mint-strong); background: color-mix(in srgb, var(--skin-mint) 22%, white); }
-.itemArt { width: 64px; height: 64px; border-radius: 13px; }
+.itemArt { width: 60px; height: 60px; border-radius: 13px; }
 .itemCopy { min-width: 0; }
 .itemNameRow { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 4px; }
 .itemNameRow > strong { color: var(--skin-ink); font-size: .75rem; line-height: 1.35; }
-.itemNameRow small { padding: 2px 5px; border-radius: 99px; color: #563365; background: var(--skin-lavender); font-size: .5rem; font-weight: 900; }
+.itemNameRow small { padding: 2px 5px; border-radius: 99px; color: #563365; background: var(--skin-lavender); font-size: .75rem; font-weight: 900; }
 .itemNameRow small[data-rarity="special"] { color: #654111; background: var(--skin-butter); }
-.itemCopy p { margin: 3px 0 0; color: var(--skin-ink-soft); font-size: .59rem; line-height: 1.4; }
+.itemCopy p { margin: 3px 0 0; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.5; }
 
 .placeButton,
 .buyButton {
@@ -494,7 +556,8 @@
   border-radius: 12px;
   color: white;
   background: var(--skin-action);
-  font-size: .62rem;
+  grid-column: 1 / -1;
+  font-size: .78rem;
   font-weight: 900;
 }
 
@@ -523,7 +586,7 @@
   border-radius: 13px;
   color: var(--skin-ink-soft);
   background: white;
-  font-size: .64rem;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -557,13 +620,13 @@
 
 .collectionCard[data-selected] { border-color: var(--skin-coral); box-shadow: 0 0 0 3px color-mix(in srgb, var(--skin-blush) 55%, transparent); }
 .collectionCard[data-locked] { background: color-mix(in srgb, var(--skin-paper-warm) 72%, #e2ddd4); }
-.collectionNumber { position: absolute; z-index: 2; top: 7px; left: 7px; padding: 3px 6px; border-radius: 99px; color: var(--skin-ink-soft); background: rgba(255,255,255,.9); font-size: .51rem; font-weight: 900; }
-.newBadge { position: absolute; z-index: 2; top: 7px; right: 7px; padding: 3px 6px; border-radius: 99px; color: white; background: var(--skin-action); font-size: .66rem; font-weight: 900; letter-spacing: .06em; }
+.collectionNumber { position: absolute; z-index: 2; top: 7px; left: 7px; padding: 3px 6px; border-radius: 99px; color: var(--skin-ink-soft); background: rgba(255,255,255,.9); font-size: .75rem; font-weight: 900; }
+.newBadge { position: absolute; z-index: 2; top: 7px; right: 7px; padding: 3px 6px; border-radius: 99px; color: white; background: var(--skin-action); font-size: .75rem; font-weight: 900; letter-spacing: .04em; }
 .collectionArt { width: 100%; height: 132px; border-radius: 12px; }
 .collectionCard[data-locked] .collectionArt { filter: grayscale(1); opacity: .28; }
 .collectionCardCopy { display: grid; align-content: center; gap: 2px; min-width: 0; padding: 2px; text-align: center; }
-.collectionCardCopy strong { font-size: .72rem; line-height: 1.4; overflow-wrap: anywhere; }
-.collectionCardCopy small { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 3px; color: var(--skin-ink-soft); font-size: .54rem; line-height: 1.4; overflow-wrap: anywhere; }
+.collectionCardCopy strong { font-size: .78rem; line-height: 1.4; overflow-wrap: anywhere; }
+.collectionCardCopy small { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 3px; color: var(--skin-ink-soft); font-size: .75rem; line-height: 1.45; overflow-wrap: anywhere; }
 .collectionCardCopy small svg { width: 12px; height: 12px; }
 .rarityStars { display: flex; justify-content: center; gap: 2px; }
 .rarityStars svg { width: 13px; height: 13px; color: color-mix(in srgb, var(--skin-line) 60%, white); }
@@ -585,7 +648,7 @@
 .collectionDetail h3 { margin: 0 0 4px; color: var(--skin-ink); font-family: "UD Digi Kyokasho N-B", "BIZ UDGothic", sans-serif; font-size: 1.3rem; }
 .collectionDetail > strong { color: var(--skin-coral-strong); font-size: .75rem; }
 .collectionDetail > p:not(.kicker) { margin: 9px 0; color: var(--skin-ink-soft); font-size: .76rem; line-height: 1.65; }
-.discoveredBadge { display: inline-flex; align-items: center; gap: 4px; padding: 6px 9px; border-radius: 99px; color: #315f43; background: var(--skin-mint); font-size: .67rem; font-weight: 900; }
+.discoveredBadge { display: inline-flex; align-items: center; gap: 4px; padding: 6px 9px; border-radius: 99px; color: #315f43; background: var(--skin-mint); font-size: .75rem; font-weight: 900; }
 .discoveredBadge svg { width: 15px; height: 15px; }
 
 .lockedDetail,
@@ -658,9 +721,9 @@
   box-shadow: none;
 }
 
-.storyChapterButton > span { color: var(--skin-coral-strong); font-size: .68rem; font-weight: 900; }
+.storyChapterButton > span { color: var(--skin-coral-strong); font-size: .75rem; font-weight: 900; }
 .storyChapterButton > strong { font-size: .78rem; line-height: 1.4; }
-.storyChapterButton > small { display: inline-flex; align-items: center; gap: 4px; margin-top: auto; color: var(--skin-ink-soft); font-size: .6rem; font-weight: 800; line-height: 1.4; }
+.storyChapterButton > small { display: inline-flex; align-items: center; gap: 4px; margin-top: auto; color: var(--skin-ink-soft); font-size: .75rem; font-weight: 800; line-height: 1.45; }
 .storyChapterButton > small svg { width: 14px; height: 14px; flex: 0 0 auto; }
 
 .chapterLabel { display: inline-block; margin-bottom: 4px; padding: 4px 8px; border-radius: 99px; color: white; background: var(--skin-action); font-size: .7rem; font-weight: 900; }
@@ -677,7 +740,7 @@
 
 .storyArt { width: 100%; aspect-ratio: 1.25 / 1; border-bottom: 1px solid var(--skin-line); border-radius: 0; }
 .storyCopy { padding: 17px; }
-.speaker { display: inline-block; margin: 0 0 6px !important; padding: 4px 8px; border-radius: 99px; color: var(--skin-coral-strong) !important; background: color-mix(in srgb, var(--skin-blush) 45%, white); font-size: .62rem !important; font-weight: 900; }
+.speaker { display: inline-block; margin: 0 0 6px !important; padding: 4px 8px; border-radius: 99px; color: var(--skin-coral-strong) !important; background: color-mix(in srgb, var(--skin-blush) 45%, white); font-size: .75rem !important; font-weight: 900; }
 .storyCopy > h3 { margin: 0; color: var(--skin-ink); font-family: "UD Digi Kyokasho N-B", "BIZ UDGothic", sans-serif; font-size: 1.28rem; line-height: 1.35; }
 .storyCopy > p:not(.speaker) { margin: 10px 0 0; color: var(--skin-ink-soft); font-size: .82rem; line-height: 1.85; }
 .storyReadAloud {
@@ -694,13 +757,13 @@
   border-radius: 13px;
   color: var(--skin-ink);
   background: color-mix(in srgb, var(--skin-mint) 58%, white);
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 900;
 }
 .storyReadAloud svg { width: 17px; height: 17px; }
 
 .storyChoices { display: grid; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--skin-line); }
-.storyChoices > p { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--skin-coral-strong); font-size: .73rem; font-weight: 900; }
+.storyChoices > p { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--skin-coral-strong); font-size: .75rem; font-weight: 900; }
 .storyChoices > p svg { width: 17px; height: 17px; }
 .storyChoices button {
   display: grid;
@@ -719,7 +782,7 @@
 
 .storyChoices button > span { display: grid; gap: 2px; }
 .storyChoices button strong { font-size: .78rem; line-height: 1.4; }
-.storyChoices button small { color: var(--skin-ink-soft); font-size: .6rem; line-height: 1.4; }
+.storyChoices button small { color: var(--skin-ink-soft); font-size: .75rem; line-height: 1.45; }
 .storyChoices button > svg { width: 20px; height: 20px; color: var(--skin-coral-strong); }
 
 .storyEnding {
@@ -735,7 +798,7 @@
 
 .endingSparkle { display: grid; width: 45px; height: 45px; place-items: center; border-radius: 50%; color: #d38f24; background: var(--skin-butter); }
 .endingSparkle svg { width: 25px; height: 25px; fill: color-mix(in srgb, var(--skin-butter) 75%, white); }
-.storyEnding > p { margin: 8px 0 2px; color: var(--skin-coral-strong); font-size: .67rem; font-weight: 900; letter-spacing: .08em; }
+.storyEnding > p { margin: 8px 0 2px; color: var(--skin-coral-strong); font-size: .75rem; font-weight: 900; letter-spacing: .06em; }
 .storyEnding h4 { margin: 0; color: var(--skin-ink); font-size: 1.1rem; }
 .endingReward { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 5px 9px; border-radius: 99px; color: var(--skin-coral-strong); background: white; font-size: .7rem; font-weight: 900; }
 .endingReward svg { width: 16px; height: 16px; }
@@ -793,7 +856,7 @@
   .itemList { grid-template-columns: 1fr; }
   .itemCard { grid-template-columns: 64px minmax(0, 1fr) 78px; }
   .placeButton,
-  .buyButton { grid-column: auto; }
+  .buyButton { grid-column: auto; flex: none; }
   .collectionLayout { grid-template-columns: minmax(0, 1.42fr) minmax(260px, .58fr); align-items: start; }
   .collectionGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .collectionDetail { position: sticky; top: 14px; }

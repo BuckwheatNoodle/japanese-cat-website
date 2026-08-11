@@ -44,14 +44,50 @@ vm.runInNewContext(transpiled, {
 const progression = loadedModule.exports
 const {
   createInitialAppState,
+  domainEventsHaveSameMeaning,
+  getDailyMissionDefinitions,
   hasProcessedEvent,
   hydrateProgressionState,
+  importProgressionBackup,
   isProgressionLedgerAtCapacity,
   reduceProgression,
   serializeProgressionBackup,
 } = progression
 
 const eventAt = (eventId, occurredAt, extra) => ({ eventId, occurredAt, ...extra })
+
+assert.equal(domainEventsHaveSameMeaning(
+  eventAt("diary:repeat", "2026-08-12T01:00:00.000Z", {
+    type: "diary.read",
+    diaryDate: "2026-08-12",
+    catIds: ["cat-maron", "cat-kuro", "cat-kuro"],
+    naokunFormId: "naokun-poop-pirate",
+  }),
+  eventAt("diary:repeat", "2026-08-12T09:00:00.000Z", {
+    type: "diary.read",
+    diaryDate: "2026-08-12",
+    catIds: ["cat-kuro", "cat-maron"],
+    naokunFormId: "naokun-poop-pirate",
+  }),
+), true, "再読時刻と猫IDの順序・重複だけが違う日記イベントは同じ意味です")
+assert.equal(domainEventsHaveSameMeaning(
+  eventAt("diary:repeat", "2026-08-12T01:00:00.000Z", {
+    type: "diary.read",
+    diaryDate: "2026-08-12",
+    catIds: ["cat-kuro"],
+    naokunFormId: "naokun-poop-pirate",
+  }),
+  eventAt("diary:repeat", "2026-08-12T02:00:00.000Z", {
+    type: "diary.read",
+    diaryDate: "2026-08-12",
+    catIds: ["cat-kuro"],
+    naokunFormId: "naokun-poop-space",
+  }),
+), false, "同じIDでも解放フォームが違う日記イベントは衝突です")
+assert.equal(domainEventsHaveSameMeaning(
+  eventAt("game:repeat", "2026-08-12T01:00:00.000Z", { type: "game.completed", gameId: "rescue", score: 10 }),
+  eventAt("game:repeat", "2026-08-12T02:00:00.000Z", { type: "game.completed", gameId: "rescue", score: 11 }),
+), false, "同じIDでもスコアが違うゲームイベントは衝突です")
 
 // A duplicate from a previous day must be rejected before daily state changes.
 let dailyState = createInitialAppState("2026-08-11", "2026-08-11T01:00:00.000Z")
@@ -75,6 +111,53 @@ const afterNewDay = reduceProgression(dailyState, eventAt("game:new-day", "2026-
 const duplicateReplay = reduceProgression(afterNewDay, completedGame)
 assert.equal(duplicateReplay.daily.date, "2026-08-12")
 assert.equal(JSON.stringify(duplicateReplay.daily.progress), JSON.stringify(afterNewDay.daily.progress))
+
+// Same-day fortunes use the name-scoped event identity, while daily progress and
+// rewards remain capped. Replaying an identical event must be a strict no-op.
+const fortuneDate = "2026-08-12"
+const fortuneEvent = (name) => {
+  const fortuneId = `${fortuneDate}:${encodeURIComponent(name)}`
+  return eventAt(`fortune:${fortuneId}`, `${fortuneDate}T12:00:00.000Z`, {
+    type: "fortune.drawn",
+    fortuneId,
+  })
+}
+const miyukiFortune = fortuneEvent("美雪")
+const naokunFortune = fortuneEvent("なおくん")
+let fortuneState = createInitialAppState(fortuneDate, `${fortuneDate}T00:00:00.000Z`)
+const afterMiyukiFortune = reduceProgression(fortuneState, miyukiFortune)
+const afterTwoNames = reduceProgression(afterMiyukiFortune, naokunFortune)
+assert.equal(hasProcessedEvent(afterTwoNames, miyukiFortune.eventId), true)
+assert.equal(hasProcessedEvent(afterTwoNames, naokunFortune.eventId), true)
+assert.equal(afterTwoNames.stats.fortunesDrawn, 2)
+assert.equal(afterTwoNames.daily.progress["draw-fortune"], 1)
+assert.equal(afterMiyukiFortune.wallet.nyanCoins, fortuneState.wallet.nyanCoins + 14)
+assert.equal(afterTwoNames.wallet.nyanCoins, afterMiyukiFortune.wallet.nyanCoins)
+const duplicateFortuneReplay = reduceProgression(afterTwoNames, miyukiFortune)
+assert.equal(duplicateFortuneReplay, afterTwoNames)
+
+// Backup import hydrates the compact event ledger exactly, so an already-seen
+// fortune remains a strict no-op after a serialize/import round trip.
+const fortuneBackup = serializeProgressionBackup(afterTwoNames, `${fortuneDate}T13:00:00.000Z`)
+const importedFortuneBackup = importProgressionBackup(fortuneBackup, fortuneDate, `${fortuneDate}T14:00:00.000Z`)
+assert.equal(importedFortuneBackup.ok, true)
+if (!importedFortuneBackup.ok) throw new Error("Fortune backup import unexpectedly failed")
+assert.equal(hasProcessedEvent(importedFortuneBackup.state, miyukiFortune.eventId), true)
+assert.equal(hasProcessedEvent(importedFortuneBackup.state, naokunFortune.eventId), true)
+const replayAfterImport = reduceProgression(importedFortuneBackup.state, miyukiFortune)
+assert.equal(replayAfterImport, importedFortuneBackup.state)
+
+// Copy variants may change by date, but the v1 selection order, goals, and
+// rewards are persisted gameplay contracts and must remain compatible.
+const missionCompatibilityCases = {
+  "2026-08-12": [["draw-fortune", 1, 12], ["finish-coloring", 1, 18], ["play-game", 1, 18]],
+  "2026-01-01": [["finish-coloring", 1, 18], ["read-diary", 1, 12], ["play-game", 1, 18]],
+  "2026-04-01": [["draw-fortune", 1, 12], ["play-game", 1, 18], ["finish-coloring", 1, 18]],
+}
+for (const [dateKey, expected] of Object.entries(missionCompatibilityCases)) {
+  const actual = getDailyMissionDefinitions(dateKey).map(({ id, goal, reward }) => [id, goal, reward])
+  assert.equal(JSON.stringify(actual), JSON.stringify(expected))
+}
 
 // All three story chapters must accept only their progression graph order.
 let storyState = createInitialAppState("2026-08-12", "2026-08-12T00:00:00.000Z")
@@ -170,4 +253,4 @@ assert.deepEqual([...repairedReferences.state.story.unlockedChapterIds], ["cafe-
 assert.equal(repairedReferences.state.settings.skinId, "cream-soda")
 assert.ok(repairedReferences.warnings.some((warning) => warning.includes("安全に整理")))
 
-console.log("Progression verification passed: daily idempotency, 3 story chapters, exact ledger migration/capacity, reference repair, and read-only protection.")
+console.log("Progression verification passed: daily and fortune idempotency, mission compatibility, backup replay protection, 3 story chapters, exact ledger migration/capacity, reference repair, and read-only protection.")

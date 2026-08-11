@@ -27,6 +27,8 @@ import {
   BUILT_IN_DIARY_ASSETS,
   CONTENT_OVERRIDE_APPLIED_KEY,
   CONTENT_OVERRIDE_DRAFT_KEY,
+  DIARY_OVERRIDE_CAT_IDS,
+  DIARY_OVERRIDE_TRANSFORMATION_FORMS,
   MAX_CONTENT_OVERRIDE_CHARACTERS,
   applyContentOverrideDraft,
   clearAllContentOverrides,
@@ -40,12 +42,19 @@ import {
   serializeContentOverrides,
   type ContentOverrides,
   type DiaryContentOverride,
+  type DiaryOverrideCatId,
+  type DiaryOverrideTransformationForm,
   type QuizContentOverride,
 } from "@/lib/content-overrides"
+import {
+  PARENT_PIN_KEY,
+  cleanParentPin,
+  hashParentPin,
+  isValidParentPin,
+  verifyParentPin,
+} from "@/lib/parent-access"
 import { assetPath, getLocalDateKey } from "@/lib/utils"
 import styles from "@/components/settings-center.module.css"
-
-const PARENT_PIN_KEY = "miyuki-parent-editor-pin-v1"
 
 type EditorTab = "diary" | "quiz"
 const EDITOR_TABS: readonly EditorTab[] = ["diary", "quiz"]
@@ -59,8 +68,48 @@ export function editorTabForKey(currentTab: EditorTab, key: string): EditorTab |
   return null
 }
 
-type DiaryForm = Omit<DiaryContentOverride, "hidden"> & { hidden: boolean }
+type DiaryForm = Omit<DiaryContentOverride, "hidden" | "transformationForm" | "catIds"> & {
+  hidden: boolean
+  transformationForm: DiaryOverrideTransformationForm
+  catIds: DiaryOverrideCatId[]
+}
 type QuizForm = Omit<QuizContentOverride, "correctIndex" | "hidden"> & { correctIndex: string; hidden: boolean }
+
+const TRANSFORMATION_LABELS: Record<DiaryOverrideTransformationForm, string> = {
+  none: "変身なし（ステッカー・図鑑解放なし）",
+  "naokun-poop-classic": "王道うんちなおくん",
+  "naokun-poop-soda": "クリームソーダうんち",
+  "naokun-poop-gold": "金のうんち王",
+  "naokun-poop-rainbow": "虹色うんちロケット",
+  "naokun-poop-chef": "うんちシェフ",
+  "naokun-poop-bakery": "うんちパン屋さん",
+  "naokun-poop-ninja": "忍者うんち",
+  "naokun-poop-detective": "名探偵うんち",
+  "naokun-poop-pirate": "海賊うんち船長",
+  "naokun-poop-space": "宇宙うんち飛行士",
+  "naokun-poop-samurai": "うんち侍",
+  "naokun-poop-snowman": "雪だるまうんち",
+  "naokun-poop-sakura": "桜ひらひらうんち",
+  "naokun-poop-pumpkin": "かぼちゃうんち",
+  "naokun-poop-mermaid": "人魚うんち",
+  "naokun-poop-princess": "うんち姫",
+  "naokun-poop-robot": "メカうんちロボ",
+  "naokun-poop-music": "うんち音楽指揮者",
+  "naokun-poop-artist": "画家うんち",
+  "naokun-poop-cactus": "さぼてんうんち",
+  "naokun-poop-cake": "お誕生日うんちケーキ",
+  "naokun-poop-hero": "正義のうんちヒーロー",
+  "naokun-poop-ghost": "ふわふわ雲うんち",
+  "naokun-poop-cat": "猫みみうんち",
+}
+
+const CAT_LABELS: Record<DiaryOverrideCatId, string> = {
+  "cat-maron": "マロン",
+  "cat-yuki": "ユキ",
+  "cat-mike": "ミケ",
+  "cat-kuro": "クロ",
+  "cat-tora": "トラまる",
+}
 
 function createEmptyDiary(): DiaryForm {
   return {
@@ -71,6 +120,8 @@ function createEmptyDiary(): DiaryForm {
     illustration: BUILT_IN_DIARY_ASSETS[0],
     alt: "",
     hidden: false,
+    transformationForm: "none",
+    catIds: [],
   }
 }
 
@@ -89,16 +140,6 @@ export type ParentEditorProps = {
 
 function zodMessages(error: { issues: Array<{ message: string }> }) {
   return [...new Set(error.issues.map((issue) => issue.message))]
-}
-
-async function hashPin(pin: string) {
-  const encoded = new TextEncoder().encode(`miyuki-parent-editor:${pin}`)
-  const digest = await crypto.subtle.digest("SHA-256", encoded)
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")
-}
-
-function cleanPin(value: string) {
-  return value.replace(/\D/g, "").slice(0, 4)
 }
 
 type BuiltInDiaryAsset = (typeof BUILT_IN_DIARY_ASSETS)[number]
@@ -126,6 +167,7 @@ function resolveEditorDiaryAsset(entry: DiaryEntry | DiaryContentOverride): Buil
 }
 
 function diaryFormFromEntry(entry: DiaryEntry | DiaryContentOverride): DiaryForm {
+  const isOverride = "hidden" in entry
   return {
     date: entry.date,
     title: entry.title,
@@ -133,7 +175,9 @@ function diaryFormFromEntry(entry: DiaryEntry | DiaryContentOverride): DiaryForm
     miyukiNote: entry.miyukiNote,
     illustration: resolveEditorDiaryAsset(entry),
     alt: entry.alt,
-    hidden: "hidden" in entry ? entry.hidden : false,
+    hidden: isOverride ? entry.hidden : false,
+    transformationForm: isOverride ? entry.transformationForm ?? "none" : "none",
+    catIds: isOverride ? [...(entry.catIds ?? [])] : [],
   }
 }
 
@@ -149,6 +193,7 @@ function formatUpdatedAt(value: string) {
 export function ParentEditor({ onBack }: ParentEditorProps) {
   const importRef = useRef<HTMLInputElement>(null)
   const pinHeadingRef = useRef<HTMLHeadingElement>(null)
+  const pinErrorRef = useRef<HTMLDivElement>(null)
   const editorHeadingRef = useRef<HTMLHeadingElement>(null)
   const wasUnlockedRef = useRef(false)
   const tabRefs = useRef<Record<EditorTab, HTMLButtonElement | null>>({ diary: null, quiz: null })
@@ -176,6 +221,11 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
       else pinHeadingRef.current?.focus()
     })
   }, [contentProtectionErrors.length, unlocked])
+
+  useEffect(() => {
+    if (unlocked || errors.length === 0) return
+    pinErrorRef.current?.focus({ preventScroll: true })
+  }, [errors, unlocked])
 
   useEffect(() => {
     const refresh = () => {
@@ -244,7 +294,7 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
   }
 
   const setupPin = async () => {
-    if (!/^\d{4}$/.test(pin)) {
+    if (!isValidParentPin(pin)) {
       showErrors(["PINは数字4けたにしてください。"])
       return
     }
@@ -253,7 +303,7 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
       return
     }
     try {
-      window.localStorage.setItem(PARENT_PIN_KEY, await hashPin(pin))
+      window.localStorage.setItem(PARENT_PIN_KEY, await hashParentPin(pin))
       setHasPin(true)
       setUnlocked(true)
       setPin("")
@@ -265,14 +315,21 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
   }
 
   const unlock = async () => {
-    if (!/^\d{4}$/.test(pin)) {
+    if (!isValidParentPin(pin)) {
       showErrors(["PINを数字4けたで入力してください。"])
       return
     }
     try {
-      const saved = window.localStorage.getItem(PARENT_PIN_KEY)
-      if (!saved || saved !== await hashPin(pin)) {
-        showErrors(["PINがちがいます。もう一度確認してください。"])
+      const verification = await verifyParentPin(window.localStorage, pin)
+      if (!verification.ok) {
+        if (verification.reason === "not-configured") {
+          setHasPin(false)
+          showErrors(["PINが見つかりません。新しいPINを設定してください。"])
+        } else if (verification.reason === "unavailable") {
+          showErrors(["この端末でPINを確認できませんでした。ブラウザの保存設定を確認してください。"])
+        } else {
+          showErrors(["PINがちがいます。もう一度確認してください。"])
+        }
         return
       }
       setUnlocked(true)
@@ -301,6 +358,15 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
     return true
   }
 
+  const toggleDiaryCat = (catId: DiaryOverrideCatId, checked: boolean) => {
+    setDiaryForm((current) => ({
+      ...current,
+      catIds: checked
+        ? current.catIds.includes(catId) ? current.catIds : [...current.catIds, catId]
+        : current.catIds.filter((id) => id !== catId),
+    }))
+  }
+
   const saveDiary = () => {
     const parsed = diaryContentOverrideSchema.safeParse(diaryForm)
     if (!parsed.success) {
@@ -312,7 +378,7 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
       ? draft.diaryEntries.map((entry) => entry.date === parsed.data.date ? parsed.data : entry)
       : [...draft.diaryEntries, parsed.data]
     if (saveDraft({ ...draft, diaryEntries }, exists ? "日記の下書きを更新しました。" : "日記を下書きに追加しました。")) {
-      setDiaryForm(parsed.data)
+      setDiaryForm(diaryFormFromEntry(parsed.data))
     }
   }
 
@@ -439,23 +505,23 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
             <input
               type="password"
               inputMode="numeric"
-              autoComplete="off"
               pattern="[0-9]*"
               maxLength={4}
               value={pin}
-              onChange={(event) => setPin(cleanPin(event.currentTarget.value))}
+              onChange={(event) => setPin(cleanParentPin(event.currentTarget.value))}
               onKeyDown={(event) => { if (event.key === "Enter" && hasPin) void unlock() }}
               aria-describedby="pin-help"
+              autoComplete={hasPin ? "current-password" : "new-password"}
             />
           </label>
           {!hasPin ? (
             <label className={styles.pinLabel}>
               <span>もう一度</span>
-              <input type="password" inputMode="numeric" autoComplete="off" pattern="[0-9]*" maxLength={4} value={pinConfirm} onChange={(event) => setPinConfirm(cleanPin(event.currentTarget.value))} />
+              <input type="password" inputMode="numeric" autoComplete="new-password" pattern="[0-9]*" maxLength={4} value={pinConfirm} onChange={(event) => setPinConfirm(cleanParentPin(event.currentTarget.value))} />
             </label>
           ) : null}
           <small id="pin-help">数字4けた・この端末にだけ保存</small>
-          {errors.length ? <div className={styles.error} role="alert"><AlertTriangle aria-hidden="true" />{errors.join(" ")}</div> : null}
+          {errors.length ? <div ref={pinErrorRef} className={styles.error} role="alert" aria-live="assertive" tabIndex={-1}><AlertTriangle aria-hidden="true" />{errors.join(" ")}</div> : null}
           <button type="button" className={styles.primaryButton} onClick={() => void (hasPin ? unlock() : setupPin())}>
             <LockOpen aria-hidden="true" /> {hasPin ? "編集室をひらく" : "PINを設定してひらく"}
           </button>
@@ -537,7 +603,7 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
             <h3>もとの日記</h3>
             {builtInDiary.map((entry) => (
               <button key={entry.date} type="button" data-active={diaryForm.date === entry.date} onClick={() => setDiaryForm(diaryFormFromEntry(entry))}>
-                <span>{entry.date}</span><strong>{entry.title}</strong><small>選ぶと差し替え編集</small>
+                <span>{entry.date}</span><strong>{entry.title}</strong><small>差し替え編集・変身と猫は選び直し</small>
               </button>
             ))}
           </aside>
@@ -551,6 +617,33 @@ export function ParentEditor({ onBack }: ParentEditorProps) {
             <label><span>美雪のひとこと</span><textarea value={diaryForm.miyukiNote} maxLength={240} rows={3} onChange={(event) => setDiaryForm({ ...diaryForm, miyukiNote: event.currentTarget.value })} /></label>
             <label><span>組み込み画像</span><select value={diaryForm.illustration} onChange={(event) => setDiaryForm({ ...diaryForm, illustration: event.currentTarget.value as DiaryForm["illustration"] })}>{BUILT_IN_DIARY_ASSETS.map((asset, index) => <option key={asset} value={asset}>画像 {index + 1}・{asset.split("/").at(-1)}</option>)}</select></label>
             <label><span>画像の説明</span><input value={diaryForm.alt} maxLength={160} onChange={(event) => setDiaryForm({ ...diaryForm, alt: event.currentTarget.value })} /><small>見えにくい人にも場面が伝わる短い説明</small></label>
+            <fieldset className={`${styles.answerFieldset} ${styles.metadataFieldset}`}>
+              <legend>読んだときの変身と猫（任意）</legend>
+              <p className={`${styles.helpText} ${styles.metadataHelp}`}>本文と絵に本当に登場するものだけ選んでください。選んだ内容は、日記を選んで読んだときに図鑑へ追加されます。</p>
+              <label className={`${styles.selectLabel} ${styles.metadataSelect}`}>
+                <span>なおくんの変身</span>
+                <select
+                  value={diaryForm.transformationForm}
+                  onChange={(event) => setDiaryForm({ ...diaryForm, transformationForm: event.currentTarget.value as DiaryOverrideTransformationForm })}
+                >
+                  {DIARY_OVERRIDE_TRANSFORMATION_FORMS.map((form) => <option key={form} value={form}>{TRANSFORMATION_LABELS[form]}</option>)}
+                </select>
+                <small className={styles.metadataNote}>「変身なし」なら、変身ステッカーも図鑑解放もありません。</small>
+              </label>
+              <div className={`${styles.choiceGrid} ${styles.metadataCats}`} aria-label="この日記に登場する猫">
+                {DIARY_OVERRIDE_CAT_IDS.map((catId) => {
+                  const checked = diaryForm.catIds.includes(catId)
+                  return (
+                    <label key={catId} data-active={checked}>
+                      <input type="checkbox" checked={checked} onChange={(event) => toggleDiaryCat(catId, event.currentTarget.checked)} />
+                      <strong>{CAT_LABELS[catId]}</strong>
+                      <small className={styles.metadataCatState}>{checked ? "この日記に登場" : "登場しない"}</small>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className={`${styles.helpText} ${styles.metadataHelp}`}>猫を選ばなければ、猫の図鑑解放はありません。</p>
+            </fieldset>
             <label className={styles.confirmRow}><input type="checkbox" checked={diaryForm.hidden} onChange={(event) => setDiaryForm({ ...diaryForm, hidden: event.currentTarget.checked })} /><span>この日付の日記を非表示にする</span></label>
             <article className={styles.contentPreview} aria-label="日記のプレビュー">
               <img src={assetPath(diaryForm.illustration)} alt={diaryForm.alt || "画像説明のプレビュー"} />

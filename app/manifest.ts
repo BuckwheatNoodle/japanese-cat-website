@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: appRoot,
     name: "美雪のねこカフェ",
     short_name: "美雪ねこカフェ",
-    description: "ゲームやぬりえ、占い、絵日記で遊べる、美雪のかわいいねこカフェです。",
+    description: "ゲーム攻略、カラー設計、猫占い、分岐ストーリー、絵日記を収録した美雪のねこカフェです。",
     start_url: `${appRoot}#home`,
     scope: appRoot,
     display: "standalone",

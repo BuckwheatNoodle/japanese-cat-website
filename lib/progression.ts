@@ -171,12 +171,28 @@ export type DomainEvent =
       date: string
     })
 
+function eventMeaning(event: DomainEvent) {
+  const { occurredAt: _occurredAt, ...meaning } = event
+  if (meaning.type !== "diary.read") return meaning
+  return {
+    ...meaning,
+    catIds: [...new Set(meaning.catIds ?? [])].sort((left, right) => left.localeCompare(right)),
+  }
+}
+
+export function domainEventsHaveSameMeaning(left: DomainEvent, right: DomainEvent) {
+  if (left.eventId !== right.eventId || left.type !== right.type) return false
+  return JSON.stringify(eventMeaning(left)) === JSON.stringify(eventMeaning(right))
+}
+
 export type DailyMissionDefinition = {
   id: DailyMissionId
   title: string
   description: string
   goal: number
   reward: number
+  character?: string
+  completionLine?: string
 }
 
 export type DailyMissionStatus = DailyMissionDefinition & {
@@ -242,33 +258,121 @@ export type ActionCheck =
 const DAILY_MISSION_POOL: readonly DailyMissionDefinition[] = [
   {
     id: "play-game",
-    title: "ゲームであそぼう",
-    description: "好きなゲームを1回さいごまで遊ぼう",
+    title: "ゲームを1競技クリア",
+    description: "好きなゲームを1回完了し、今回の記録を残す",
     goal: 1,
     reward: 18,
   },
   {
     id: "read-diary",
-    title: "日記をよもう",
-    description: "美雪となおくんの日記を1つ読もう",
+    title: "事件記録を1件調査",
+    description: "美雪となおくんの絵日記を1件選び、オチまで確認する",
     goal: 1,
     reward: 12,
   },
   {
     id: "draw-fortune",
-    title: "ねこみくじ",
-    description: "今日のねこみくじを引こう",
+    title: "今日の占いを記録",
+    description: "名前を入力し、今日のねこ占いを1回確認する",
     goal: 1,
     reward: 12,
   },
   {
     id: "finish-coloring",
-    title: "ぬりえタイム",
-    description: "ぬりえを1まい完成させよう",
+    title: "カラー設計を完成",
+    description: "ぬりえを1作品、進行度100%まで仕上げる",
     goal: 1,
     reward: 18,
   },
 ] as const
+
+type DailyMissionFlavor = Pick<DailyMissionDefinition, "title" | "description"> & {
+  character: string
+  completionLine: string
+}
+
+const DAILY_MISSION_FLAVORS: Record<DailyMissionId, readonly DailyMissionFlavor[]> = {
+  "play-game": [
+    {
+      character: "美雪からの指令",
+      title: "ゲーム攻略記録を提出",
+      description: "好きなゲームを1回完了し、スコアか到達記録を残す。なおくんは頼んでいない表彰台を準備中。",
+      completionLine: "美雪「任務完了！」なおくんは勝手に、うんちトロフィーになって喜びました。",
+    },
+    {
+      character: "マロン店長のお願い",
+      title: "しっぽ応援団へ結果報告",
+      description: "好きなゲームを1回完了し、猫たちへ今回の結果を報告する。",
+      completionLine: "猫たちのしっぽが一斉にぴん！なおくんは二回転して、応援うんちになりました。",
+    },
+    {
+      character: "なおくんからの挑戦",
+      title: "変身前のかたならし",
+      description: "好きなゲームを1回完了する。猫審査員は最前列で無言採点中。",
+      completionLine: "なおくん「よし、勝利のうんちポーズ！」猫たちは無言で満点の札を上げました。",
+    },
+  ],
+  "read-diary": [
+    {
+      character: "ミケの事件メモ",
+      title: "今日のうんち事件簿",
+      description: "絵日記を1件選び、猫の行動と最後のオチを確認する。",
+      completionLine: "犯人は変身したなおくんでした。本人は肉球しおりをもらって大満足！",
+    },
+    {
+      character: "美雪からの調査依頼",
+      title: "笑える日記を調査！",
+      description: "絵日記を1件調査し、なおくんの作戦がどこで崩れたかを見つける。",
+      completionLine: "なおくんは自分の変身回だけ三回読み、猫たちは先にオチを覚えました。",
+    },
+    {
+      character: "猫読書会のお題",
+      title: "猫読書会の事件検討",
+      description: "絵日記を1件読み、美雪のツッコミと猫の反応を比較する。",
+      completionLine: "読書会の金賞は、またもやうんち役のなおくん。本人だけ立って拍手しています。",
+    },
+  ],
+  "draw-fortune": [
+    {
+      character: "ユキの水晶だより",
+      title: "まるい影の正体を占おう",
+      description: "今日のねこみくじを引いて、なおくんの変身予報も確かめよう。",
+      completionLine: "予報は『ところにより、なおくんがうんち』。本人は傘より先にポーズを用意しました。",
+    },
+    {
+      character: "美雪からのお願い",
+      title: "ラッキーうんち欄はある？",
+      description: "今日のねこみくじを引こう。なおくんが横から結果をのぞいているよ。",
+      completionLine: "ラッキー項目には無かったのに、なおくんは金のうんちへ自主変身！猫はほそ目です。",
+    },
+    {
+      character: "猫会議の決定",
+      title: "大吉を一枚くださいにゃ",
+      description: "今日のねこみくじを引いて、猫会議へ結果を届けよう。",
+      completionLine: "猫会議は大吉で閉会。なおくんだけ『うんち吉』を自作して持ち帰りました。",
+    },
+  ],
+  "finish-coloring": [
+    {
+      character: "きなこ博士の色研究",
+      title: "なおくんは何色うんち？",
+      description: "ぬりえを1作品完成させる。なおくんの『全部茶色案』は採用しなくてもよい。",
+      completionLine: "すてきな一枚が完成！なおくんは空いているすみに、小さなうんちサインを描きました。",
+    },
+    {
+      character: "美雪アトリエのお題",
+      title: "配色作品を1点完成",
+      description: "ぬりえを1作品完成させ、色の組み合わせを記録する。",
+      completionLine: "猫たちは肉球スタンプで合格。なおくんは虹色うんちの額縁になって喜んでいます。",
+    },
+    {
+      character: "猫いろ会議のお願い",
+      title: "猫いろ会議へ作品提出",
+      description: "ぬりえを1作品完成させる。色数や配色の方針は自分で決める。",
+      completionLine: "猫会議で作品賞に決定！なおくんの『全部茶色案』は次回まで保留です。",
+    },
+  ],
+}
 
 export const ROOM_ITEM_DEFINITIONS: readonly RoomItemDefinition[] = [
   { id: "wall-mint", name: "ミントのかべ", description: "クリームソーダ色のやさしい壁紙。", slot: "wall", price: 0, assetKey: "room/wall-mint", starter: true },
@@ -295,11 +399,11 @@ export const STORY_CHAPTERS: readonly StoryChapterDefinition[] = [
 
 export const STORY_NODES: readonly StoryNodeDefinition[] = [
   { id: "cafe-opening-1", chapterId: "cafe-opening", title: "最初のお客さま", summary: "しましま店長といっしょに、開店の看板を出そう。", reward: 8, choices: [{ id: "kitchen", label: "キッチンを調べる" }, { id: "garden", label: "中庭を調べる" }] },
-  { id: "cafe-opening-2", chapterId: "cafe-opening", title: "クリームソーダ大作戦", summary: "なおくんがカップに入り、まさかのクリームソーダうんちに変身！", reward: 100, choices: [{ id: "cherry-king-ending", label: "さくらんぼ王エンド" }, { id: "cat-hero-ending", label: "やさしい猫チームエンド" }], unlockChapterId: "lost-star" },
-  { id: "lost-star-1", chapterId: "lost-star", title: "夜の足あと", summary: "くろまめの光る足あとをたどって、星のさくらんぼを探そう。", reward: 10, choices: [{ id: "window", label: "窓辺をさがす" }, { id: "shelf", label: "本棚をさがす" }] },
+  { id: "cafe-opening-2", chapterId: "cafe-opening", title: "クリームソーダ大作戦", summary: "カップから離れた撮影台で、なおくんがまさかのクリームソーダうんちに変身！", reward: 100, choices: [{ id: "cherry-king-ending", label: "さくらんぼ王エンド" }, { id: "cat-hero-ending", label: "やさしい猫チームエンド" }], unlockChapterId: "lost-star" },
+  { id: "lost-star-1", chapterId: "lost-star", title: "夜の足あと", summary: "クロの光る足あとをたどって、星のさくらんぼを探そう。", reward: 10, choices: [{ id: "window", label: "窓辺をさがす" }, { id: "shelf", label: "本棚をさがす" }] },
   { id: "lost-star-2", chapterId: "lost-star", title: "うちゅうへ出発", summary: "うちゅううんちになったなおくんが、さくらんぼを連れて帰る。", reward: 20, choices: [{ id: "moon-ending", label: "月あかりお迎えエンド" }, { id: "comet-ending", label: "ロボット船長エンド" }], unlockChapterId: "festival-night" },
   { id: "festival-night-1", chapterId: "festival-night", title: "屋台のお手伝い", summary: "ねこパンケーキをきれいに並べよう。", reward: 12, choices: [{ id: "cats", label: "ねこ形にならべる" }, { id: "stars", label: "星形にならべる" }] },
-  { id: "festival-night-2", chapterId: "festival-night", title: "うんち王のパレード", summary: "王冠をかぶったなおくんと、みんなでフィナーレ！", reward: 25, choices: [{ id: "music-ending", label: "にゃんこ大合奏エンド" }, { id: "art-ending", label: "夜空の音符エンド" }] },
+  { id: "festival-night-2", chapterId: "festival-night", title: "なおくんの大変身パレード", summary: "指揮者うんちか芸術家うんちを選んで、みんなでフィナーレ！", reward: 25, choices: [{ id: "music-ending", label: "にゃんこ大合奏エンド" }, { id: "art-ending", label: "夜空のアートエンド" }] },
 ] as const
 
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -781,7 +885,13 @@ function seededOrder<T extends { id: string }>(items: readonly T[], seed: string
 
 export function getDailyMissionDefinitions(dateKey: string): DailyMissionDefinition[] {
   const safeDateKey = isDateKey(dateKey) ? dateKey : getLocalDateKey()
-  return seededOrder(DAILY_MISSION_POOL, `${safeDateKey}:v${DAILY_MISSION_ALGORITHM_VERSION}`).slice(0, 3)
+  return seededOrder(DAILY_MISSION_POOL, `${safeDateKey}:v${DAILY_MISSION_ALGORITHM_VERSION}`)
+    .slice(0, 3)
+    .map((mission) => {
+      const flavors = DAILY_MISSION_FLAVORS[mission.id]
+      const flavor = flavors[hashText(`${safeDateKey}:${mission.id}:copy`) % flavors.length]
+      return { ...mission, ...flavor }
+    })
 }
 
 export function getDailyMissionStatuses(state: AppStateV1, dateKey = state.daily.date): DailyMissionStatus[] {

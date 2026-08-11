@@ -20,10 +20,37 @@ const CAT_PAIRS = [
   { icon: Bell, label: "すず" }, { icon: Leaf, label: "はっぱ" }, { icon: Cherry, label: "さくらんぼ" },
 ]
 
+const PAIR_REACTIONS: Record<string, string> = {
+  "ねこ": "美雪『猫が二匹！』なおくん『ぼくも並べば三匹？』猫たち『種類がちがいます』",
+  "にくきゅう": "肉球がそろうと、猫審査員が本物の肉球を一個追加。なおくんは三枚目を探しています。",
+  "おさかな": "魚が二匹そろいました。なおくんはお皿を持って待機、猫たちは先に着席済みです。",
+  "ハート": "ハートが二つ。なおくんは自分への拍手だと思い、まだ何もしていないのにおじぎしました。",
+  "にっこり": "にっこりがそろい、なおくんも満面の笑顔。猫だけは次のカードを見ています。",
+  "きらきら目": "きらきら目が二組。美雪『なおくん、その顔はカードじゃないから裏返らないよ』",
+  "おほしさま": "星が二つ。なおくんは『三つ目はぼく！』。猫たちの判定は、いったん保留です。",
+  "おつきさま": "月が二つ並び、なおくん宇宙飛行士が勝手に出発準備。まだ神経衰弱の途中です。",
+  "おひさま": "太陽が二つでぽかぽか。猫たちは昼寝、なおくんは勝利会見を始めました。",
+  "すず": "鈴が二つ鳴った気分。猫バンドの指揮者なおくんだけ、四拍先まで振っています。",
+  "はっぱ": "葉っぱがそろい、猫が一枚を頭へ。なおくんもまねしたら大きすぎて顔が隠れました。",
+  "さくらんぼ": "さくらんぼが二つ。なおくんは王冠へ飾る気ですが、猫店長が先に数えています。",
+}
+
+const MEMORY_MISS_REACTIONS = [
+  "美雪『その二枚は別もの！』なおくん『似ている気持ちはありました』猫たち『気持ちでそろえません』",
+  "おしい！ なおくんは両方に『正解』の札を置こうとして、猫にそっと回収されました。",
+  "猫審査員がしっぽを横へ一振り。なおくんだけ縦にうなずいています。場所は覚えておこう！",
+] as const
+
+function memoryResultCopy(stars: number) {
+  if (stars === 3) return "美雪『ほぼ最短！』なおくんはカードより先に記念写真の場所を覚えていました。猫たちも肉球拍手！"
+  if (stars === 2) return "猫たち『よく覚えたにゃ』。なおくんは間違えた場所だけ完璧に説明できるようになりました。"
+  return "全部そろえば大成功！ なおくんは最後の二枚を見て『最初から知ってた』。美雪と猫は聞かなかったことにしました。"
+}
+
 const DIFFICULTIES: Difficulty[] = [
-  { id: "easy", name: "かんたん", pairs: 6, description: "12枚・最初に2秒見える" },
-  { id: "normal", name: "ふつう", pairs: 8, description: "16枚・記憶力アップ" },
-  { id: "hard", name: "むずかしい", pairs: 12, description: "24枚・全力チャレンジ" },
+  { id: "easy", name: "入門", pairs: 6, description: "12枚・開始前に2秒確認" },
+  { id: "normal", name: "標準", pairs: 8, description: "16枚・手数と時間を記録" },
+  { id: "hard", name: "上級", pairs: 12, description: "24枚・最短手に挑戦" },
 ]
 
 function shuffle<T>(items: T[]) {
@@ -202,7 +229,7 @@ export function CatMemoryGame() {
     const second = cardsRef.current.find((item) => item.id === secondId)!
 
     if (first.label === second.label) {
-      setMessage(`「${first.label}」がそろった！`)
+      setMessage(`「${first.label}」がそろった！ ${PAIR_REACTIONS[first.label]}`)
       resolutionTimerRef.current = window.setTimeout(() => {
         const matchedCards = cardsRef.current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isMatched: true } : item)
         cardsRef.current = matchedCards
@@ -215,7 +242,7 @@ export function CatMemoryGame() {
         focusAvailableCard()
       }, 460)
     } else {
-      setMessage("おしい！場所を覚えておこう")
+      setMessage(MEMORY_MISS_REACTIONS[moves % MEMORY_MISS_REACTIONS.length])
       resolutionTimerRef.current = window.setTimeout(() => {
         const hiddenCards = cardsRef.current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isFlipped: false } : item)
         cardsRef.current = hiddenCards
@@ -320,6 +347,7 @@ export function CatMemoryGame() {
           <h3 ref={resultHeadingRef} tabIndex={-1}>{moves}手</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
           <p>{difficulty.name}を{formatTime(elapsedTime)}でクリア。最後までよく覚えたね！</p>
+          <p>{memoryResultCopy(stars)}</p>
           <div className="game-result-record"><Clock3 aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : "ベスト記録"}</span><strong>{record ? `${record.moves}手 / ${formatTime(record.time)}` : recordSaveFailed ? "記録なし" : `${moves}手`}</strong></div>
           {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={() => startGame()}><RotateCcw aria-hidden="true" />同じむずかしさで遊ぶ</GamePrimaryButton>
