@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
+import { Cat, EyeOff, X } from "lucide-react"
 import { assetPath } from "@/lib/utils"
 
 const MEOW_SOUNDS = [
@@ -47,7 +48,7 @@ const GUIDE_MESSAGES = [
 
   // なおくんについて
   "なおくんって知ってる？絵日記に出てくるよ！",
-  "なおくんは美雪ちゃんの大切な猫ちゃん♪",
+  "なおくんは美雪のお兄ちゃん。うんち役が大好き♪",
   "絵日記のなおくん、とってもかわいいでしょ？",
   "なおくんと美雪ちゃんの日常が見れるよ〜",
   "なおくんはお昼寝が得意なんだって！",
@@ -110,13 +111,19 @@ export function FloatingCatGuide() {
   const [showMessage, setShowMessage] = useState(false)
   const [currentMessage, setCurrentMessage] = useState("")
   const [isVisible, setIsVisible] = useState(true)
+  const [reduceMotion, setReduceMotion] = useState(false)
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([])
   const [tapCount, setTapCount] = useState(0)
 
-  const catRef = useRef<HTMLDivElement>(null)
-  const animationRef = useRef<number>()
-  const messageTimeoutRef = useRef<NodeJS.Timeout>()
+  const catRef = useRef<HTMLButtonElement>(null)
+  const showButtonRef = useRef<HTMLButtonElement>(null)
+  const animationRef = useRef<number | null>(null)
+  const messageTimeoutRef = useRef<number | null>(null)
+  const rippleTimeoutRefs = useRef(new Set<number>())
+  const focusFrameRef = useRef<number | null>(null)
+  const focusAfterVisibilityToggleRef = useRef(false)
   const rippleIdRef = useRef(0)
+  const tapCountRef = useRef(0)
   const audioRefs = useRef<HTMLAudioElement[]>([])
   const posRef = useRef({ x: 50, y: 50 })
   const velRef = useRef({ x: 1, y: 0.8 })
@@ -148,16 +155,16 @@ export function FloatingCatGuide() {
 
       if (selectedAudio) {
         // 前の音声を停止してリセット
-        selectedAudio.pause()
-        selectedAudio.currentTime = 0
+        audioRefs.current.forEach((audio) => {
+          audio.pause()
+          audio.currentTime = 0
+        })
 
         // 新しい音声を再生
-        selectedAudio.play().catch((error) => {
-          console.log("Audio playback failed:", error)
-        })
+        void selectedAudio.play().catch(() => undefined)
       }
-    } catch (error) {
-      console.log("Sound effect error:", error)
+    } catch {
+      // Audio is optional; browser policy and device state may block playback.
     }
   }
 
@@ -165,13 +172,30 @@ export function FloatingCatGuide() {
   const getBounds = () => {
     if (typeof window === "undefined") return { width: 400, height: 600 }
     return {
-      width: window.innerWidth - 80,
-      height: window.innerHeight - 200, // ヘッダー + ボトムタブ分を除く
+      width: Math.max(80, window.innerWidth - 80),
+      height: Math.max(80, window.innerHeight - 200), // ヘッダー + ボトムタブ分を除く
     }
   }
 
   // ふわふわ浮遊アニメーション（refベースで1つのループだけ走る）
   useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const root = document.documentElement
+    const syncPreference = () => {
+      setReduceMotion(media.matches || root.dataset.miyukiMotion === "reduced")
+    }
+    const observer = new MutationObserver(syncPreference)
+    syncPreference()
+    media.addEventListener("change", syncPreference)
+    observer.observe(root, { attributes: true, attributeFilter: ["data-miyuki-motion"] })
+    return () => {
+      media.removeEventListener("change", syncPreference)
+      observer.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isVisible || reduceMotion) return
     let frameCount = 0
 
     const animate = () => {
@@ -222,11 +246,47 @@ export function FloatingCatGuide() {
     animationRef.current = requestAnimationFrame(animate)
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current)
       }
+      animationRef.current = null
     }
-  }, []) // 依存配列を空にして1回だけ起動
+  }, [isVisible, reduceMotion])
+
+  useEffect(() => () => {
+    if (messageTimeoutRef.current !== null) window.clearTimeout(messageTimeoutRef.current)
+    rippleTimeoutRefs.current.forEach((timer) => window.clearTimeout(timer))
+    rippleTimeoutRefs.current.clear()
+    if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+  }, [])
+
+  useEffect(() => {
+    if (!isVisible) {
+      setShowMessage(false)
+      if (messageTimeoutRef.current !== null) {
+        window.clearTimeout(messageTimeoutRef.current)
+        messageTimeoutRef.current = null
+      }
+      rippleTimeoutRefs.current.forEach((timer) => window.clearTimeout(timer))
+      rippleTimeoutRefs.current.clear()
+      setRipples([])
+      audioRefs.current.forEach((audio) => {
+        audio.pause()
+        audio.currentTime = 0
+      })
+    }
+    if (!focusAfterVisibilityToggleRef.current) return
+    focusAfterVisibilityToggleRef.current = false
+    focusFrameRef.current = window.requestAnimationFrame(() => {
+      if (isVisible) catRef.current?.focus()
+      else showButtonRef.current?.focus()
+      focusFrameRef.current = null
+    })
+    return () => {
+      if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+      focusFrameRef.current = null
+    }
+  }, [isVisible])
 
   // 画面リサイズ対応
   useEffect(() => {
@@ -243,7 +303,7 @@ export function FloatingCatGuide() {
   }, [])
 
   // 猫をタップした時の処理
-  const handleCatTap = (e: React.TouchEvent | React.MouseEvent) => {
+  const handleCatTap = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
 
@@ -251,20 +311,16 @@ export function FloatingCatGuide() {
     playRandomSound()
 
     // タップ回数をカウント
-    setTapCount((prev) => prev + 1)
+    const nextTapCount = tapCountRef.current + 1
+    tapCountRef.current = nextTapCount
+    setTapCount(nextTapCount)
 
     // タップ位置を取得
     const rect = catRef.current?.getBoundingClientRect()
     if (!rect) return
 
-    let clientX: number, clientY: number
-    if ("touches" in e) {
-      clientX = e.touches[0]?.clientX || e.changedTouches[0]?.clientX || 0
-      clientY = e.touches[0]?.clientY || e.changedTouches[0]?.clientY || 0
-    } else {
-      clientX = e.clientX
-      clientY = e.clientY
-    }
+    const clientX = e.clientX || rect.left + rect.width / 2
+    const clientY = e.clientY || rect.top + rect.height / 2
 
     // リップル効果を追加
     const rippleId = rippleIdRef.current++
@@ -274,47 +330,50 @@ export function FloatingCatGuide() {
     setRipples((prev) => [...prev, { id: rippleId, x: rippleX, y: rippleY }])
 
     // リップル効果を削除
-    setTimeout(() => {
+    const rippleTimer = window.setTimeout(() => {
       setRipples((prev) => prev.filter((ripple) => ripple.id !== rippleId))
+      rippleTimeoutRefs.current.delete(rippleTimer)
     }, 600)
+    rippleTimeoutRefs.current.add(rippleTimer)
 
     // 鳴き声とメッセージを表示
     const sound = MEOW_SOUNDS[Math.floor(Math.random() * MEOW_SOUNDS.length)]
     let message = GUIDE_MESSAGES[Math.floor(Math.random() * GUIDE_MESSAGES.length)]
 
     // 特定のタップ回数で特別なメッセージ
-    if (tapCount === 10) {
+    if (nextTapCount === 10) {
       message = "10回もタップしてくれてありがとう♪"
-    } else if (tapCount === 20) {
+    } else if (nextTapCount === 20) {
       message = "20回！君は本当の猫好きだね〜"
-    } else if (tapCount === 50) {
+    } else if (nextTapCount === 50) {
       message = "50回！！美雪ちゃんもびっくりするよ〜"
-    } else if (tapCount % 25 === 0 && tapCount > 0) {
-      message = `${tapCount}回もタップしてくれて嬉しいな♪`
+    } else if (nextTapCount % 25 === 0) {
+      message = `${nextTapCount}回もタップしてくれて嬉しいな♪`
     }
 
     setCurrentMessage(`${sound} ${message}`)
     setShowMessage(true)
 
     // 少し跳ねる動作（タップ回数に応じて跳ね方を変える）
-    const jumpIntensity = Math.min(tapCount / 10, 5)
+    const jumpIntensity = Math.min(nextTapCount / 10, 5)
     velRef.current = {
       x: velRef.current.x + (Math.random() - 0.5) * (3 + jumpIntensity),
       y: velRef.current.y - Math.random() * (2 + jumpIntensity) - 1,
     }
 
     // メッセージを自動で隠す
-    if (messageTimeoutRef.current) {
-      clearTimeout(messageTimeoutRef.current)
+    if (messageTimeoutRef.current !== null) {
+      window.clearTimeout(messageTimeoutRef.current)
     }
-    messageTimeoutRef.current = setTimeout(() => {
+    messageTimeoutRef.current = window.setTimeout(() => {
       setShowMessage(false)
+      messageTimeoutRef.current = null
     }, 3500) // 少し長めに表示
 
     // バイブレーション（対応デバイスのみ）
     if (navigator.vibrate) {
       // タップ回数に応じてバイブレーションパターンを変える
-      if (tapCount % 10 === 0) {
+      if (nextTapCount % 10 === 0) {
         navigator.vibrate([50, 50, 50]) // 特別なパターン
       } else {
         navigator.vibrate(50)
@@ -325,24 +384,29 @@ export function FloatingCatGuide() {
   // メッセージを手動で閉じる
   const handleMessageClose = () => {
     setShowMessage(false)
-    if (messageTimeoutRef.current) {
-      clearTimeout(messageTimeoutRef.current)
+    if (messageTimeoutRef.current !== null) {
+      window.clearTimeout(messageTimeoutRef.current)
+      messageTimeoutRef.current = null
     }
+    catRef.current?.focus()
   }
 
   // 猫を一時的に隠す/表示する
   const toggleVisibility = () => {
-    setIsVisible(!isVisible)
+    focusAfterVisibilityToggleRef.current = true
+    setIsVisible((current) => !current)
   }
 
   if (!isVisible) {
     return (
       <button
+        ref={showButtonRef}
+        type="button"
         onClick={toggleVisibility}
         className="fixed bottom-4 right-4 z-40 bg-[#D4A57A] hover:bg-[#C7946A] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
         aria-label="猫ガイドを表示"
       >
-        🐱
+        <Cat aria-hidden="true" />
       </button>
     )
   }
@@ -350,32 +414,31 @@ export function FloatingCatGuide() {
   return (
     <>
       {/* 浮遊する猫キャラ */}
-      <div
+      <button
         ref={catRef}
-        className="fixed z-30 cursor-pointer select-none"
+        type="button"
+        className="fixed z-30 cursor-pointer select-none border-0 bg-transparent p-0"
         style={{
           left: `${renderPos.x}px`,
           top: `${renderPos.y + 80}px`,
           transform: `scaleX(${facingRight ? 1 : -1})`,
           willChange: "left, top",
         }}
-        onTouchStart={handleCatTap}
         onClick={handleCatTap}
-        role="button"
         aria-label="猫ガイド - タップして話しかける"
       >
         {/* 猫の影 */}
         <div
           className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-6 bg-black/20 rounded-full blur-sm animate-pulse"
           style={{
-            animation: "shadow-float 3s ease-in-out infinite",
+            animation: reduceMotion ? "none" : "shadow-float 3s ease-in-out infinite",
           }}
         />
 
         {/* 猫本体 */}
-        <div className="relative animate-bounce-gentle">
+        <div className={`relative ${reduceMotion ? "" : "animate-bounce-gentle"}`}>
           <Image
-            src={assetPath("/cute-tabby-waving.png")}
+            src={assetPath("/cute-tabby-waving.webp")}
             alt="浮遊する猫ガイド"
             width={60}
             height={60}
@@ -401,22 +464,22 @@ export function FloatingCatGuide() {
                 top: ripple.y - 20,
               }}
             >
-              <div className="w-10 h-10 border-2 border-[#D4A57A] rounded-full animate-ping opacity-75" />
+              <div className={`w-10 h-10 border-2 border-[#D4A57A] rounded-full opacity-75 ${reduceMotion ? "" : "animate-ping"}`} />
             </div>
           ))}
         </div>
 
         {/* ふわふわエフェクト */}
-        <div className="absolute -top-2 -right-2 w-3 h-3 bg-[#FFB6C1] rounded-full animate-ping opacity-60" />
+        <div className={`absolute -top-2 -right-2 w-3 h-3 bg-[#FFB6C1] rounded-full opacity-60 ${reduceMotion ? "" : "animate-ping"}`} />
         <div
-          className="absolute -top-1 -left-3 w-2 h-2 bg-[#87CEEB] rounded-full animate-ping opacity-40"
+          className={`absolute -top-1 -left-3 w-2 h-2 bg-[#87CEEB] rounded-full opacity-40 ${reduceMotion ? "" : "animate-ping"}`}
           style={{ animationDelay: "0.5s" }}
         />
         <div
-          className="absolute -bottom-1 right-1 w-2 h-2 bg-[#98FB98] rounded-full animate-ping opacity-50"
+          className={`absolute -bottom-1 right-1 w-2 h-2 bg-[#98FB98] rounded-full opacity-50 ${reduceMotion ? "" : "animate-ping"}`}
           style={{ animationDelay: "1s" }}
         />
-      </div>
+      </button>
 
       {/* メッセージ吹き出し */}
       {showMessage && (
@@ -432,13 +495,14 @@ export function FloatingCatGuide() {
             <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white border-r-2 border-b-2 border-[#EAD8C0] transform rotate-45" />
 
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm text-[#5C3A21] font-medium leading-relaxed">{currentMessage}</p>
+              <p className="text-sm text-[#5C3A21] font-medium leading-relaxed" role="status" aria-live="polite">{currentMessage}</p>
               <button
+                type="button"
                 onClick={handleMessageClose}
                 className="flex-shrink-0 text-[#8A6E59] hover:text-[#5C3A21] transition-colors p-1"
                 aria-label="メッセージを閉じる"
               >
-                ×
+                <X aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -447,11 +511,12 @@ export function FloatingCatGuide() {
 
       {/* 猫を隠すボタン */}
       <button
+        type="button"
         onClick={toggleVisibility}
         className="fixed bottom-4 right-4 z-40 bg-[#8A6E59]/80 hover:bg-[#8A6E59] text-white p-2 rounded-full shadow-lg transition-all duration-300 hover:scale-110 text-xs"
         aria-label="猫ガイドを隠す"
       >
-        🙈
+        <EyeOff aria-hidden="true" />
       </button>
 
       {/* カスタムアニメーション用のスタイル */}

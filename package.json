@@ -1,12 +1,17 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "miyuki-cat-cafe",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build && node scripts/generate-service-worker.mjs",
+    "check": "tsc --noEmit --incremental false && npm run check:assets && npm run check:progression && npm run check:content",
+    "check:assets": "node scripts/validate-assets.mjs",
+    "check:content": "node scripts/verify-content-overrides.mjs",
+    "check:progression": "node scripts/verify-progression.mjs",
     "dev": "next dev",
-    "lint": "next lint",
-    "start": "next start"
+    "lint": "npm run check",
+    "preview": "node scripts/serve-static.mjs",
+    "start": "node scripts/serve-static.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

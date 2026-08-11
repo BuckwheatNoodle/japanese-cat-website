@@ -1,15 +1,22 @@
 "use client"
 
 import Image from "next/image"
-import { Gamepad2, PawPrint } from "lucide-react"
+import { ArrowRight, CircleDollarSign, Gamepad2, PawPrint, Sparkles } from "lucide-react"
 import { useSkin } from "@/components/skin-provider"
 import type { TabId } from "@/components/bottom-tabs"
+import { HomePassport, type ActivityTab } from "@/components/home-passport"
+import { assetPath } from "@/lib/utils"
 
 type HeroProps = {
   onNavigate: (tab: TabId) => void
+  visitedTabs: ActivityTab[]
+  lastActivity: ActivityTab | null
+  recommendation: ActivityTab
+  coins: number
+  onOpenClub: () => void
 }
 
-export function Hero({ onNavigate }: HeroProps) {
+export function Hero({ onNavigate, visitedTabs, lastActivity, recommendation, coins, onOpenClub }: HeroProps) {
   const { skin } = useSkin()
 
   const activities = [
@@ -63,6 +70,26 @@ export function Hero({ onNavigate }: HeroProps) {
             </button>
           ))}
         </div>
+
+        <button type="button" className="home-club-card" onClick={onOpenClub}>
+          <span className="home-club-art" aria-hidden="true">
+            <Image src={assetPath("/content/missions/daily-board.webp")} alt="" fill sizes="132px" />
+          </span>
+          <span className="home-club-copy">
+            <small><Sparkles aria-hidden="true" /> MIYUKI CAT CLUB</small>
+            <strong>きょうの猫クラブ</strong>
+            <span>ミッション・おへや・図鑑・ものがたり</span>
+            <b><CircleDollarSign aria-hidden="true" /> {coins.toLocaleString("ja-JP")} にゃんコイン</b>
+          </span>
+          <ArrowRight className="home-club-arrow" aria-hidden="true" />
+        </button>
+
+        <HomePassport
+          visitedTabs={visitedTabs}
+          lastActivity={lastActivity}
+          recommendation={recommendation}
+          onNavigate={onNavigate}
+        />
       </div>
       <div className="footer-trim" aria-hidden="true">
         <Image src={skin.assets.footerTrim} alt="" fill sizes="(max-width: 640px) 100vw, 820px" />

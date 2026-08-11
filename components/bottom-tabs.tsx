@@ -22,7 +22,7 @@ const TABS: Tab[] = [
 ]
 
 type BottomTabsProps = {
-  activeTab: TabId
+  activeTab: TabId | null
   onTabChange: (tab: TabId) => void
 }
 

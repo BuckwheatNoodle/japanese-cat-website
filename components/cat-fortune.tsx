@@ -1,9 +1,11 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { BookOpenCheck, Heart, Palette, RotateCcw, Sparkles, Star, Users } from "lucide-react"
 import { useSkin } from "@/components/skin-provider"
+import { useProgression } from "@/components/progression-provider"
+import { getLocalDateKey } from "@/lib/progression"
 
 const CAT_TYPES = [
   "あまえんぼうにゃん",
@@ -47,9 +49,7 @@ function hashText(value: string) {
   return Math.abs(hash)
 }
 
-function makeFortune(name: string) {
-  const today = new Date()
-  const dateKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+function makeFortune(name: string, dateKey = getLocalDateKey()) {
   const seed = hashText(`${name.trim()}-${dateKey}`)
   const typeIndex = seed % CAT_TYPES.length
   return {
@@ -63,18 +63,65 @@ function makeFortune(name: string) {
 
 export function CatFortune() {
   const { skin } = useSkin()
+  const { ready, recordEvent } = useProgression()
   const [name, setName] = useState("")
   const [fortune, setFortune] = useState<ReturnType<typeof makeFortune> | null>(null)
+  const [fortuneName, setFortuneName] = useState("")
+  const [fortuneDateKey, setFortuneDateKey] = useState("")
   const [isAnimating, setIsAnimating] = useState(false)
+  const animationTimerRef = useRef<number | null>(null)
+  const focusFrameRef = useRef<number | null>(null)
+  const drawLockedRef = useRef(false)
+  const returningToFormRef = useRef(false)
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const resultHeadingRef = useRef<HTMLHeadingElement | null>(null)
+
+  useEffect(() => {
+    if (!ready || !fortuneName || !fortuneDateKey) return
+    recordEvent({
+      type: "fortune.drawn",
+      eventId: `fortune:${fortuneDateKey}`,
+      occurredAt: `${fortuneDateKey}T12:00:00.000Z`,
+      fortuneId: `${fortuneDateKey}:${hashText(fortuneName)}`,
+    })
+  }, [fortuneDateKey, fortuneName, ready, recordEvent])
+
+  useEffect(() => {
+    if (fortune) {
+      focusFrameRef.current = window.requestAnimationFrame(() => resultHeadingRef.current?.focus())
+    } else if (returningToFormRef.current) {
+      returningToFormRef.current = false
+      focusFrameRef.current = window.requestAnimationFrame(() => nameInputRef.current?.focus())
+    }
+    return () => {
+      if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+      focusFrameRef.current = null
+    }
+  }, [fortune])
+
+  useEffect(() => () => {
+    if (animationTimerRef.current !== null) window.clearTimeout(animationTimerRef.current)
+  }, [])
 
   const handleFortune = () => {
     const safeName = name.trim().slice(0, 12)
-    if (!safeName) return
+    if (!safeName || drawLockedRef.current) return
+    drawLockedRef.current = true
     setIsAnimating(true)
-    window.setTimeout(() => {
-      setFortune(makeFortune(safeName))
+    animationTimerRef.current = window.setTimeout(() => {
+      const drawDateKey = getLocalDateKey()
+      animationTimerRef.current = null
+      setFortuneName(safeName)
+      setFortuneDateKey(drawDateKey)
+      setFortune(makeFortune(safeName, drawDateKey))
       setIsAnimating(false)
+      drawLockedRef.current = false
     }, 650)
+  }
+
+  const resetFortune = () => {
+    returningToFormRef.current = true
+    setFortune(null)
   }
 
   return (
@@ -95,11 +142,13 @@ export function CatFortune() {
           <label htmlFor="fortune-name">なまえ</label>
           <div className="fortune-input-row">
             <input
+              ref={nameInputRef}
               id="fortune-name"
               value={name}
               maxLength={12}
               autoComplete="off"
               inputMode="text"
+              disabled={isAnimating}
               onChange={(event) => setName(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && handleFortune()}
               placeholder="なまえを入れてね"
@@ -112,10 +161,10 @@ export function CatFortune() {
           <p className="privacy-note">入力した名前は、この端末にも保存せず、外にも送信しません。</p>
         </div>
       ) : (
-        <div className="fortune-result" aria-live="polite">
+        <div className="fortune-result">
           <div className="fortune-result-head">
-            <p>{name.trim().slice(0, 12)}ちゃんの今日の運勢</p>
-            <h3>{fortune.catType}</h3>
+            <p>{fortuneName}ちゃんの今日の運勢</p>
+            <h3 ref={resultHeadingRef} tabIndex={-1}>{fortune.catType}</h3>
             <div className="fortune-stars" aria-label={`星 ${fortune.stars} こ`}>
               {Array.from({ length: 5 }).map((_, index) => (
                 <Star key={index} className={index < fortune.stars ? "is-on" : ""} aria-hidden="true" />
@@ -143,7 +192,7 @@ export function CatFortune() {
             <p><Sparkles aria-hidden="true" /><span><strong>遊び</strong>{fortune.advice.play}</span></p>
           </div>
 
-          <button type="button" className="secondary-action" onClick={() => setFortune(null)}>
+          <button type="button" className="secondary-action" onClick={resetFortune}>
             <RotateCcw aria-hidden="true" />
             名前を変える
           </button>

@@ -1,21 +1,35 @@
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { BrainCircuit, Trophy, Play, RotateCcw, CheckCircle, XCircle } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { ArrowRight, BrainCircuit, CheckCircle, Clock3, Play, RotateCcw, Sparkles, Star, Timer, Trophy, XCircle } from "lucide-react"
+import { isFiniteNumberRecord, useLocalStorage } from "@/hooks/use-local-storage"
+import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
+import { useProgression } from "@/components/progression-provider"
+import { createEventId } from "@/lib/progression"
+import {
+  CONTENT_OVERRIDE_APPLIED_KEY,
+  getContentOverrideStorage,
+  readContentOverrides,
+  type QuizContentOverride,
+} from "@/lib/content-overrides"
 
 type QuizGameState = "idle" | "playing" | "finished"
+type GlobalDifficulty = "gentle" | "standard" | "challenge"
+type QuestionCount = 5 | 10
+
+export function getActualQuizQuestionCount(requested: number, available: number) {
+  if (!Number.isFinite(requested) || !Number.isFinite(available)) return 0
+  return Math.max(0, Math.min(Math.floor(requested), Math.floor(available)))
+}
 
 type QuizQuestion = {
   question: string
   options: [string, string, string, string]
   correctAnswer: string
+  explanation?: string
 }
 
 const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
-  // Existing 20 questions
+  // 猫の体・行動・ことば
   {
     question: "猫が甘いものを感じられないのはなぜ？",
     options: ["舌が小さいから", "甘味の受容体がないから", "甘いものが嫌いだから", "鼻が効きすぎるから"],
@@ -102,11 +116,6 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
     correctAnswer: "価値のわからない人に貴重なものを与えても無駄",
   },
   {
-    question: "猫のしっぽの付け根を叩くと喜ぶことがあるのはなぜ？",
-    options: ["そこが一番かゆいから", "神経が集中しているから", "しっぽの筋肉がほぐれるから", "特に意味はない"],
-    correctAnswer: "神経が集中しているから",
-  },
-  {
     question: "猫がよく毛づくろいをする一番の理由は何？",
     options: ["体を清潔に保つため", "暇だから", "飼い主にかまってほしいから", "毛並みを整えるため"],
     correctAnswer: "体を清潔に保つため",
@@ -116,7 +125,7 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
     options: ["ほぼ同じ", "約2倍", "約4倍", "約10倍"],
     correctAnswer: "約4倍",
   },
-  // New 20 questions
+  // 猫の歴史・品種・科学
   {
     question: "猫の視野は、約何度あると言われている？",
     options: ["約120度", "約180度", "約200度", "約360度"],
@@ -224,38 +233,147 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ]
 
+// These IDs are persisted by the parent editor. Keep the existing order stable and append new questions.
+export const BUILT_IN_QUIZ_ITEMS: readonly QuizContentOverride[] = ALL_QUIZ_QUESTIONS.map((item, index) => ({
+  id: `builtin-cat-${String(index + 1).padStart(3, "0")}`,
+  question: item.question,
+  options: [...item.options] as QuizContentOverride["options"],
+  correctIndex: item.options.indexOf(item.correctAnswer),
+  explanation: item.explanation ?? "",
+  hidden: false,
+}))
+
 const TIME_PER_QUESTION = 10000 // 10秒 (ミリ秒)
+const recordKeyFor = (mode: GlobalDifficulty, questionCount: number) => `${mode}:${questionCount}`
+
+function shuffle<T>(items: readonly T[]): T[] {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[target]] = [result[target], result[index]]
+  }
+  return result
+}
+
+function overrideToQuestion(item: QuizContentOverride): QuizQuestion {
+  return {
+    question: item.question,
+    options: [...item.options] as QuizQuestion["options"],
+    correctAnswer: item.options[item.correctIndex],
+    explanation: item.explanation || undefined,
+  }
+}
+
+export function mergeQuizQuestions(overrides: readonly QuizContentOverride[]) {
+  const merged = new Map(BUILT_IN_QUIZ_ITEMS.map((item) => [item.id, item]))
+  for (const override of overrides) {
+    if (override.hidden) {
+      merged.delete(override.id)
+    } else {
+      merged.set(override.id, override)
+    }
+  }
+  return [...merged.values()].map(overrideToQuestion)
+}
 
 export function CatQuiz() {
+  const { state, recordEvent } = useProgression()
   const [gameState, setGameState] = useState<QuizGameState>("idle")
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [questionCount, setQuestionCount] = useState<QuestionCount>(10)
+  const [runQuestionCount, setRunQuestionCount] = useState(10)
+  const [runGlobalDifficulty, setRunGlobalDifficulty] = useState<GlobalDifficulty>("standard")
   const [timeProgress, setTimeProgress] = useState(100)
   const [questionStartTime, setQuestionStartTime] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [isAnswered, setIsAnswered] = useState(false)
   const [isTimedOut, setIsTimedOut] = useState(false)
-  const [highScore, setHighScore] = useLocalStorage("catQuizHighScore", 0)
+  const [availableQuestions, setAvailableQuestions] = useState<QuizQuestion[]>(() => mergeQuizQuestions([]))
+  const [highScores, setHighScores] = useLocalStorage<Record<string, number>>("catQuizHighScoresV2", {}, isFiniteNumberRecord)
+  const [recordSaveFailed, setRecordSaveFailed] = useState(false)
 
   const animationFrameRef = useRef<number | null>(null)
+  const focusFrameRef = useRef<number | null>(null)
+  const gameStateRef = useRef<QuizGameState>("idle")
+  const answeredRef = useRef(false)
+  const advancingRef = useRef(false)
+  const completionEventIdRef = useRef<string | null>(null)
+  const questionHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const feedbackButtonRef = useRef<HTMLButtonElement | null>(null)
+  const setupHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const resultHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const returningToSetupRef = useRef(false)
+  const globalDifficulty = state.settings.difficulty as GlobalDifficulty
+  const activeGlobalDifficulty = gameState === "idle" ? globalDifficulty : runGlobalDifficulty
+  const effectiveTimePerQuestion = activeGlobalDifficulty === "gentle" ? null : activeGlobalDifficulty === "challenge" ? 8000 : TIME_PER_QUESTION
+
+  const recordCompletion = useCallback(() => {
+    const eventId = completionEventIdRef.current
+    if (!eventId) return
+    completionEventIdRef.current = null
+    recordEvent({
+      type: "game.completed",
+      eventId,
+      occurredAt: new Date().toISOString(),
+      gameId: "quiz",
+      score: Math.round(score / Math.max(1, sessionQuestions.length)),
+      won: sessionQuestions.length > 0 && correctCount >= Math.ceil(sessionQuestions.length / 2),
+    })
+  }, [correctCount, recordEvent, score, sessionQuestions.length])
+
+  useEffect(() => {
+    const refreshQuestions = () => {
+      const storage = getContentOverrideStorage()
+      const result = storage ? readContentOverrides(storage, "applied") : null
+      setAvailableQuestions(mergeQuizQuestions(result?.ok ? result.value.quizItems : []))
+    }
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CONTENT_OVERRIDE_APPLIED_KEY || event.key === null) refreshQuestions()
+    }
+
+    refreshQuestions()
+    window.addEventListener("storage", handleStorage)
+    window.addEventListener("miyuki:content-overrides-applied", refreshQuestions)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      window.removeEventListener("miyuki:content-overrides-applied", refreshQuestions)
+    }
+  }, [])
 
   const startQuiz = () => {
-    const shuffled = [...ALL_QUIZ_QUESTIONS].sort(() => 0.5 - Math.random())
-    setSessionQuestions(shuffled.slice(0, 10))
+    if (availableQuestions.length === 0 || (gameStateRef.current !== "idle" && gameStateRef.current !== "finished")) return
+    gameStateRef.current = "playing"
+    answeredRef.current = false
+    advancingRef.current = false
+    completionEventIdRef.current = createEventId("game-quiz")
+    setRunGlobalDifficulty(globalDifficulty)
+    const shuffled = shuffle(availableQuestions)
+    const actualQuestionCount = getActualQuizQuestionCount(questionCount, shuffled.length)
+    setRunQuestionCount(actualQuestionCount)
+    setSessionQuestions(shuffled.slice(0, actualQuestionCount))
 
     setGameState("playing")
     setCurrentQuestionIndex(0)
     setScore(0)
+    setCorrectCount(0)
+    setStreak(0)
     setSelectedAnswer(null)
     setIsAnswered(false)
     setIsTimedOut(false)
+    setRecordSaveFailed(false)
     setQuestionStartTime(Date.now())
     setTimeProgress(100)
   }
 
   const nextQuestion = useCallback(() => {
+    if (gameStateRef.current !== "playing" || !answeredRef.current || advancingRef.current) return
+    advancingRef.current = true
     if (currentQuestionIndex < sessionQuestions.length - 1) {
+      answeredRef.current = false
       setCurrentQuestionIndex((prev) => prev + 1)
       setSelectedAnswer(null)
       setIsAnswered(false)
@@ -263,50 +381,55 @@ export function CatQuiz() {
       setQuestionStartTime(Date.now())
       setTimeProgress(100)
     } else {
+      gameStateRef.current = "finished"
+      recordCompletion()
       setGameState("finished")
     }
-  }, [currentQuestionIndex, sessionQuestions.length])
+  }, [currentQuestionIndex, recordCompletion, sessionQuestions.length])
 
   const handleAnswerClick = useCallback(
     (answer: string | null) => {
-      if (animationFrameRef.current) {
+      if (gameStateRef.current !== "playing" || answeredRef.current) return
+      answeredRef.current = true
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
         animationFrameRef.current = null
       }
 
-      if (isAnswered) return
       setIsAnswered(true)
 
       if (answer === null) {
         setIsTimedOut(true)
+        setStreak(0)
       } else {
         setSelectedAnswer(answer)
         if (sessionQuestions.length > 0 && answer === sessionQuestions[currentQuestionIndex].correctAnswer) {
-          const timeTaken = Date.now() - questionStartTime
-          const points = Math.floor(Math.max(0, TIME_PER_QUESTION - timeTaken) / 10)
+          const points = effectiveTimePerQuestion === null
+            ? 1000
+            : Math.floor((Math.max(0, effectiveTimePerQuestion - (Date.now() - questionStartTime)) / effectiveTimePerQuestion) * 1000)
           setScore((prev) => prev + points)
+          setCorrectCount((value) => value + 1)
+          setStreak((value) => value + 1)
+        } else {
+          setStreak(0)
         }
       }
-
-      setTimeout(() => {
-        nextQuestion()
-      }, 2000)
     },
-    [isAnswered, currentQuestionIndex, questionStartTime, nextQuestion, sessionQuestions],
+    [effectiveTimePerQuestion, currentQuestionIndex, questionStartTime, sessionQuestions],
   )
 
   useEffect(() => {
-    if (gameState === "playing" && !isAnswered) {
+    if (gameState === "playing" && !isAnswered && effectiveTimePerQuestion !== null) {
       const animate = () => {
         const elapsed = Date.now() - questionStartTime
         const adjustedElapsed = Math.max(0, elapsed - 40)
-        const remaining = TIME_PER_QUESTION - adjustedElapsed
+        const remaining = effectiveTimePerQuestion - adjustedElapsed
 
         if (remaining <= 0) {
           setTimeProgress(0)
           handleAnswerClick(null)
         } else {
-          setTimeProgress((remaining / TIME_PER_QUESTION) * 100)
+          setTimeProgress((remaining / effectiveTimePerQuestion) * 100)
           animationFrameRef.current = requestAnimationFrame(animate)
         }
       }
@@ -314,30 +437,61 @@ export function CatQuiz() {
     }
 
     return () => {
-      if (animationFrameRef.current) {
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
     }
-  }, [gameState, isAnswered, questionStartTime, handleAnswerClick])
+  }, [effectiveTimePerQuestion, gameState, isAnswered, questionStartTime, handleAnswerClick])
 
   useEffect(() => {
-    if (gameState === "finished" && score > highScore) {
-      setHighScore(score)
+    if (gameState === "playing" && !isAnswered) focusFrameRef.current = window.requestAnimationFrame(() => questionHeadingRef.current?.focus())
+    if (gameState === "playing" && isAnswered) focusFrameRef.current = window.requestAnimationFrame(() => feedbackButtonRef.current?.focus())
+    if (gameState === "finished") focusFrameRef.current = window.requestAnimationFrame(() => resultHeadingRef.current?.focus())
+    if (gameState === "idle" && returningToSetupRef.current) {
+      returningToSetupRef.current = false
+      focusFrameRef.current = window.requestAnimationFrame(() => setupHeadingRef.current?.focus())
     }
-  }, [gameState, score, highScore, setHighScore])
+    return () => {
+      if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+      focusFrameRef.current = null
+    }
+  }, [currentQuestionIndex, gameState, isAnswered])
+
+  useEffect(() => {
+    if (gameState === "playing") advancingRef.current = false
+  }, [currentQuestionIndex, gameState])
+
+  useEffect(() => {
+    if (gameState !== "finished") return
+    const recordKey = recordKeyFor(runGlobalDifficulty, runQuestionCount)
+    if (score > (highScores[recordKey] ?? 0)) setRecordSaveFailed(!setHighScores({ ...highScores, [recordKey]: score }))
+    recordCompletion()
+  }, [gameState, highScores, recordCompletion, runGlobalDifficulty, runQuestionCount, score, setHighScores])
+
+  const returnToSetup = () => {
+    returningToSetupRef.current = true
+    gameStateRef.current = "idle"
+    answeredRef.current = false
+    advancingRef.current = false
+    setGameState("idle")
+  }
 
   const renderContent = () => {
+    const setupQuestionCount = getActualQuizQuestionCount(questionCount, availableQuestions.length)
     if (gameState === "finished") {
+      const stars = correctCount >= sessionQuestions.length * 0.8 ? 3 : correctCount >= sessionQuestions.length * 0.5 ? 2 : 1
       return (
-        <div className="text-center space-y-4 flex flex-col items-center">
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 text-yellow-500" />
-          <h3 className="text-xl md:text-2xl font-bold">クイズ終了！</h3>
-          <p className="text-3xl md:text-4xl font-bold">{score}点</p>
-          <p className="text-lg">ハイスコア: {highScore}点</p>
-          <Button onClick={startQuiz} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            もう一度挑戦
-          </Button>
+        <div className="game-result-view">
+          <Trophy className="game-result-trophy" aria-hidden="true" />
+          <p className="game-result-kicker">クイズ終了！</p>
+          <h3 ref={resultHeadingRef} tabIndex={-1}>{correctCount} / {sessionQuestions.length}問正解</h3>
+          <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
+          <p>{score}点をゲット。答えを読んで、猫博士にまた一歩近づいたね！</p>
+          <div className="game-result-record"><Clock3 aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${runQuestionCount}問コースのベスト`}</span><strong>{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0) : Math.max(score, highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0)}点</strong></div>
+          {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
+          <GamePrimaryButton onClick={startQuiz} disabled={availableQuestions.length === 0}><RotateCcw aria-hidden="true" />もう一度挑戦</GamePrimaryButton>
+          <button type="button" className="game-secondary-button" onClick={returnToSetup}>問題数を変える</button>
         </div>
       )
     }
@@ -348,85 +502,70 @@ export function CatQuiz() {
       }
       const currentQuestion = sessionQuestions[currentQuestionIndex]
       return (
-        <div className="w-full flex flex-col items-center space-y-4">
-          <div className="w-full flex justify-between items-center font-bold">
-            <span>
-              第{currentQuestionIndex + 1}問 / {sessionQuestions.length}問
-            </span>
-            <span>スコア: {score}</span>
+        <div className="quiz-play-view">
+          <div className="game-stats-row">
+            <GameStat icon={BrainCircuit} label="問題" value={`${currentQuestionIndex + 1}/${sessionQuestions.length}`} />
+            <GameStat icon={Sparkles} label="連続正解" value={`${streak}問`} />
+            <GameStat icon={Trophy} label="スコア" value={`${score}点`} />
           </div>
-          <div className="w-full space-y-2">
-            <Progress value={timeProgress} className="w-full h-3" />
-          </div>
-          <div className="relative w-full min-h-[8rem] flex items-center justify-center">
+          {effectiveTimePerQuestion === null
+            ? <p className="quiz-untimed-note"><Clock3 aria-hidden="true" />時間制限なし・ゆっくり考えてね</p>
+            : <div className="quiz-time-track" aria-label={`残り時間${Math.ceil((timeProgress / 100) * (effectiveTimePerQuestion / 1000))}秒`}><span style={{ width: `${timeProgress}%` }} /></div>}
+          <div className="quiz-question-card">
             {isTimedOut && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 rounded-lg">
-                <p className="text-white font-bold text-3xl animate-ping-once">時間切れ！</p>
-              </div>
+              <span className="quiz-timeout"><Timer aria-hidden="true" />時間切れ</span>
             )}
-            <p className="text-lg md:text-xl font-bold text-center">{currentQuestion.question}</p>
+            <small>第{currentQuestionIndex + 1}問</small>
+            <h3 ref={questionHeadingRef} tabIndex={-1}>{currentQuestion.question}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+          <div className="quiz-options">
             {currentQuestion.options.map((option) => {
               const isCorrect = option === currentQuestion.correctAnswer
-              let buttonClass = "bg-[#D4A57A] hover:bg-[#C7946A]"
-              if (isAnswered) {
-                if (isCorrect) {
-                  buttonClass = "bg-green-500 hover:bg-green-600"
-                } else if (selectedAnswer === option) {
-                  buttonClass = "bg-red-500 hover:bg-red-600"
-                }
-              }
+              const state = isAnswered ? isCorrect ? "correct" : selectedAnswer === option ? "wrong" : "muted" : "ready"
 
               return (
-                <Button
+                <button type="button"
                   key={option}
                   onClick={() => handleAnswerClick(option)}
                   disabled={isAnswered}
-                  className={`text-white h-auto min-h-[3rem] py-2 whitespace-normal transition-all duration-300 ${buttonClass}`}
+                  data-state={state}
                 >
                   {option}
-                  {isAnswered && isCorrect && <CheckCircle className="ml-2" />}
-                  {isAnswered && selectedAnswer === option && !isCorrect && <XCircle className="ml-2" />}
-                </Button>
+                  {isAnswered && isCorrect && <CheckCircle aria-hidden="true" />}
+                  {isAnswered && selectedAnswer === option && !isCorrect && <XCircle aria-hidden="true" />}
+                </button>
               )
             })}
           </div>
+          {isAnswered && (
+            <div className={`quiz-feedback ${selectedAnswer === currentQuestion.correctAnswer ? "is-correct" : "is-wrong"}`} aria-live="polite">
+              <div>
+                <strong>{selectedAnswer === currentQuestion.correctAnswer ? "正解！" : "正解はこちら"}</strong>
+                <p>こたえ：{currentQuestion.correctAnswer}</p>
+                {currentQuestion.explanation && <p>{currentQuestion.explanation}</p>}
+              </div>
+              <button ref={feedbackButtonRef} type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の問題"}<ArrowRight aria-hidden="true" /></button>
+            </div>
+          )}
         </div>
       )
     }
 
     return (
-      <div className="text-center space-y-4">
-        <h3 className="text-lg md:text-xl font-bold">にゃんこクイズ</h3>
-        <p className="text-sm md:text-base">
-          猫に関する40問の中からランダムで10問出題！
-          <br />
-          1問10秒、早く答えるほど高得点だよ。
-        </p>
-        <p className="font-bold">ハイスコア: {highScore}点</p>
-        <Button onClick={startQuiz} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-          <Play className="w-4 h-4 mr-2" />
-          クイズ開始
-        </Button>
+      <div className="game-start-view">
+        <div className="game-intro-mark"><BrainCircuit aria-hidden="true" /></div>
+        <h3 ref={setupHeadingRef} tabIndex={-1}>猫博士にチャレンジ</h3>
+        <p>{availableQuestions.length > 0 ? `${availableQuestions.length}問から${setupQuestionCount}問をランダム出題。` : "いま遊べる問題はありません。おうちの人の編集室で問題を表示すると遊べます。"}{availableQuestions.length > 0 ? `${effectiveTimePerQuestion === null ? "時間制限なしで" : `1問${effectiveTimePerQuestion / 1000}秒で`}、答えたあとは正解を読んでから自分のペースで次へ進めます。` : ""}</p>
+        <div className="game-mode-options" aria-label="問題数を選ぶ">
+          {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as QuestionCount)} aria-pressed={questionCount === count}>
+            <strong>{count}問コース</strong><span>{availableQuestions.length > 0 && availableQuestions.length < count ? `いまは${availableQuestions.length}問` : count === 5 ? "さくっと遊ぶ" : "たっぷり挑戦"}</span>
+          </button>)}
+        </div>
+        {setupQuestionCount > 0 ? <div className="game-record-pill"><Trophy aria-hidden="true" />{setupQuestionCount}問コースのベスト <strong>{highScores[recordKeyFor(globalDifficulty, setupQuestionCount)] ?? 0}点</strong></div> : null}
+        <GamePrimaryButton onClick={startQuiz} disabled={availableQuestions.length === 0}><Play aria-hidden="true" />クイズ開始</GamePrimaryButton>
       </div>
     )
   }
 
-  return (
-    <section className="w-full">
-      <Card className="bg-white/80 border-2 border-dashed border-[#EAD8C0]/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-        <CardHeader className="bg-[#FDEEDC]/60 rounded-t-lg">
-          <CardTitle className="flex items-center justify-center text-xl md:text-2xl space-x-2">
-            <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" />
-            <span>にゃんこクイズ</span>
-            <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[28rem] md:min-h-[32rem] p-4 md:p-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </section>
-  )
+  return <GameShell title="にゃんこクイズ" subtitle="猫のふしぎを知って、答えを読んで、猫博士になろう。" icon={BrainCircuit} tone="mint">{renderContent()}</GameShell>
 }
