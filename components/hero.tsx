@@ -4,12 +4,16 @@ import Image from "next/image"
 import { Gamepad2, PawPrint } from "lucide-react"
 import { useSkin } from "@/components/skin-provider"
 import type { TabId } from "@/components/bottom-tabs"
+import { HomePassport, type ActivityTab } from "@/components/home-passport"
 
 type HeroProps = {
   onNavigate: (tab: TabId) => void
+  visitedTabs: ActivityTab[]
+  lastActivity: ActivityTab | null
+  recommendation: ActivityTab
 }
 
-export function Hero({ onNavigate }: HeroProps) {
+export function Hero({ onNavigate, visitedTabs, lastActivity, recommendation }: HeroProps) {
   const { skin } = useSkin()
 
   const activities = [
@@ -63,6 +67,13 @@ export function Hero({ onNavigate }: HeroProps) {
             </button>
           ))}
         </div>
+
+        <HomePassport
+          visitedTabs={visitedTabs}
+          lastActivity={lastActivity}
+          recommendation={recommendation}
+          onNavigate={onNavigate}
+        />
       </div>
       <div className="footer-trim" aria-hidden="true">
         <Image src={skin.assets.footerTrim} alt="" fill sizes="(max-width: 640px) 100vw, 820px" />

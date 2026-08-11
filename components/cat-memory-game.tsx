@@ -1,51 +1,38 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Bell, Cat, Cherry, Eye, Fish, Heart, Layers, Leaf, Moon, PawPrint, Play, RotateCcw, Smile, Star, Sun, Trophy, Timer } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Bell, Cat, Cherry, Clock3, Eye, Fish, Footprints, Heart, Layers, Leaf, Moon, PawPrint, Play, RotateCcw, Smile, Sparkles, Star, Sun, Timer, Trophy } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
 
-type MemoryGameState = "idle" | "playing" | "finished"
-
-type MemoryCard = {
-  id: number
-  icon: React.ElementType
-  label: string
-  isFlipped: boolean
-  isMatched: boolean
-}
+type MemoryGameState = "idle" | "preview" | "playing" | "finished"
+type MemoryCard = { id: number; icon: React.ElementType; label: string; isFlipped: boolean; isMatched: boolean }
+type Difficulty = { id: "easy" | "normal" | "hard"; name: string; pairs: number; description: string }
+type BestRecord = { moves: number; time: number }
 
 const CAT_PAIRS = [
-  { icon: Cat, label: "ねこ" },
-  { icon: PawPrint, label: "にくきゅう" },
-  { icon: Fish, label: "おさかな" },
-  { icon: Heart, label: "ハート" },
-  { icon: Smile, label: "にっこり" },
-  { icon: Eye, label: "きらきら目" },
-  { icon: Star, label: "おほしさま" },
-  { icon: Moon, label: "おつきさま" },
-  { icon: Sun, label: "おひさま" },
-  { icon: Bell, label: "すず" },
-  { icon: Leaf, label: "はっぱ" },
-  { icon: Cherry, label: "さくらんぼ" },
+  { icon: Cat, label: "ねこ" }, { icon: PawPrint, label: "にくきゅう" }, { icon: Fish, label: "おさかな" },
+  { icon: Heart, label: "ハート" }, { icon: Smile, label: "にっこり" }, { icon: Eye, label: "きらきら目" },
+  { icon: Star, label: "おほしさま" }, { icon: Moon, label: "おつきさま" }, { icon: Sun, label: "おひさま" },
+  { icon: Bell, label: "すず" }, { icon: Leaf, label: "はっぱ" }, { icon: Cherry, label: "さくらんぼ" },
 ]
 
-type Difficulty = { name: string; pairs: number; cols: string }
 const DIFFICULTIES: Difficulty[] = [
-  { name: "かんたん", pairs: 6, cols: "grid-cols-4" },
-  { name: "ふつう", pairs: 8, cols: "grid-cols-4" },
-  { name: "むずかしい", pairs: 12, cols: "grid-cols-6" },
+  { id: "easy", name: "かんたん", pairs: 6, description: "12枚・最初に2秒見える" },
+  { id: "normal", name: "ふつう", pairs: 8, description: "16枚・記憶力アップ" },
+  { id: "hard", name: "むずかしい", pairs: 12, description: "24枚・全力チャレンジ" },
 ]
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
+function shuffle<T>(items: T[]) {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[target]] = [result[target], result[index]]
   }
-  return a
+  return result
 }
+
+const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
 
 export function CatMemoryGame() {
   const [gameState, setGameState] = useState<MemoryGameState>("idle")
@@ -55,201 +42,144 @@ export function CatMemoryGame() {
   const [moves, setMoves] = useState(0)
   const [matchedCount, setMatchedCount] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [bestScores, setBestScores] = useLocalStorage<Record<string, number>>("catMemoryBestScores", {})
+  const [message, setMessage] = useState("場所を覚えてね！")
+  const [bestRecords, setBestRecords] = useLocalStorage<Record<string, BestRecord>>("catMemoryBestRecordsV2", {})
   const lockRef = useRef(false)
+  const previewTimerRef = useRef<number | null>(null)
 
-  const bestScore = bestScores[difficulty.name] ?? Infinity
-
-  const startGame = (diff: Difficulty) => {
-    setDifficulty(diff)
-    const selected = shuffleArray(CAT_PAIRS).slice(0, diff.pairs)
-    const doubled = selected.flatMap((p, i) => [
-      { id: i * 2, icon: p.icon, label: p.label, isFlipped: false, isMatched: false },
-      { id: i * 2 + 1, icon: p.icon, label: p.label, isFlipped: false, isMatched: false },
-    ])
-    setCards(shuffleArray(doubled))
+  const startGame = (nextDifficulty = difficulty) => {
+    setDifficulty(nextDifficulty)
+    const selected = shuffle(CAT_PAIRS).slice(0, nextDifficulty.pairs)
+    const deck = shuffle(selected.flatMap((pair, index) => [
+      { id: index * 2, ...pair, isFlipped: true, isMatched: false },
+      { id: index * 2 + 1, ...pair, isFlipped: true, isMatched: false },
+    ]))
+    setCards(deck)
     setFlippedIds([])
     setMoves(0)
     setMatchedCount(0)
     setElapsedTime(0)
-    setGameState("playing")
-    lockRef.current = false
+    setMessage("場所を覚えてね！")
+    setGameState("preview")
+    lockRef.current = true
+    if (previewTimerRef.current) window.clearTimeout(previewTimerRef.current)
+    previewTimerRef.current = window.setTimeout(() => {
+      setCards((current) => current.map((card) => ({ ...card, isFlipped: false })))
+      setMessage("同じ絵を2枚見つけよう")
+      setGameState("playing")
+      lockRef.current = false
+    }, nextDifficulty.id === "easy" ? 2000 : 1500)
   }
 
-  // Timer
+  useEffect(() => () => { if (previewTimerRef.current) window.clearTimeout(previewTimerRef.current) }, [])
+
   useEffect(() => {
     if (gameState !== "playing") return
-    const interval = setInterval(() => setElapsedTime((t) => t + 1), 1000)
-    return () => clearInterval(interval)
+    const timer = window.setInterval(() => setElapsedTime((value) => value + 1), 1000)
+    return () => window.clearInterval(timer)
   }, [gameState])
 
-  const handleCardClick = (id: number) => {
-    if (lockRef.current) return
-    if (gameState !== "playing") return
-
-    const card = cards.find((c) => c.id === id)
+  const flipCard = (id: number) => {
+    if (lockRef.current || gameState !== "playing") return
+    const card = cards.find((item) => item.id === id)
     if (!card || card.isFlipped || card.isMatched) return
 
-    const newFlipped = [...flippedIds, id]
-    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, isFlipped: true } : c)))
-    setFlippedIds(newFlipped)
+    const nextFlipped = [...flippedIds, id]
+    setCards((current) => current.map((item) => item.id === id ? { ...item, isFlipped: true } : item))
+    setFlippedIds(nextFlipped)
+    if (nextFlipped.length < 2) return
 
-    if (newFlipped.length === 2) {
-      lockRef.current = true
-      setMoves((m) => m + 1)
-      const [firstId, secondId] = newFlipped
-      const first = cards.find((c) => c.id === firstId)!
-      const second = cards.find((c) => c.id === secondId)!
+    lockRef.current = true
+    setMoves((value) => value + 1)
+    const [firstId, secondId] = nextFlipped
+    const first = cards.find((item) => item.id === firstId)!
+    const second = cards.find((item) => item.id === secondId)!
 
-      if (first.label === second.label) {
-        // Match
-        setTimeout(() => {
-          setCards((prev) =>
-            prev.map((c) => (c.id === firstId || c.id === secondId ? { ...c, isMatched: true } : c)),
-          )
-          setFlippedIds([])
-          setMatchedCount((mc) => {
-            const next = mc + 1
-            if (next === cards.length / 2) {
-              // game complete - will be handled by effect
-            }
-            return next
-          })
-          lockRef.current = false
-        }, 500)
-      } else {
-        // No match
-        setTimeout(() => {
-          setCards((prev) =>
-            prev.map((c) => (c.id === firstId || c.id === secondId ? { ...c, isFlipped: false } : c)),
-          )
-          setFlippedIds([])
-          lockRef.current = false
-        }, 800)
-      }
+    if (first.label === second.label) {
+      setMessage(`「${first.label}」がそろった！`)
+      window.setTimeout(() => {
+        setCards((current) => current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isMatched: true } : item))
+        setFlippedIds([])
+        setMatchedCount((value) => value + 1)
+        lockRef.current = false
+      }, 460)
+    } else {
+      setMessage("おしい！場所を覚えておこう")
+      window.setTimeout(() => {
+        setCards((current) => current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isFlipped: false } : item))
+        setFlippedIds([])
+        lockRef.current = false
+      }, 760)
     }
   }
 
-  // Check for game completion
   useEffect(() => {
-    if (gameState === "playing" && cards.length > 0 && matchedCount === cards.length / 2) {
-      setGameState("finished")
-      if (moves < bestScore) {
-        setBestScores({ ...bestScores, [difficulty.name]: moves })
-      }
+    if (gameState !== "playing" || cards.length === 0 || matchedCount !== cards.length / 2) return
+    setGameState("finished")
+    const currentBest = bestRecords[difficulty.id]
+    if (!currentBest || moves < currentBest.moves || (moves === currentBest.moves && elapsedTime < currentBest.time)) {
+      setBestRecords({ ...bestRecords, [difficulty.id]: { moves, time: elapsedTime } })
     }
-  }, [matchedCount, cards.length, gameState, moves, bestScore, bestScores, setBestScores, difficulty.name])
+  }, [bestRecords, cards.length, difficulty.id, elapsedTime, gameState, matchedCount, moves, setBestRecords])
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`
+  const record = bestRecords[difficulty.id]
+  const stars = moves <= difficulty.pairs + 2 ? 3 : moves <= difficulty.pairs + 6 ? 2 : 1
 
-  const renderContent = () => {
-    if (gameState === "finished") {
-      return (
-        <div className="text-center space-y-4 flex flex-col items-center">
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 text-yellow-500" />
-          <h3 className="text-xl md:text-2xl font-bold">クリア！</h3>
-          <p className="text-2xl font-bold">{moves}手 / {formatTime(elapsedTime)}</p>
-          <p className="text-lg">
-            ベストスコア（{difficulty.name}）: {bestScores[difficulty.name] ?? "-"}手
-          </p>
-          <div className="flex gap-2 flex-wrap justify-center">
-            <Button onClick={() => startGame(difficulty)} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              もう一度
-            </Button>
-            <Button
-              onClick={() => setGameState("idle")}
-              variant="outline"
-              className="bg-white hover:bg-[#FDEEDC] border-[#EAD8C0]"
-            >
-              難易度を変える
-            </Button>
-          </div>
-        </div>
-      )
-    }
-
-    if (gameState === "playing") {
-      return (
-        <div className="w-full space-y-4">
-          <div className="flex items-center justify-between px-2 font-bold text-base md:text-lg">
-            <span>手数: {moves}</span>
-            <span className="flex items-center gap-1">
-              <Timer className="w-4 h-4 text-blue-500" />
-              {formatTime(elapsedTime)}
-            </span>
-            <span>残り: {cards.length / 2 - matchedCount}組</span>
-          </div>
-          <div className={`grid ${difficulty.cols} gap-2 md:gap-3 mx-auto max-w-lg`}>
-            {cards.map((card) => {
-              const CardIcon = card.icon
-              return <button
-                key={card.id}
-                onClick={() => handleCardClick(card.id)}
-                className={`aspect-square rounded-xl text-3xl md:text-4xl flex items-center justify-center transition-all duration-300 transform ${
-                  card.isMatched
-                    ? "bg-green-100 border-2 border-green-300 scale-95 opacity-70"
-                    : card.isFlipped
-                      ? "bg-white border-2 border-[#D4A57A] scale-105 shadow-md"
-                      : "bg-[#D4A57A] border-2 border-[#C7946A] hover:scale-105 hover:shadow-md cursor-pointer"
-                }`}
-                disabled={card.isFlipped || card.isMatched}
-                aria-label={card.isFlipped || card.isMatched ? card.label : "カードをめくる"}
-              >
-                {card.isFlipped || card.isMatched ? (
-                  <CardIcon className="w-8 h-8 md:w-10 md:h-10 text-[#8A6E59] animate-fade-in" aria-hidden="true" />
-                ) : (
-                  <PawPrint className="w-7 h-7 text-white" aria-hidden="true" />
-                )}
+  return (
+    <GameShell title="にゃんこ神経衰弱" subtitle="最初のプレビューを覚えて、同じ絵のペアを見つけよう。" icon={Layers} tone="lavender">
+      {gameState === "idle" && (
+        <div className="game-start-view">
+          <div className="game-intro-mark"><Layers aria-hidden="true" /></div>
+          <h3>カードの場所を覚えよう</h3>
+          <p>ゲーム開始直後に全部のカードが少しだけ見えるよ。少ない手数と短い時間で全ペアをそろえよう。</p>
+          <div className="game-difficulty-grid">
+            {DIFFICULTIES.map((item) => {
+              const best = bestRecords[item.id]
+              return <button key={item.id} type="button" onClick={() => startGame(item)}>
+                <strong>{item.name}</strong><span>{item.description}</span><small>{best ? `ベスト ${best.moves}手 / ${formatTime(best.time)}` : "記録なし"}</small>
               </button>
             })}
           </div>
         </div>
-      )
-    }
+      )}
 
-    // idle
-    return (
-      <div className="text-center space-y-4">
-        <h3 className="text-lg md:text-xl font-bold">にゃんこ神経衰弱</h3>
-        <p className="text-sm md:text-base">
-          カードをめくって同じ猫の絵柄ペアを見つけよう！
-          <br />
-          少ない手数でクリアを目指そう。
-        </p>
-        <div className="flex flex-col gap-3 items-center">
-          {DIFFICULTIES.map((diff) => (
-            <Button
-              key={diff.name}
-              onClick={() => startGame(diff)}
-              className="w-48 bg-[#D4A57A] hover:bg-[#C7946A] text-white"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              {diff.name}（{diff.pairs}組）
-              {bestScores[diff.name] != null && (
-                <span className="ml-2 text-xs opacity-80">Best: {bestScores[diff.name]}手</span>
-              )}
-            </Button>
-          ))}
+      {(gameState === "preview" || gameState === "playing") && (
+        <div className="memory-game-view">
+          <div className="game-stats-row">
+            <GameStat icon={Footprints} label="手数" value={moves} />
+            <GameStat icon={Timer} label="時間" value={formatTime(elapsedTime)} />
+            <GameStat icon={Sparkles} label="残り" value={`${difficulty.pairs - matchedCount}組`} />
+          </div>
+          <p className={`game-live-message ${gameState === "preview" ? "is-preview" : ""}`} aria-live="polite">{message}</p>
+          <div className="memory-grid" data-pairs={difficulty.pairs}>
+            {cards.map((card) => {
+              const Icon = card.icon
+              const visible = card.isFlipped || card.isMatched
+              return (
+                <button key={card.id} type="button" data-state={card.isMatched ? "matched" : visible ? "flipped" : "hidden"} onClick={() => flipCard(card.id)} disabled={gameState !== "playing" || visible} aria-label={visible ? card.label : "裏向きのカード"}>
+                  <span className="memory-card-inner">
+                    <span className="memory-card-back"><PawPrint aria-hidden="true" /></span>
+                    <span className="memory-card-front"><Icon aria-hidden="true" /><small>{card.label}</small></span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  return (
-    <section className="w-full">
-      <Card className="bg-white/80 border-2 border-dashed border-[#EAD8C0]/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-        <CardHeader className="bg-[#FDEEDC]/60 rounded-t-lg">
-          <CardTitle className="flex items-center justify-center text-xl md:text-2xl space-x-2">
-            <Layers className="w-5 h-5 md:w-6 md:h-6" />
-            <span>にゃんこ神経衰弱</span>
-            <Layers className="w-5 h-5 md:w-6 md:h-6" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[28rem] md:min-h-[32rem] p-4 md:p-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </section>
+      {gameState === "finished" && (
+        <div className="game-result-view">
+          <Trophy className="game-result-trophy" aria-hidden="true" />
+          <p className="game-result-kicker">ぜんぶそろった！</p>
+          <h3>{moves}手</h3>
+          <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
+          <p>{difficulty.name}を{formatTime(elapsedTime)}でクリア。最後までよく覚えたね！</p>
+          <div className="game-result-record"><Clock3 aria-hidden="true" /><span>ベスト記録</span><strong>{record ? `${record.moves}手 / ${formatTime(record.time)}` : `${moves}手`}</strong></div>
+          <GamePrimaryButton onClick={() => startGame()}><RotateCcw aria-hidden="true" />同じむずかしさで遊ぶ</GamePrimaryButton>
+          <button type="button" className="game-secondary-button" onClick={() => setGameState("idle")}>むずかしさを変える</button>
+        </div>
+      )}
+    </GameShell>
   )
 }

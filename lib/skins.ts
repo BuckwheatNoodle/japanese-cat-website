@@ -6,6 +6,7 @@ export type SkinAssets = {
   activityColoring: string
   activityFortune: string
   activityDiary: string
+  passportHero: string
   gameGuide: string
   footerTrim: string
   navHome: string
@@ -13,6 +14,10 @@ export type SkinAssets = {
   navColoring: string
   navFortune: string
   navDiary: string
+  diaryIllustrations: Record<string, string>
+  passportStamps: Record<string, string>
+  gameCards: Record<string, string>
+  gameSprites: Record<string, string>
 }
 
 export type SkinDefinition = {
@@ -72,6 +77,7 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       activityColoring: "/skins/cream-soda/activity-coloring.webp",
       activityFortune: "/skins/cream-soda/activity-fortune.webp",
       activityDiary: "/skins/cream-soda/activity-diary.webp",
+      passportHero: "/skins/cream-soda/passport/today-board.webp",
       gameGuide: "/cute-tabby-waving.png",
       footerTrim: "/skins/cream-soda/footer-trim-cropped.webp",
       navHome: "/skins/cream-soda/nav-home.webp",
@@ -79,6 +85,50 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       navColoring: "/skins/cream-soda/nav-coloring.webp",
       navFortune: "/skins/cream-soda/nav-fortune.webp",
       navDiary: "/skins/cream-soda/nav-diary.webp",
+      diaryIllustrations: {
+        "2026-08-01": "/skins/cream-soda/diary/2026-08-01.webp",
+        "2026-08-02": "/skins/cream-soda/diary/2026-08-02.webp",
+        "2026-08-03": "/skins/cream-soda/diary/2026-08-03.webp",
+        "2026-08-04": "/skins/cream-soda/diary/2026-08-04.webp",
+        "2026-08-05": "/skins/cream-soda/diary/2026-08-05.webp",
+        "2026-08-06": "/skins/cream-soda/diary/2026-08-06.webp",
+        "2026-08-07": "/skins/cream-soda/diary/2026-08-07.webp",
+        "2026-08-08": "/skins/cream-soda/diary/2026-08-08.webp",
+        "2026-08-09": "/skins/cream-soda/diary/2026-08-09.webp",
+        "2026-08-10": "/skins/cream-soda/diary/2026-08-10.webp",
+        "2026-08-11": "/skins/cream-soda/diary/2026-08-11.webp",
+        "2025-08-10": "/images/diary-2025-08-10.png",
+        "2025-08-11": "/images/diary-2025-08-11.png",
+        "2025-08-12": "/images/diary-2025-08-12.png",
+        "2025-08-13": "/images/diary-2025-08-13.png",
+        "2025-08-14": "/images/diary-2025-08-14.png",
+        "2025-08-15": "/images/diary-2025-08-15.png",
+        "2025-08-16": "/images/diary-2025-08-16.png",
+        "2025-08-17": "/images/diary-2025-08-17.png",
+        "2025-08-29": "/images/diary-2025-08-29.png",
+        "2025-08-30": "/images/diary-2025-08-30.png",
+        "2025-08-31": "/images/diary-2025-08-31.png",
+      },
+      passportStamps: {
+        games: "/skins/cream-soda/passport/stamp-games.webp",
+        coloring: "/skins/cream-soda/passport/stamp-coloring.webp",
+        fortune: "/skins/cream-soda/passport/stamp-fortune.webp",
+        diary: "/skins/cream-soda/passport/stamp-diary.webp",
+      },
+      gameCards: {
+        rescue: "/skins/cream-soda/games/rescue.webp",
+        quiz: "/skins/cream-soda/games/quiz.webp",
+        breed: "/skins/cream-soda/games/breed.webp",
+        memory: "/skins/cream-soda/games/memory.webp",
+        simon: "/skins/cream-soda/games/simon.webp",
+      },
+      gameSprites: {
+        tabby: "/skins/cream-soda/games/rescue-tabby.webp",
+        white: "/white-cat.png",
+        black: "/black-cat.png",
+        dog: "/dog.png",
+        poop: "/poop-icon.png",
+      },
     },
   },
 }

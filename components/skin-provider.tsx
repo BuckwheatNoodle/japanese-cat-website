@@ -24,12 +24,27 @@ export function SkinProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SkinContextValue>(() => {
     const source = SKINS[skinId]
+    const { diaryIllustrations, passportStamps, gameCards, gameSprites, ...sharedAssets } = source.assets
     return {
       skin: {
         ...source,
-        assets: Object.fromEntries(
-          Object.entries(source.assets).map(([key, value]) => [key, assetPath(value)]),
-        ) as SkinDefinition["assets"],
+        assets: {
+          ...(Object.fromEntries(
+            Object.entries(sharedAssets).map(([key, asset]) => [key, assetPath(asset)]),
+          ) as Omit<SkinDefinition["assets"], "diaryIllustrations" | "passportStamps" | "gameCards" | "gameSprites">),
+          diaryIllustrations: Object.fromEntries(
+            Object.entries(diaryIllustrations).map(([key, asset]) => [key, assetPath(asset)]),
+          ),
+          passportStamps: Object.fromEntries(
+            Object.entries(passportStamps).map(([key, asset]) => [key, assetPath(asset)]),
+          ),
+          gameCards: Object.fromEntries(
+            Object.entries(gameCards).map(([key, asset]) => [key, assetPath(asset)]),
+          ),
+          gameSprites: Object.fromEntries(
+            Object.entries(gameSprites).map(([key, asset]) => [key, assetPath(asset)]),
+          ),
+        },
       },
       setSkin: (nextSkinId) => {
         window.localStorage.setItem("miyuki-cat-skin", nextSkinId)

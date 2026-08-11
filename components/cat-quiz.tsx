@@ -1,10 +1,8 @@
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { BrainCircuit, Trophy, Play, RotateCcw, CheckCircle, XCircle } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
+import { ArrowRight, BrainCircuit, CheckCircle, Clock3, Play, RotateCcw, Sparkles, Star, Timer, Trophy, XCircle } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
 
 type QuizGameState = "idle" | "playing" | "finished"
 
@@ -231,6 +229,9 @@ export function CatQuiz() {
   const [sessionQuestions, setSessionQuestions] = useState<QuizQuestion[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
+  const [correctCount, setCorrectCount] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [questionCount, setQuestionCount] = useState<5 | 10>(10)
   const [timeProgress, setTimeProgress] = useState(100)
   const [questionStartTime, setQuestionStartTime] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -242,11 +243,13 @@ export function CatQuiz() {
 
   const startQuiz = () => {
     const shuffled = [...ALL_QUIZ_QUESTIONS].sort(() => 0.5 - Math.random())
-    setSessionQuestions(shuffled.slice(0, 10))
+    setSessionQuestions(shuffled.slice(0, questionCount))
 
     setGameState("playing")
     setCurrentQuestionIndex(0)
     setScore(0)
+    setCorrectCount(0)
+    setStreak(0)
     setSelectedAnswer(null)
     setIsAnswered(false)
     setIsTimedOut(false)
@@ -279,18 +282,19 @@ export function CatQuiz() {
 
       if (answer === null) {
         setIsTimedOut(true)
+        setStreak(0)
       } else {
         setSelectedAnswer(answer)
         if (sessionQuestions.length > 0 && answer === sessionQuestions[currentQuestionIndex].correctAnswer) {
           const timeTaken = Date.now() - questionStartTime
           const points = Math.floor(Math.max(0, TIME_PER_QUESTION - timeTaken) / 10)
           setScore((prev) => prev + points)
+          setCorrectCount((value) => value + 1)
+          setStreak((value) => value + 1)
+        } else {
+          setStreak(0)
         }
       }
-
-      setTimeout(() => {
-        nextQuestion()
-      }, 2000)
     },
     [isAnswered, currentQuestionIndex, questionStartTime, nextQuestion, sessionQuestions],
   )
@@ -328,16 +332,17 @@ export function CatQuiz() {
 
   const renderContent = () => {
     if (gameState === "finished") {
+      const stars = correctCount >= sessionQuestions.length * 0.8 ? 3 : correctCount >= sessionQuestions.length * 0.5 ? 2 : 1
       return (
-        <div className="text-center space-y-4 flex flex-col items-center">
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 text-yellow-500" />
-          <h3 className="text-xl md:text-2xl font-bold">クイズ終了！</h3>
-          <p className="text-3xl md:text-4xl font-bold">{score}点</p>
-          <p className="text-lg">ハイスコア: {highScore}点</p>
-          <Button onClick={startQuiz} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            もう一度挑戦
-          </Button>
+        <div className="game-result-view">
+          <Trophy className="game-result-trophy" aria-hidden="true" />
+          <p className="game-result-kicker">クイズ終了！</p>
+          <h3>{correctCount} / {sessionQuestions.length}問正解</h3>
+          <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
+          <p>{score}点をゲット。答えを読んで、猫博士にまた一歩近づいたね！</p>
+          <div className="game-result-record"><Clock3 aria-hidden="true" /><span>ハイスコア</span><strong>{Math.max(score, highScore)}点</strong></div>
+          <GamePrimaryButton onClick={startQuiz}><RotateCcw aria-hidden="true" />もう一度挑戦</GamePrimaryButton>
+          <button type="button" className="game-secondary-button" onClick={() => setGameState("idle")}>問題数を変える</button>
         </div>
       )
     }
@@ -348,85 +353,64 @@ export function CatQuiz() {
       }
       const currentQuestion = sessionQuestions[currentQuestionIndex]
       return (
-        <div className="w-full flex flex-col items-center space-y-4">
-          <div className="w-full flex justify-between items-center font-bold">
-            <span>
-              第{currentQuestionIndex + 1}問 / {sessionQuestions.length}問
-            </span>
-            <span>スコア: {score}</span>
+        <div className="quiz-play-view">
+          <div className="game-stats-row">
+            <GameStat icon={BrainCircuit} label="問題" value={`${currentQuestionIndex + 1}/${sessionQuestions.length}`} />
+            <GameStat icon={Sparkles} label="連続正解" value={`${streak}問`} />
+            <GameStat icon={Trophy} label="スコア" value={`${score}点`} />
           </div>
-          <div className="w-full space-y-2">
-            <Progress value={timeProgress} className="w-full h-3" />
-          </div>
-          <div className="relative w-full min-h-[8rem] flex items-center justify-center">
+          <div className="quiz-time-track" aria-label={`残り時間${Math.ceil(timeProgress / 10)}秒`}><span style={{ width: `${timeProgress}%` }} /></div>
+          <div className="quiz-question-card">
             {isTimedOut && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 rounded-lg">
-                <p className="text-white font-bold text-3xl animate-ping-once">時間切れ！</p>
-              </div>
+              <span className="quiz-timeout"><Timer aria-hidden="true" />時間切れ</span>
             )}
-            <p className="text-lg md:text-xl font-bold text-center">{currentQuestion.question}</p>
+            <small>第{currentQuestionIndex + 1}問</small>
+            <h3>{currentQuestion.question}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+          <div className="quiz-options">
             {currentQuestion.options.map((option) => {
               const isCorrect = option === currentQuestion.correctAnswer
-              let buttonClass = "bg-[#D4A57A] hover:bg-[#C7946A]"
-              if (isAnswered) {
-                if (isCorrect) {
-                  buttonClass = "bg-green-500 hover:bg-green-600"
-                } else if (selectedAnswer === option) {
-                  buttonClass = "bg-red-500 hover:bg-red-600"
-                }
-              }
+              const state = isAnswered ? isCorrect ? "correct" : selectedAnswer === option ? "wrong" : "muted" : "ready"
 
               return (
-                <Button
+                <button type="button"
                   key={option}
                   onClick={() => handleAnswerClick(option)}
                   disabled={isAnswered}
-                  className={`text-white h-auto min-h-[3rem] py-2 whitespace-normal transition-all duration-300 ${buttonClass}`}
+                  data-state={state}
                 >
                   {option}
-                  {isAnswered && isCorrect && <CheckCircle className="ml-2" />}
-                  {isAnswered && selectedAnswer === option && !isCorrect && <XCircle className="ml-2" />}
-                </Button>
+                  {isAnswered && isCorrect && <CheckCircle aria-hidden="true" />}
+                  {isAnswered && selectedAnswer === option && !isCorrect && <XCircle aria-hidden="true" />}
+                </button>
               )
             })}
           </div>
+          {isAnswered && (
+            <div className={`quiz-feedback ${selectedAnswer === currentQuestion.correctAnswer ? "is-correct" : "is-wrong"}`} aria-live="polite">
+              <div><strong>{selectedAnswer === currentQuestion.correctAnswer ? "正解！" : "正解はこちら"}</strong><p>{currentQuestion.correctAnswer}</p></div>
+              <button type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の問題"}<ArrowRight aria-hidden="true" /></button>
+            </div>
+          )}
         </div>
       )
     }
 
     return (
-      <div className="text-center space-y-4">
-        <h3 className="text-lg md:text-xl font-bold">にゃんこクイズ</h3>
-        <p className="text-sm md:text-base">
-          猫に関する40問の中からランダムで10問出題！
-          <br />
-          1問10秒、早く答えるほど高得点だよ。
-        </p>
-        <p className="font-bold">ハイスコア: {highScore}点</p>
-        <Button onClick={startQuiz} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-          <Play className="w-4 h-4 mr-2" />
-          クイズ開始
-        </Button>
+      <div className="game-start-view">
+        <div className="game-intro-mark"><BrainCircuit aria-hidden="true" /></div>
+        <h3>猫博士にチャレンジ</h3>
+        <p>40問からランダム出題。1問10秒で、答えたあとは正解を読んでから自分のペースで次へ進めます。</p>
+        <div className="game-mode-options" aria-label="問題数を選ぶ">
+          {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as 5 | 10)} aria-pressed={questionCount === count}>
+            <strong>{count}問コース</strong><span>{count === 5 ? "さくっと遊ぶ" : "たっぷり挑戦"}</span>
+          </button>)}
+        </div>
+        <div className="game-record-pill"><Trophy aria-hidden="true" />ハイスコア <strong>{highScore}点</strong></div>
+        <GamePrimaryButton onClick={startQuiz}><Play aria-hidden="true" />クイズ開始</GamePrimaryButton>
       </div>
     )
   }
 
-  return (
-    <section className="w-full">
-      <Card className="bg-white/80 border-2 border-dashed border-[#EAD8C0]/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-        <CardHeader className="bg-[#FDEEDC]/60 rounded-t-lg">
-          <CardTitle className="flex items-center justify-center text-xl md:text-2xl space-x-2">
-            <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" />
-            <span>にゃんこクイズ</span>
-            <BrainCircuit className="w-5 h-5 md:w-6 md:h-6" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[28rem] md:min-h-[32rem] p-4 md:p-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </section>
-  )
+  return <GameShell title="にゃんこクイズ" subtitle="猫のふしぎを知って、答えを読んで、猫博士になろう。" icon={BrainCircuit} tone="mint">{renderContent()}</GameShell>
 }

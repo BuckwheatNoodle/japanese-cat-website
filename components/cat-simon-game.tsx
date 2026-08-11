@@ -1,230 +1,194 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Cat, Fish, Heart, Lightbulb, PawPrint, Play, RotateCcw, Trophy } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Cat, Fish, Heart, Lightbulb, PawPrint, Play, RotateCcw, Sparkles, Star, Trophy, Volume2, VolumeX } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
 
-type SimonGameState = "idle" | "showing" | "input" | "success" | "gameover"
+type SimonState = "idle" | "showing" | "input" | "success" | "retry" | "gameover"
+type SpeedId = "calm" | "normal" | "fast"
 
-type PadColor = {
-  id: number
-  color: string
-  activeColor: string
-  icon: React.ElementType
-  label: string
-}
+const PADS = [
+  { id: 0, icon: Heart, label: "あか", tone: "coral", frequency: 392 },
+  { id: 1, icon: Cat, label: "あお", tone: "soda", frequency: 494 },
+  { id: 2, icon: PawPrint, label: "きいろ", tone: "butter", frequency: 587 },
+  { id: 3, icon: Fish, label: "みどり", tone: "mint", frequency: 659 },
+] as const
 
-const PADS: PadColor[] = [
-  { id: 0, color: "bg-red-300", activeColor: "bg-red-500", icon: Heart, label: "あか" },
-  { id: 1, color: "bg-blue-300", activeColor: "bg-blue-500", icon: Cat, label: "あお" },
-  { id: 2, color: "bg-yellow-300", activeColor: "bg-yellow-500", icon: PawPrint, label: "きいろ" },
-  { id: 3, color: "bg-green-300", activeColor: "bg-green-500", icon: Fish, label: "みどり" },
-]
-
-const SHOW_INTERVAL = 600
-const SHOW_PAUSE = 300
+const SPEEDS = [
+  { id: "calm", name: "ゆっくり", show: 720, pause: 360, description: "光る時間が長め" },
+  { id: "normal", name: "ふつう", show: 520, pause: 260, description: "おすすめ速度" },
+  { id: "fast", name: "はやい", show: 340, pause: 170, description: "反射神経も勝負" },
+] as const
 
 export function CatSimonGame() {
-  const [gameState, setGameState] = useState<SimonGameState>("idle")
+  const [gameState, setGameState] = useState<SimonState>("idle")
+  const [speedId, setSpeedId] = useState<SpeedId>("normal")
   const [sequence, setSequence] = useState<number[]>([])
   const [inputIndex, setInputIndex] = useState(0)
   const [activePad, setActivePad] = useState<number | null>(null)
   const [level, setLevel] = useState(0)
-  const [highScore, setHighScore] = useLocalStorage("catSimonHighScore", 0)
+  const [lives, setLives] = useState(2)
+  const [soundOn, setSoundOn] = useState(true)
+  const [highScores, setHighScores] = useLocalStorage<Record<SpeedId, number>>("catSimonHighScoresV2", { calm: 0, normal: 0, fast: 0 })
+  const timeoutRef = useRef<number | null>(null)
+  const audioRef = useRef<AudioContext | null>(null)
+  const speed = SPEEDS.find((item) => item.id === speedId) ?? SPEEDS[1]
 
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  const clearTimeouts = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
-    }
+  const clearTimer = () => {
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = null
   }
 
-  const playSequence = useCallback((seq: number[]) => {
+  const playTone = useCallback((padId: number, duration = 0.16) => {
+    if (!soundOn) return
+    try {
+      audioRef.current ??= new AudioContext()
+      const context = audioRef.current
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.frequency.value = PADS[padId].frequency
+      oscillator.type = "sine"
+      gain.gain.setValueAtTime(0.0001, context.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration)
+      oscillator.connect(gain).connect(context.destination)
+      oscillator.start()
+      oscillator.stop(context.currentTime + duration + 0.02)
+    } catch {
+      // Visual feedback remains available when Web Audio is unavailable.
+    }
+  }, [soundOn])
+
+  const showSequence = useCallback((nextSequence: number[]) => {
+    clearTimer()
     setGameState("showing")
     setActivePad(null)
-    let i = 0
-
+    let index = 0
     const showNext = () => {
-      if (i >= seq.length) {
-        setActivePad(null)
-        timeoutRef.current = setTimeout(() => {
-          setGameState("input")
-          setInputIndex(0)
-        }, SHOW_PAUSE)
+      if (index >= nextSequence.length) {
+        timeoutRef.current = window.setTimeout(() => { setInputIndex(0); setGameState("input") }, speed.pause)
         return
       }
-
-      setActivePad(seq[i])
-      timeoutRef.current = setTimeout(() => {
+      const padId = nextSequence[index]
+      setActivePad(padId)
+      playTone(padId, Math.min(0.22, speed.show / 1800))
+      timeoutRef.current = window.setTimeout(() => {
         setActivePad(null)
-        timeoutRef.current = setTimeout(() => {
-          i++
-          showNext()
-        }, SHOW_PAUSE)
-      }, SHOW_INTERVAL)
+        timeoutRef.current = window.setTimeout(() => { index += 1; showNext() }, speed.pause)
+      }, speed.show)
     }
-
-    timeoutRef.current = setTimeout(showNext, 500)
-  }, [])
+    timeoutRef.current = window.setTimeout(showNext, 520)
+  }, [playTone, speed.pause, speed.show])
 
   const startGame = () => {
-    clearTimeouts()
-    const firstPad = Math.floor(Math.random() * 4)
-    const newSeq = [firstPad]
-    setSequence(newSeq)
+    clearTimer()
+    const first = Math.floor(Math.random() * PADS.length)
+    const nextSequence = [first]
+    setSequence(nextSequence)
     setLevel(1)
+    setLives(2)
     setInputIndex(0)
-    playSequence(newSeq)
+    showSequence(nextSequence)
   }
 
   const advanceLevel = useCallback(() => {
     setGameState("success")
-    const nextPad = Math.floor(Math.random() * 4)
-    const newSeq = [...sequence, nextPad]
-
-    timeoutRef.current = setTimeout(() => {
-      setSequence(newSeq)
-      setLevel((l) => l + 1)
+    const nextSequence = [...sequence, Math.floor(Math.random() * PADS.length)]
+    timeoutRef.current = window.setTimeout(() => {
+      setSequence(nextSequence)
+      setLevel(nextSequence.length)
       setInputIndex(0)
-      playSequence(newSeq)
-    }, 800)
-  }, [sequence, playSequence])
+      showSequence(nextSequence)
+    }, 760)
+  }, [sequence, showSequence])
 
-  const handlePadClick = (padId: number) => {
+  const pressPad = (padId: number) => {
     if (gameState !== "input") return
-
     setActivePad(padId)
-    setTimeout(() => setActivePad(null), 200)
+    playTone(padId)
+    window.setTimeout(() => setActivePad(null), 180)
 
     if (padId === sequence[inputIndex]) {
-      // Correct
       const nextIndex = inputIndex + 1
-      if (nextIndex >= sequence.length) {
-        // Completed this level
-        advanceLevel()
-      } else {
-        setInputIndex(nextIndex)
-      }
+      if (nextIndex === sequence.length) advanceLevel()
+      else setInputIndex(nextIndex)
+      return
+    }
+
+    if (lives > 1) {
+      setLives((value) => value - 1)
+      setGameState("retry")
+      timeoutRef.current = window.setTimeout(() => showSequence(sequence), 900)
     } else {
-      // Wrong
+      setLives(0)
       setGameState("gameover")
-      const finalLevel = sequence.length
-      if (finalLevel > highScore) {
-        setHighScore(finalLevel)
-      }
+      if (level > (highScores[speedId] ?? 0)) setHighScores({ ...highScores, [speedId]: level })
     }
   }
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => clearTimeouts()
+  useEffect(() => () => {
+    clearTimer()
+    audioRef.current?.close().catch(() => undefined)
   }, [])
 
-  const renderContent = () => {
-    if (gameState === "gameover") {
-      return (
-        <div className="text-center space-y-4 flex flex-col items-center">
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 text-yellow-500" />
-          <h3 className="text-xl md:text-2xl font-bold">ゲームオーバー！</h3>
-          <p className="text-3xl md:text-4xl font-bold">レベル {sequence.length}</p>
-          <p className="text-lg">ハイスコア: レベル {highScore}</p>
-          <Button onClick={startGame} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-            <RotateCcw className="w-4 h-4 mr-2" />
-            もう一度プレイ
-          </Button>
-        </div>
-      )
-    }
-
-    if (gameState === "idle") {
-      return (
-        <div className="text-center space-y-4">
-          <h3 className="text-lg md:text-xl font-bold">にゃんこ記憶力チャレンジ</h3>
-          <p className="text-sm md:text-base">
-            猫が光る順番を覚えて、同じ順番でタップしよう！
-            <br />
-            レベルが上がるごとに1つずつ増えるよ。
-            <br />
-            どこまで覚えられるかな？
-          </p>
-          <p className="font-bold">ハイスコア: レベル {highScore}</p>
-          <Button onClick={startGame} className="bg-[#D4A57A] hover:bg-[#C7946A] text-white">
-            <Play className="w-4 h-4 mr-2" />
-            ゲーム開始
-          </Button>
-        </div>
-      )
-    }
-
-    // showing / input / success
-    return (
-      <div className="w-full flex flex-col items-center space-y-4">
-        <div className="flex items-center justify-between w-full px-4 font-bold text-base md:text-lg">
-          <span>レベル: {level}</span>
-          <span className="text-sm md:text-base text-[#8A6E59]">
-            {gameState === "showing"
-              ? "よく見てね..."
-              : gameState === "success"
-                ? "すごい！次のレベル！"
-                : `${inputIndex + 1} / ${sequence.length}`}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 md:gap-4 w-full max-w-xs mx-auto">
-          {PADS.map((pad) => {
-            const isActive = activePad === pad.id
-            const isDisabled = gameState !== "input"
-            const Icon = pad.icon
-
-            return (
-              <button
-                key={pad.id}
-                onClick={() => handlePadClick(pad.id)}
-                disabled={isDisabled}
-                className={`aspect-square rounded-2xl text-4xl md:text-5xl flex flex-col items-center justify-center gap-1 transition-all duration-200 border-4 ${
-                  isActive
-                    ? `${pad.activeColor} border-white scale-105 shadow-lg shadow-current/30`
-                    : `${pad.color} border-[#EAD8C0] ${!isDisabled ? "hover:scale-105 hover:shadow-md cursor-pointer active:scale-95" : "opacity-80"}`
-                }`}
-              >
-                <Icon className={`w-10 h-10 md:w-12 md:h-12 text-white ${isActive ? "animate-bounce" : ""}`} aria-hidden="true" />
-                <span className="text-xs md:text-sm font-bold text-white/80">{pad.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {gameState === "showing" && (
-          <p className="text-[#8A6E59] animate-pulse text-sm">光る順番を覚えてね...</p>
-        )}
-        {gameState === "input" && (
-          <p className="text-[#8A6E59] text-sm">同じ順番でタップしよう！</p>
-        )}
-        {gameState === "success" && (
-          <p className="text-green-600 font-bold text-sm animate-bounce">正解！次はもう1つ増えるよ！</p>
-        )}
-      </div>
-    )
-  }
+  const stars = level >= 10 ? 3 : level >= 6 ? 2 : 1
 
   return (
-    <section className="w-full">
-      <Card className="bg-white/80 border-2 border-dashed border-[#EAD8C0]/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
-        <CardHeader className="bg-[#FDEEDC]/60 rounded-t-lg">
-          <CardTitle className="flex items-center justify-center text-xl md:text-2xl space-x-2">
-            <Lightbulb className="w-5 h-5 md:w-6 md:h-6" />
-            <span>にゃんこ記憶力チャレンジ</span>
-            <Lightbulb className="w-5 h-5 md:w-6 md:h-6" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center min-h-[28rem] md:min-h-[32rem] p-4 md:p-6">
-          {renderContent()}
-        </CardContent>
-      </Card>
-    </section>
+    <GameShell title="にゃんこ記憶力チャレンジ" subtitle="光と音の順番を覚えて、同じパッドをタップしよう。" icon={Lightbulb} tone="blush">
+      {gameState === "idle" && (
+        <div className="game-start-view">
+          <div className="game-intro-mark"><Lightbulb aria-hidden="true" /></div>
+          <h3>どこまで覚えられるかな？</h3>
+          <p>毎レベルひとつずつ順番が増えるよ。まちがえても一度だけ見直せる安心ルールです。</p>
+          <div className="game-difficulty-grid">
+            {SPEEDS.map((item) => <button key={item.id} type="button" className={speedId === item.id ? "is-selected" : ""} onClick={() => setSpeedId(item.id)} aria-pressed={speedId === item.id}>
+              <strong>{item.name}</strong><span>{item.description}</span><small>ベスト Lv.{highScores[item.id] ?? 0}</small>
+            </button>)}
+          </div>
+          <button type="button" className="game-sound-toggle" onClick={() => setSoundOn((value) => !value)} aria-pressed={soundOn}>
+            {soundOn ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}音 {soundOn ? "あり" : "なし"}
+          </button>
+          <GamePrimaryButton onClick={startGame}><Play aria-hidden="true" />チャレンジ開始</GamePrimaryButton>
+        </div>
+      )}
+
+      {gameState !== "idle" && gameState !== "gameover" && (
+        <div className="simon-game-view">
+          <div className="game-stats-row">
+            <GameStat icon={Sparkles} label="レベル" value={level} />
+            <GameStat icon={Heart} label="チャンス" value={`${lives}こ`} />
+            <GameStat icon={PawPrint} label="入力" value={`${Math.min(inputIndex + 1, sequence.length)} / ${sequence.length}`} />
+          </div>
+          <p className="game-live-message" aria-live="assertive">
+            {gameState === "showing" ? "よく見て、音も聞いてね" : gameState === "input" ? "同じ順番でタップ！" : gameState === "success" ? "正解！ひとつ増えるよ" : "おしい！もう一度見てね"}
+          </p>
+          <div className="simon-grid">
+            {PADS.map((pad) => {
+              const Icon = pad.icon
+              return <button key={pad.id} type="button" data-tone={pad.tone} className={activePad === pad.id ? "is-active" : ""} onClick={() => pressPad(pad.id)} disabled={gameState !== "input"} aria-label={`${pad.label}のパッド`}>
+                <Icon aria-hidden="true" /><span>{pad.label}</span>
+              </button>
+            })}
+          </div>
+          <div className="simon-sequence-progress" aria-label={`${sequence.length}個中${inputIndex}個入力済み`}>
+            {sequence.map((_, index) => <i key={index} className={index < inputIndex ? "is-done" : index === inputIndex && gameState === "input" ? "is-current" : ""} />)}
+          </div>
+        </div>
+      )}
+
+      {gameState === "gameover" && (
+        <div className="game-result-view">
+          <Trophy className="game-result-trophy" aria-hidden="true" />
+          <p className="game-result-kicker">記憶力チャレンジ終了</p>
+          <h3>レベル {level}</h3>
+          <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
+          <p>{sequence.length}個の順番まで覚えられたよ。次はもうひとつ先を目指そう！</p>
+          <div className="game-result-record"><Trophy aria-hidden="true" /><span>{speed.name}のベスト</span><strong>Lv.{Math.max(level, highScores[speedId] ?? 0)}</strong></div>
+          <GamePrimaryButton onClick={startGame}><RotateCcw aria-hidden="true" />もう一度遊ぶ</GamePrimaryButton>
+          <button type="button" className="game-secondary-button" onClick={() => setGameState("idle")}>速さを変える</button>
+        </div>
+      )}
+    </GameShell>
   )
 }

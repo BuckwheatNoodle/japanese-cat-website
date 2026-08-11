@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useState } from "react"
-import { ArrowLeft, BrainCircuit, Camera, Layers, Lightbulb, PawPrint } from "lucide-react"
+import { ArrowLeft, BrainCircuit, Camera, ChevronRight, Layers, Lightbulb, PawPrint, Sparkles, Trophy } from "lucide-react"
 import { useSkin } from "@/components/skin-provider"
 
 const CatGame = dynamic(() => import("@/components/cat-game").then((m) => m.CatGame))
@@ -20,6 +20,7 @@ type GameDef = {
   icon: React.ElementType
   tone: "coral" | "mint" | "butter" | "lavender" | "blush"
   component: React.ComponentType
+  artKey: string
 }
 
 const GAMES: GameDef[] = [
@@ -31,6 +32,7 @@ const GAMES: GameDef[] = [
     icon: PawPrint,
     tone: "coral",
     component: CatGame,
+    artKey: "rescue",
   },
   {
     id: "quiz",
@@ -40,6 +42,7 @@ const GAMES: GameDef[] = [
     icon: BrainCircuit,
     tone: "mint",
     component: CatQuiz,
+    artKey: "quiz",
   },
   {
     id: "breed",
@@ -49,6 +52,7 @@ const GAMES: GameDef[] = [
     icon: Camera,
     tone: "butter",
     component: CatBreedQuiz,
+    artKey: "breed",
   },
   {
     id: "memory",
@@ -58,6 +62,7 @@ const GAMES: GameDef[] = [
     icon: Layers,
     tone: "lavender",
     component: CatMemoryGame,
+    artKey: "memory",
   },
   {
     id: "simon",
@@ -67,6 +72,7 @@ const GAMES: GameDef[] = [
     icon: Lightbulb,
     tone: "blush",
     component: CatSimonGame,
+    artKey: "simon",
   },
 ]
 
@@ -106,6 +112,12 @@ export function GamesHub() {
         </div>
       </div>
 
+      <div className="game-hub-summary" aria-label="ゲームの特徴">
+        <span><Sparkles aria-hidden="true" /><strong>5</strong>つの遊び</span>
+        <span><Trophy aria-hidden="true" />ベスト記録を保存</span>
+        <span><PawPrint aria-hidden="true" />全部タップで遊べる</span>
+      </div>
+
       <div className="game-list-grid">
         {GAMES.map((game) => {
           const Icon = game.icon
@@ -118,14 +130,17 @@ export function GamesHub() {
               data-tone={game.tone}
               onClick={() => selectGame(game.id)}
             >
-              <span className="game-choice-icon" aria-hidden="true">
-                <Icon />
+              <span className="game-choice-art" aria-hidden="true">
+                <Image src={skin.assets.gameCards[game.artKey]} alt="" fill sizes="(max-width: 559px) 120px, 280px" />
+                <span className="game-choice-icon"><Icon /></span>
               </span>
               <span className="game-choice-copy">
+                {game.id === "rescue" && <em>おすすめ</em>}
                 <strong>{game.title}</strong>
                 <span>{game.description}</span>
+                <span className="game-choice-detail">{game.detail}</span>
               </span>
-              <span className="game-choice-detail">{game.detail}</span>
+              <span className="game-choice-arrow" aria-hidden="true"><ChevronRight /></span>
             </button>
           )
         })}

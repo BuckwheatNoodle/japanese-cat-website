@@ -1,62 +1,98 @@
 "use client"
 
-import type React from "react"
 import Image from "next/image"
-import { useEffect, useRef, useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { assetPath } from "@/lib/utils"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { CalendarDays, ChevronLeft, ChevronRight, PawPrint, Sparkles } from "lucide-react"
+import { AVAILABLE_DIARY_MONTHS, DIARY_ENTRIES, type DiaryEntry } from "@/lib/diary"
 import { useSkin } from "@/components/skin-provider"
 
-const diaryEntries = [
-  { date: "8月10日", image: "/images/diary-2025-08-10.png", title: "今日の猫ちゃん" },
-  { date: "8月11日", image: "/images/diary-2025-08-11.png", title: "お昼寝タイム" },
-  { date: "8月12日", image: "/images/diary-2025-08-12.png", title: "遊び時間" },
-  { date: "8月13日", image: "/images/diary-2025-08-13.png", title: "夏の日の思い出" },
-  { date: "8月14日", image: "/images/diary-2025-08-14.png", title: "猫と過ごした日" },
-  { date: "8月15日", image: "/images/diary-2025-08-15.png", title: "お気に入りの時間" },
-  { date: "8月16日", image: "/images/diary-2025-08-16.png", title: "いっしょにのんびり" },
-  { date: "8月17日", image: "/images/diary-2025-08-17.png", title: "今日もなかよし" },
-  { date: "8月29日", image: "/images/diary-2025-08-29.png", title: "なおくんとお昼寝" },
-  { date: "8月30日", image: "/images/diary-2025-08-30.png", title: "巨大化したなおくん" },
-  { date: "8月31日", image: "/images/diary-2025-08-31.png", title: "夏休み最後の日" },
-].map((entry) => ({ ...entry, image: assetPath(entry.image) }))
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"]
+
+function parseDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number)
+  return { year, month, day }
+}
+
+function formatMonth(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number)
+  return `${year}年${month}月`
+}
+
+function formatFullDate(dateKey: string) {
+  const { year, month, day } = parseDateKey(dateKey)
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date(year, month - 1, day, 12))
+}
+
+function getLocalTodayKey() {
+  const today = new Date()
+  return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-")
+}
+
+function createCalendarWeeks(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number)
+  const firstWeekday = new Date(year, month - 1, 1, 12).getDay()
+  const daysInMonth = new Date(year, month, 0, 12).getDate()
+  const cells: Array<number | null> = [
+    ...Array.from({ length: firstWeekday }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+  ]
+
+  while (cells.length % 7 !== 0) cells.push(null)
+  return Array.from({ length: cells.length / 7 }, (_, index) => cells.slice(index * 7, index * 7 + 7))
+}
+
+function dateKeyFor(monthKey: string, day: number) {
+  return `${monthKey}-${String(day).padStart(2, "0")}`
+}
 
 export function PictureDiary() {
   const { skin } = useSkin()
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const touchStartX = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
-  const currentEntry = diaryEntries[currentIndex]
+  const [displayedMonth, setDisplayedMonth] = useState(AVAILABLE_DIARY_MONTHS[0])
+  const [selectedDate, setSelectedDate] = useState(DIARY_ENTRIES[0].date)
+  const [todayKey, setTodayKey] = useState("")
+  const detailRef = useRef<HTMLElement>(null)
 
-  const goToPrevious = () => setCurrentIndex((index) => (index - 1 + diaryEntries.length) % diaryEntries.length)
-  const goToNext = () => setCurrentIndex((index) => (index + 1) % diaryEntries.length)
+  useEffect(() => setTodayKey(getLocalTodayKey()), [])
 
-  const handleTouchStart = (event: React.TouchEvent) => {
-    touchStartX.current = event.touches[0].clientX
-    touchEndX.current = null
-  }
+  const entriesByDate = useMemo(
+    () => new Map(DIARY_ENTRIES.map((entry) => [entry.date, entry])),
+    [],
+  )
+  const monthEntries = useMemo(
+    () => DIARY_ENTRIES.filter((entry) => entry.date.startsWith(displayedMonth)).sort((a, b) => a.date.localeCompare(b.date)),
+    [displayedMonth],
+  )
+  const calendarWeeks = useMemo(() => createCalendarWeeks(displayedMonth), [displayedMonth])
+  const selectedEntry = entriesByDate.get(selectedDate) ?? monthEntries.at(-1) ?? DIARY_ENTRIES[0]
+  const selectedEntryIndex = monthEntries.findIndex((entry) => entry.date === selectedEntry.date)
+  const monthIndex = AVAILABLE_DIARY_MONTHS.indexOf(displayedMonth)
+  const previousEntry = selectedEntryIndex > 0 ? monthEntries[selectedEntryIndex - 1] : null
+  const nextEntry = selectedEntryIndex >= 0 && selectedEntryIndex < monthEntries.length - 1 ? monthEntries[selectedEntryIndex + 1] : null
 
-  const handleTouchMove = (event: React.TouchEvent) => {
-    touchEndX.current = event.touches[0].clientX
-  }
-
-  const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return
-    const distance = touchStartX.current - touchEndX.current
-    if (distance > 48) goToNext()
-    if (distance < -48) goToPrevious()
-    touchStartX.current = null
-    touchEndX.current = null
-  }
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") goToPrevious()
-      if (event.key === "ArrowRight") goToNext()
+  const selectEntry = (entry: DiaryEntry, moveToDetail = true) => {
+    setSelectedDate(entry.date)
+    if (moveToDetail) {
+      window.requestAnimationFrame(() => {
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+        detailRef.current?.focus({ preventScroll: true })
+      })
     }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  }
+
+  const showMonthAt = (nextMonthIndex: number) => {
+    const nextMonth = AVAILABLE_DIARY_MONTHS[nextMonthIndex]
+    if (!nextMonth) return
+    const entries = DIARY_ENTRIES.filter((entry) => entry.date.startsWith(nextMonth)).sort((a, b) => a.date.localeCompare(b.date))
+    setDisplayedMonth(nextMonth)
+    if (entries.length > 0) setSelectedDate(entries.at(-1)!.date)
+  }
+
+  const illustration = skin.assets.diaryIllustrations[selectedEntry.illustration] ?? skin.assets.activityDiary
 
   return (
     <section className="feature-screen diary-screen" aria-labelledby="diary-title">
@@ -67,56 +103,140 @@ export function PictureDiary() {
         <div>
           <p className="screen-kicker">MIYUKI&apos;S PICTURE DIARY</p>
           <h2 id="diary-title">美雪の絵日記</h2>
-          <p>左右にスワイプして、猫との思い出を見てね。</p>
+          <p>カレンダーの肉球から、読みたい日を選んでね。</p>
         </div>
       </div>
 
-      <div className="diary-viewer">
-        <div className="diary-meta" aria-live="polite">
-          <span>{currentEntry.date}</span>
-          <h3>{currentEntry.title}</h3>
-          <span>{currentIndex + 1} / {diaryEntries.length}</span>
+      <div className="diary-cast-strip" aria-label="絵日記の登場人物">
+        <span><b>美雪</b><small>ツッコミ役</small></span>
+        <span className="is-naokun"><i aria-hidden="true">💩</i><b>なおくん</b><small>美雪の兄・うんち役が大好き</small></span>
+        <span><b>猫たち</b><small>自由な主役</small></span>
+      </div>
+
+      <section className="diary-calendar" aria-labelledby="calendar-heading">
+        <div className="diary-calendar-heading">
+          <div>
+            <span className="calendar-kicker"><CalendarDays aria-hidden="true" /> 日記カレンダー</span>
+            <h3 id="calendar-heading">{formatMonth(displayedMonth)}</h3>
+          </div>
+          <div className="calendar-month-controls">
+            <button
+              type="button"
+              onClick={() => showMonthAt(monthIndex + 1)}
+              disabled={monthIndex >= AVAILABLE_DIARY_MONTHS.length - 1}
+              aria-label="前の日記月を見る"
+            >
+              <ChevronLeft aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => showMonthAt(monthIndex - 1)}
+              disabled={monthIndex <= 0}
+              aria-label="次の日記月を見る"
+            >
+              <ChevronRight aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
-        <div
-          className="diary-image-stage"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <Image
-            src={currentEntry.image}
-            alt={`${currentEntry.date}「${currentEntry.title}」の絵日記`}
-            width={720}
-            height={720}
-            sizes="(max-width: 640px) 92vw, 680px"
-            priority={currentIndex === 0}
-            draggable={false}
-          />
-          <button type="button" className="diary-arrow is-left" onClick={goToPrevious} aria-label="前の絵日記">
+        <table className="diary-calendar-table">
+          <caption className="sr-only">{formatMonth(displayedMonth)}の日記がある日を選ぶカレンダー</caption>
+          <thead>
+            <tr>
+              {WEEKDAYS.map((weekday, index) => (
+                <th key={weekday} scope="col" className={index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : undefined}>
+                  {weekday}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {calendarWeeks.map((week, weekIndex) => (
+              <tr key={`${displayedMonth}-${weekIndex}`}>
+                {week.map((day, weekdayIndex) => {
+                  if (day === null) return <td key={`empty-${weekdayIndex}`} aria-hidden="true" />
+
+                  const dateKey = dateKeyFor(displayedMonth, day)
+                  const entry = entriesByDate.get(dateKey)
+                  const isSelected = selectedDate === dateKey
+                  const isToday = todayKey === dateKey
+                  const weekdayClass = weekdayIndex === 0 ? "is-sunday" : weekdayIndex === 6 ? "is-saturday" : ""
+
+                  return (
+                    <td key={dateKey} className={weekdayClass}>
+                      <button
+                        type="button"
+                        className={["calendar-day", entry ? "has-entry" : "", isSelected ? "is-selected" : "", isToday ? "is-today" : ""].filter(Boolean).join(" ")}
+                        onClick={() => entry && selectEntry(entry)}
+                        disabled={!entry}
+                        aria-pressed={entry ? isSelected : undefined}
+                        aria-current={isToday ? "date" : undefined}
+                        aria-label={entry ? `${formatFullDate(dateKey)}、${entry.title}を読む` : `${day}日、日記はありません`}
+                      >
+                        <span className="calendar-day-number">{day}</span>
+                        {entry && <PawPrint className="calendar-paw" aria-hidden="true" />}
+                        {isToday && <span className="calendar-today-label">きょう</span>}
+                      </button>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="calendar-legend">
+          <span><PawPrint aria-hidden="true" /> 肉球の日に日記があるよ</span>
+          <span>{monthEntries.length}日分</span>
+        </div>
+      </section>
+
+      <article ref={detailRef} className="diary-entry-card" tabIndex={-1} aria-labelledby="diary-entry-title">
+        <div className="diary-entry-topline">
+          <time dateTime={selectedEntry.date}>{formatFullDate(selectedEntry.date)}</time>
+          <span><Sparkles aria-hidden="true" /> 美雪・なおくん・猫の観察日記</span>
+        </div>
+
+        <div className="diary-entry-layout">
+          <div className="diary-entry-image">
+            <Image
+              src={illustration}
+              alt={selectedEntry.alt}
+              fill
+              sizes="(max-width: 719px) 92vw, 420px"
+              priority={selectedEntry.date === DIARY_ENTRIES[0].date}
+            />
+            {selectedEntry.date.startsWith("2026-") && (
+              <span className="diary-poop-sticker"><i aria-hidden="true">💩</i><b>なおくん</b><small>うんち変身中！</small></span>
+            )}
+          </div>
+
+          <div className="diary-entry-copy" aria-live="polite">
+            <p className="diary-entry-label">きょうの兄・なおくんと猫たち</p>
+            <h3 id="diary-entry-title">{selectedEntry.title}</h3>
+            <p className="diary-entry-body">{selectedEntry.body}</p>
+            <div className="miyuki-note">
+              <PawPrint aria-hidden="true" />
+              <div>
+                <strong>美雪のひとこと</strong>
+                <p>{selectedEntry.miyukiNote}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="diary-entry-navigation" aria-label="前後の日記">
+          <button type="button" disabled={!previousEntry} onClick={() => previousEntry && selectEntry(previousEntry, false)}>
             <ChevronLeft aria-hidden="true" />
+            <span><small>前の日記</small>{previousEntry ? `${previousEntry.date.slice(-2).replace(/^0/, "")}日` : "ありません"}</span>
           </button>
-          <button type="button" className="diary-arrow is-right" onClick={goToNext} aria-label="次の絵日記">
+          <span className="diary-entry-position">{selectedEntryIndex + 1} / {monthEntries.length}</span>
+          <button type="button" disabled={!nextEntry} onClick={() => nextEntry && selectEntry(nextEntry, false)}>
+            <span><small>次の日記</small>{nextEntry ? `${nextEntry.date.slice(-2).replace(/^0/, "")}日` : "ありません"}</span>
             <ChevronRight aria-hidden="true" />
           </button>
         </div>
-
-        <div className="diary-thumbnails" aria-label="絵日記を選ぶ">
-          {diaryEntries.map((entry, index) => (
-            <button
-              key={entry.image}
-              type="button"
-              className={index === currentIndex ? "is-current" : ""}
-              onClick={() => setCurrentIndex(index)}
-              aria-label={`${entry.date}の絵日記を表示`}
-              aria-current={index === currentIndex ? "true" : undefined}
-            >
-              <Image src={entry.image} alt="" fill sizes="64px" />
-              <span>{entry.date.replace("月", "/").replace("日", "")}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      </article>
     </section>
   )
 }
