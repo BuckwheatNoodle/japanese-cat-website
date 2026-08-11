@@ -20,7 +20,7 @@ const ACTIVITIES: Array<{
   shortLabel: string
   description: string
 }> = [
-  { id: "games", label: "ねこゲーム", shortLabel: "ゲーム", description: "5つのゲームから好きなものを選ぼう" },
+  { id: "games", label: "ねこゲーム", shortLabel: "ゲーム", description: "6つのゲームから好きなものを選ぼう" },
   { id: "coloring", label: "ねこぬりえ", shortLabel: "ぬりえ", description: "好きな色で自分だけの作品を作ろう" },
   { id: "fortune", label: "今日のねこ占い", shortLabel: "占い", description: "今日のラッキーをねこに聞いてみよう" },
   { id: "diary", label: "美雪の絵日記", shortLabel: "日記", description: "美雪・なおくん・猫の事件を読もう" },

@@ -1,4 +1,11 @@
-import { test, expect } from "@playwright/test"
+import { test, expect, type Page } from "@playwright/test"
+
+const PRIMARY_TABS = ["home", "games", "coloring", "fortune", "diary"] as const
+
+async function openPrimaryTab(page: Page, tab: typeof PRIMARY_TABS[number]) {
+  await page.getByTestId(`tab-${tab}`).click()
+  await expect(page.getByTestId(`tab-${tab}`)).toHaveAttribute("aria-current", "page")
+}
 
 test.describe("レイアウト基本テスト", () => {
   test("ページが正常に読み込まれる", async ({ page }) => {
@@ -12,10 +19,11 @@ test.describe("レイアウト基本テスト", () => {
     await expect(tabs).toBeVisible()
   })
 
-  test("ボトムタブが5つある", async ({ page }) => {
+  test("主要なボトムタブがそろっている", async ({ page }) => {
     await page.goto("/")
-    const tabButtons = page.locator("[data-testid='bottom-tabs'] button")
-    await expect(tabButtons).toHaveCount(5)
+    for (const tab of PRIMARY_TABS) {
+      await expect(page.getByTestId(`tab-${tab}`)).toBeVisible()
+    }
   })
 
   test("ボトムタブが画面下部に固定されている", async ({ page }) => {
@@ -24,13 +32,14 @@ test.describe("レイアウト基本テスト", () => {
     const box = await tabs.boundingBox()
     const viewport = page.viewportSize()!
     // タブの下端がビューポート下端付近にある
-    expect(box!.y + box!.height).toBeGreaterThan(viewport.height - 10)
+    expect(box).not.toBeNull()
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeGreaterThan(viewport.height - 10)
   })
 
   test("ホームタブがデフォルトで選択されている", async ({ page }) => {
     await page.goto("/")
-    const homeTab = page.locator("[data-testid='tab-home']")
-    await expect(homeTab).toHaveAttribute("aria-selected", "true")
+    const homeTab = page.getByTestId("tab-home")
+    await expect(homeTab).toHaveAttribute("aria-current", "page")
   })
 
   test("ヘッダーが表示される", async ({ page }) => {
@@ -42,74 +51,75 @@ test.describe("レイアウト基本テスト", () => {
 test.describe("タブ切替テスト", () => {
   test("ゲームタブに切り替えられる", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-games']").click()
-    await expect(page.locator("[data-testid='tab-games']")).toHaveAttribute("aria-selected", "true")
-    await expect(page.locator("[data-testid='games-content']")).toBeVisible()
+    await openPrimaryTab(page, "games")
+    await expect(page.getByTestId("games-content")).toBeVisible()
   })
 
   test("ぬりえタブに切り替えられる", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-coloring']").click()
-    await expect(page.locator("[data-testid='tab-coloring']")).toHaveAttribute("aria-selected", "true")
+    await openPrimaryTab(page, "coloring")
+    await expect(page.getByTestId("coloring-content")).toBeVisible()
   })
 
   test("占いタブに切り替えられる", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-fortune']").click()
-    await expect(page.locator("[data-testid='tab-fortune']")).toHaveAttribute("aria-selected", "true")
+    await openPrimaryTab(page, "fortune")
+    await expect(page.getByTestId("fortune-content")).toBeVisible()
   })
 
   test("日記タブに切り替えられる", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-diary']").click()
-    await expect(page.locator("[data-testid='tab-diary']")).toHaveAttribute("aria-selected", "true")
+    await openPrimaryTab(page, "diary")
+    await expect(page.getByTestId("diary-content")).toBeVisible()
   })
 
   test("タブ切替でコンテンツが変わる", async ({ page }) => {
     await page.goto("/")
     // ホーム → ゲーム → ホーム
-    await expect(page.locator("[data-testid='home-content']")).toBeVisible()
-    await page.locator("[data-testid='tab-games']").click()
-    await expect(page.locator("[data-testid='home-content']")).not.toBeVisible()
-    await expect(page.locator("[data-testid='games-content']")).toBeVisible()
-    await page.locator("[data-testid='tab-home']").click()
-    await expect(page.locator("[data-testid='home-content']")).toBeVisible()
+    await expect(page.getByTestId("home-content")).toBeVisible()
+    await openPrimaryTab(page, "games")
+    await expect(page.getByTestId("home-content")).not.toBeVisible()
+    await expect(page.getByTestId("games-content")).toBeVisible()
+    await openPrimaryTab(page, "home")
+    await expect(page.getByTestId("home-content")).toBeVisible()
   })
 })
 
 test.describe("ホームタブ", () => {
-  test("Heroセクションが表示される", async ({ page }) => {
+  test("ねこカフェの案内と遊ぶボタンが表示される", async ({ page }) => {
     await page.goto("/")
-    await expect(page.locator("text=美雪のページへようこそ")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "ねこカフェへようこそ" })).toBeAttached()
+    await expect(page.getByRole("button", { name: "いっしょに遊ぼう！" })).toBeVisible()
   })
 
-  test("プロフィールが表示される", async ({ page }) => {
+  test("ねこカフェパスポートが表示される", async ({ page }) => {
     await page.goto("/")
-    await expect(page.locator("text=わたしの猫愛について")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "ねこカフェパスポート" })).toBeVisible()
   })
 })
 
 test.describe("ゲームタブ", () => {
   test("ゲーム一覧がカードグリッドで表示される", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-games']").click()
-    const cards = page.locator("[data-testid='games-content'] [data-testid='game-card']")
-    await expect(cards).toHaveCount(5)
+    await openPrimaryTab(page, "games")
+    const cards = page.getByTestId("games-content").getByTestId("game-card")
+    await expect(cards).toHaveCount(6)
+    await expect(cards.first()).toBeVisible()
   })
 
   test("ゲームカードをタップすると展開される", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-games']").click()
-    await page.locator("[data-testid='game-card']").first().click()
-    await expect(page.locator("[data-testid='game-expanded']")).toBeVisible()
+    await openPrimaryTab(page, "games")
+    await page.getByTestId("game-card").first().click()
+    await expect(page.getByTestId("game-expanded")).toBeVisible()
   })
 
   test("展開したゲームから一覧に戻れる", async ({ page }) => {
     await page.goto("/")
-    await page.locator("[data-testid='tab-games']").click()
-    await page.locator("[data-testid='game-card']").first().click()
-    await page.locator("[data-testid='game-back-button']").click()
-    await expect(page.locator("[data-testid='game-card']")).toHaveCount(5)
+    await openPrimaryTab(page, "games")
+    await page.getByTestId("game-card").first().click()
+    await page.getByTestId("game-back-button").click()
+    await expect(page.getByTestId("game-card").first()).toBeVisible()
   })
 })
 

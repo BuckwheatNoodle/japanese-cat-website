@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { assetPath } from "@/lib/utils"
-import { DEFAULT_SKIN_ID, isSkinId, SKINS, type SkinDefinition, type SkinId } from "@/lib/skins"
+import { DEFAULT_SKIN_ID, getSeasonSkinId, isSkinId, SKINS, type SkinDefinition, type SkinId } from "@/lib/skins"
 
 type SkinContextValue = {
   skin: SkinDefinition
@@ -12,15 +12,27 @@ type SkinContextValue = {
 
 const SkinContext = createContext<SkinContextValue | null>(null)
 
-export function SkinProvider({ children }: { children: React.ReactNode }) {
+type SkinProviderProps = {
+  children: React.ReactNode
+  configuredSkinId?: string
+  onSkinChange?: (skinId: SkinId) => void
+}
+
+export function SkinProvider({ children, configuredSkinId, onSkinChange }: SkinProviderProps) {
   const [skinId, setSkinId] = useState<SkinId>(DEFAULT_SKIN_ID)
 
   useEffect(() => {
     const querySkin = new URLSearchParams(window.location.search).get("skin")
-    const savedSkin = window.localStorage.getItem("miyuki-cat-skin")
-    const nextSkin = isSkinId(querySkin) ? querySkin : isSkinId(savedSkin) ? savedSkin : DEFAULT_SKIN_ID
+    let savedSkin: string | null = null
+    try { savedSkin = window.localStorage.getItem("miyuki-cat-skin") } catch { /* 進行データ側の設定を使う */ }
+    const configured = configuredSkinId === "season-auto"
+      ? getSeasonSkinId()
+      : isSkinId(configuredSkinId ?? null)
+        ? configuredSkinId as SkinId
+        : null
+    const nextSkin = isSkinId(querySkin) ? querySkin : configured ?? (isSkinId(savedSkin) ? savedSkin : DEFAULT_SKIN_ID)
     setSkinId(nextSkin)
-  }, [])
+  }, [configuredSkinId])
 
   const value = useMemo<SkinContextValue>(() => {
     const source = SKINS[skinId]
@@ -47,11 +59,12 @@ export function SkinProvider({ children }: { children: React.ReactNode }) {
         },
       },
       setSkin: (nextSkinId) => {
-        window.localStorage.setItem("miyuki-cat-skin", nextSkinId)
+        try { window.localStorage.setItem("miyuki-cat-skin", nextSkinId) } catch { /* 設定状態には保持する */ }
         setSkinId(nextSkinId)
+        onSkinChange?.(nextSkinId)
       },
     }
-  }, [skinId])
+  }, [onSkinChange, skinId])
 
   return (
     <SkinContext.Provider value={value}>

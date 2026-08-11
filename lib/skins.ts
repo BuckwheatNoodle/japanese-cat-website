@@ -1,4 +1,4 @@
-export type SkinId = "cream-soda"
+export type SkinId = "cream-soda" | "spring-strawberry" | "summer-soda" | "autumn-caramel" | "winter-berry"
 
 export type SkinAssets = {
   awning: string
@@ -29,8 +29,7 @@ export type SkinDefinition = {
 
 export const DEFAULT_SKIN_ID: SkinId = "cream-soda"
 
-export const SKINS: Record<SkinId, SkinDefinition> = {
-  "cream-soda": {
+const CREAM_SODA_SKIN: SkinDefinition = {
     id: "cream-soda",
     name: "クリームソーダのねこカフェ",
     tokens: {
@@ -40,7 +39,7 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       "--card-foreground": "#482816",
       "--popover": "#fffdf8",
       "--popover-foreground": "#482816",
-      "--primary": "#f17469",
+      "--primary": "#b63f39",
       "--primary-foreground": "#ffffff",
       "--secondary": "#c7dfc9",
       "--secondary-foreground": "#3f2a1d",
@@ -62,7 +61,9 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       "--skin-mint": "#b8d8bf",
       "--skin-mint-strong": "#72a889",
       "--skin-coral": "#f17469",
-      "--skin-coral-strong": "#d95c54",
+      "--skin-coral-strong": "#a63f39",
+      "--skin-action": "#b63f39",
+      "--skin-coral-ink": "#a63f39",
       "--skin-butter": "#f7d692",
       "--skin-blush": "#f6c7c2",
       "--skin-lavender": "#d9c7e6",
@@ -78,7 +79,7 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       activityFortune: "/skins/cream-soda/activity-fortune.webp",
       activityDiary: "/skins/cream-soda/activity-diary.webp",
       passportHero: "/skins/cream-soda/passport/today-board.webp",
-      gameGuide: "/cute-tabby-waving.png",
+      gameGuide: "/cute-tabby-waving.webp",
       footerTrim: "/skins/cream-soda/footer-trim-cropped.webp",
       navHome: "/skins/cream-soda/nav-home.webp",
       navGames: "/skins/cream-soda/nav-games.webp",
@@ -97,17 +98,18 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
         "2026-08-09": "/skins/cream-soda/diary/2026-08-09.webp",
         "2026-08-10": "/skins/cream-soda/diary/2026-08-10.webp",
         "2026-08-11": "/skins/cream-soda/diary/2026-08-11.webp",
-        "2025-08-10": "/images/diary-2025-08-10.png",
-        "2025-08-11": "/images/diary-2025-08-11.png",
-        "2025-08-12": "/images/diary-2025-08-12.png",
-        "2025-08-13": "/images/diary-2025-08-13.png",
-        "2025-08-14": "/images/diary-2025-08-14.png",
-        "2025-08-15": "/images/diary-2025-08-15.png",
-        "2025-08-16": "/images/diary-2025-08-16.png",
-        "2025-08-17": "/images/diary-2025-08-17.png",
-        "2025-08-29": "/images/diary-2025-08-29.png",
-        "2025-08-30": "/images/diary-2025-08-30.png",
-        "2025-08-31": "/images/diary-2025-08-31.png",
+        "2026-08-12": "/content/diary/2026-08-12.webp",
+        "2025-08-10": "/images/diary-2025-08-10.webp",
+        "2025-08-11": "/images/diary-2025-08-11.webp",
+        "2025-08-12": "/images/diary-2025-08-12.webp",
+        "2025-08-13": "/images/diary-2025-08-13.webp",
+        "2025-08-14": "/images/diary-2025-08-14.webp",
+        "2025-08-15": "/images/diary-2025-08-15.webp",
+        "2025-08-16": "/images/diary-2025-08-16.webp",
+        "2025-08-17": "/images/diary-2025-08-17.webp",
+        "2025-08-29": "/images/diary-2025-08-29.webp",
+        "2025-08-30": "/images/diary-2025-08-30.webp",
+        "2025-08-31": "/images/diary-2025-08-31.webp",
       },
       passportStamps: {
         games: "/skins/cream-soda/passport/stamp-games.webp",
@@ -124,13 +126,92 @@ export const SKINS: Record<SkinId, SkinDefinition> = {
       },
       gameSprites: {
         tabby: "/skins/cream-soda/games/rescue-tabby.webp",
-        white: "/white-cat.png",
-        black: "/black-cat.png",
-        dog: "/dog.png",
-        poop: "/poop-icon.png",
+        white: "/white-cat.webp",
+        black: "/black-cat.webp",
+        dog: "/dog.webp",
+        poop: "/poop-icon.webp",
       },
     },
-  },
+}
+
+function makeSeasonSkin(
+  id: Exclude<SkinId, "cream-soda">,
+  name: string,
+  tokens: Partial<SkinDefinition["tokens"]>,
+): SkinDefinition {
+  return {
+    ...CREAM_SODA_SKIN,
+    id,
+    name,
+    tokens: { ...CREAM_SODA_SKIN.tokens, ...tokens } as SkinDefinition["tokens"],
+    assets: CREAM_SODA_SKIN.assets,
+  }
+}
+
+export const SKINS: Record<SkinId, SkinDefinition> = {
+  "cream-soda": CREAM_SODA_SKIN,
+  "spring-strawberry": makeSeasonSkin("spring-strawberry", "春のいちごミルク", {
+    "--background": "#fff7f3",
+    "--skin-canvas": "#fff5f2",
+    "--skin-paper-warm": "#fff0e7",
+    "--skin-mint": "#c7e0cb",
+    "--skin-mint-strong": "#58866d",
+    "--skin-coral": "#ef8b8c",
+    "--skin-coral-strong": "#983a46",
+    "--skin-action": "#a93f4b",
+    "--skin-coral-ink": "#8f3441",
+    "--skin-blush": "#f7ced6",
+    "--skin-butter": "#f4db9a",
+  }),
+  "summer-soda": makeSeasonSkin("summer-soda", "夏の青空ソーダ", {
+    "--background": "#f5fcfb",
+    "--skin-canvas": "#f2fbfa",
+    "--skin-paper-warm": "#edf8f4",
+    "--skin-mint": "#b9e0d6",
+    "--skin-mint-strong": "#397a70",
+    "--skin-coral": "#f18372",
+    "--skin-coral-strong": "#963e35",
+    "--skin-action": "#a94439",
+    "--skin-coral-ink": "#8f372f",
+    "--skin-butter": "#f6dc86",
+    "--skin-lavender": "#c8dff1",
+  }),
+  "autumn-caramel": makeSeasonSkin("autumn-caramel", "秋のキャラメルカフェ", {
+    "--background": "#fff8ee",
+    "--skin-canvas": "#fff6e9",
+    "--skin-paper-warm": "#faead5",
+    "--skin-mint": "#cbd7b0",
+    "--skin-mint-strong": "#657b4e",
+    "--skin-coral": "#df8762",
+    "--skin-coral-strong": "#8d402b",
+    "--skin-action": "#9d4932",
+    "--skin-coral-ink": "#813822",
+    "--skin-butter": "#eec982",
+    "--skin-blush": "#efc6ae",
+    "--skin-lavender": "#d8c9b5",
+  }),
+  "winter-berry": makeSeasonSkin("winter-berry", "冬のベリークリーム", {
+    "--background": "#fbf8ff",
+    "--skin-canvas": "#f8f5fc",
+    "--skin-paper-warm": "#f3edf8",
+    "--skin-mint": "#c5dcd7",
+    "--skin-mint-strong": "#4f7873",
+    "--skin-coral": "#d9869b",
+    "--skin-coral-strong": "#82384e",
+    "--skin-action": "#934057",
+    "--skin-coral-ink": "#773047",
+    "--skin-butter": "#eee0aa",
+    "--skin-blush": "#ead1dd",
+    "--skin-lavender": "#d8d2ee",
+  }),
+}
+
+export function getSeasonSkinId(date = new Date()): SkinId {
+  const month = date.getMonth() + 1
+  if (month >= 3 && month <= 5) return "spring-strawberry"
+  if (month >= 6 && month <= 8) return "summer-soda"
+  if (month >= 9 && month <= 11) return "autumn-caramel"
+  return "winter-berry"
 }
 
 export function isSkinId(value: string | null): value is SkinId {

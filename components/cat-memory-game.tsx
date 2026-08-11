@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react"
 import { Bell, Cat, Cherry, Clock3, Eye, Fish, Footprints, Heart, Layers, Leaf, Moon, PawPrint, Play, RotateCcw, Smile, Sparkles, Star, Sun, Timer, Trophy } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
+import { useProgression } from "@/components/progression-provider"
+import { createEventId } from "@/lib/progression"
 
 type MemoryGameState = "idle" | "preview" | "playing" | "finished"
 type MemoryCard = { id: number; icon: React.ElementType; label: string; isFlipped: boolean; isMatched: boolean }
 type Difficulty = { id: "easy" | "normal" | "hard"; name: string; pairs: number; description: string }
 type BestRecord = { moves: number; time: number }
+type GlobalDifficulty = "gentle" | "standard" | "challenge"
 
 const CAT_PAIRS = [
   { icon: Cat, label: "ねこ" }, { icon: PawPrint, label: "にくきゅう" }, { icon: Fish, label: "おさかな" },
@@ -33,8 +36,33 @@ function shuffle<T>(items: T[]) {
 }
 
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
+const recordKeyFor = (mode: GlobalDifficulty, difficultyId: Difficulty["id"]) => `${mode}:${difficultyId}`
+
+function isBestRecordMap(value: unknown): value is Record<string, BestRecord> {
+  return typeof value === "object"
+    && value !== null
+    && !Array.isArray(value)
+    && Object.values(value).every((entry) => (
+      typeof entry === "object"
+      && entry !== null
+      && !Array.isArray(entry)
+      && typeof (entry as BestRecord).moves === "number"
+      && Number.isFinite((entry as BestRecord).moves)
+      && (entry as BestRecord).moves >= 0
+      && typeof (entry as BestRecord).time === "number"
+      && Number.isFinite((entry as BestRecord).time)
+      && (entry as BestRecord).time >= 0
+    ))
+}
+
+const previewDurationFor = (mode: GlobalDifficulty, difficultyId: Difficulty["id"], reviewing = false) => {
+  if (mode === "gentle") return reviewing ? 6000 : 8000
+  if (mode === "challenge") return reviewing ? 1400 : 1000
+  return reviewing ? 3000 : difficultyId === "easy" ? 2000 : 1500
+}
 
 export function CatMemoryGame() {
+  const { state, recordEvent } = useProgression()
   const [gameState, setGameState] = useState<MemoryGameState>("idle")
   const [difficulty, setDifficulty] = useState<Difficulty>(DIFFICULTIES[0])
   const [cards, setCards] = useState<MemoryCard[]>([])
@@ -43,35 +71,107 @@ export function CatMemoryGame() {
   const [matchedCount, setMatchedCount] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [message, setMessage] = useState("場所を覚えてね！")
-  const [bestRecords, setBestRecords] = useLocalStorage<Record<string, BestRecord>>("catMemoryBestRecordsV2", {})
+  const [reviewCount, setReviewCount] = useState(0)
+  const [runGlobalDifficulty, setRunGlobalDifficulty] = useState<GlobalDifficulty>("standard")
+  const [bestRecords, setBestRecords] = useLocalStorage<Record<string, BestRecord>>("catMemoryBestRecordsV3", {}, isBestRecordMap)
+  const [recordSaveFailed, setRecordSaveFailed] = useState(false)
   const lockRef = useRef(false)
+  const gameStateRef = useRef<MemoryGameState>("idle")
+  const cardsRef = useRef<MemoryCard[]>([])
+  const flippedIdsRef = useRef<number[]>([])
   const previewTimerRef = useRef<number | null>(null)
+  const resolutionTimerRef = useRef<number | null>(null)
+  const focusFrameRef = useRef<number | null>(null)
+  const completionEventIdRef = useRef<string | null>(null)
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const setupHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const resultHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const returningToSetupRef = useRef(false)
+  const globalDifficulty = state.settings.difficulty as GlobalDifficulty
+  const activeGlobalDifficulty = gameState === "idle" ? globalDifficulty : runGlobalDifficulty
+
+  const focusAvailableCard = () => {
+    if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+    focusFrameRef.current = window.requestAnimationFrame(() => {
+      gridRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus()
+      focusFrameRef.current = null
+    })
+  }
+
+  const finishPreviewAfter = (duration: number) => {
+    if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current)
+    previewTimerRef.current = window.setTimeout(() => {
+      const hiddenCards = cardsRef.current.map((card) => ({ ...card, isFlipped: card.isMatched }))
+      cardsRef.current = hiddenCards
+      setCards(hiddenCards)
+      setMessage("同じ絵を2枚見つけよう")
+      gameStateRef.current = "playing"
+      setGameState("playing")
+      lockRef.current = false
+      previewTimerRef.current = null
+    }, duration)
+  }
 
   const startGame = (nextDifficulty = difficulty) => {
+    if (gameStateRef.current !== "idle" && gameStateRef.current !== "finished") return
+    setRecordSaveFailed(false)
+    gameStateRef.current = "preview"
+    if (resolutionTimerRef.current !== null) window.clearTimeout(resolutionTimerRef.current)
+    resolutionTimerRef.current = null
+    completionEventIdRef.current = createEventId("game-memory")
+    setRunGlobalDifficulty(globalDifficulty)
     setDifficulty(nextDifficulty)
     const selected = shuffle(CAT_PAIRS).slice(0, nextDifficulty.pairs)
     const deck = shuffle(selected.flatMap((pair, index) => [
       { id: index * 2, ...pair, isFlipped: true, isMatched: false },
       { id: index * 2 + 1, ...pair, isFlipped: true, isMatched: false },
     ]))
+    cardsRef.current = deck
+    flippedIdsRef.current = []
     setCards(deck)
     setFlippedIds([])
     setMoves(0)
     setMatchedCount(0)
     setElapsedTime(0)
+    setReviewCount(0)
     setMessage("場所を覚えてね！")
     setGameState("preview")
     lockRef.current = true
-    if (previewTimerRef.current) window.clearTimeout(previewTimerRef.current)
-    previewTimerRef.current = window.setTimeout(() => {
-      setCards((current) => current.map((card) => ({ ...card, isFlipped: false })))
-      setMessage("同じ絵を2枚見つけよう")
-      setGameState("playing")
-      lockRef.current = false
-    }, nextDifficulty.id === "easy" ? 2000 : 1500)
+    finishPreviewAfter(previewDurationFor(globalDifficulty, nextDifficulty.id))
   }
 
-  useEffect(() => () => { if (previewTimerRef.current) window.clearTimeout(previewTimerRef.current) }, [])
+  const reviewCards = () => {
+    const reviewLimit = runGlobalDifficulty === "gentle" ? Number.POSITIVE_INFINITY : runGlobalDifficulty === "standard" ? 1 : 0
+    if (gameStateRef.current !== "playing" || lockRef.current || flippedIdsRef.current.length > 0 || reviewCount >= reviewLimit) return
+    setReviewCount((value) => value + 1)
+    setMessage("もう一度、場所をゆっくり確認しよう")
+    const revealedCards = cardsRef.current.map((card) => ({ ...card, isFlipped: true }))
+    cardsRef.current = revealedCards
+    setCards(revealedCards)
+    gameStateRef.current = "preview"
+    setGameState("preview")
+    lockRef.current = true
+    finishPreviewAfter(previewDurationFor(runGlobalDifficulty, difficulty.id, true))
+  }
+
+  useEffect(() => () => {
+    if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current)
+    if (resolutionTimerRef.current !== null) window.clearTimeout(resolutionTimerRef.current)
+    if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+  }, [])
+
+  useEffect(() => {
+    if (gameState === "playing") focusFrameRef.current = window.requestAnimationFrame(() => gridRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus())
+    if (gameState === "finished") focusFrameRef.current = window.requestAnimationFrame(() => resultHeadingRef.current?.focus())
+    if (gameState === "idle" && returningToSetupRef.current) {
+      returningToSetupRef.current = false
+      focusFrameRef.current = window.requestAnimationFrame(() => setupHeadingRef.current?.focus())
+    }
+    return () => {
+      if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+      focusFrameRef.current = null
+    }
+  }, [gameState])
 
   useEffect(() => {
     if (gameState !== "playing") return
@@ -80,63 +180,102 @@ export function CatMemoryGame() {
   }, [gameState])
 
   const flipCard = (id: number) => {
-    if (lockRef.current || gameState !== "playing") return
-    const card = cards.find((item) => item.id === id)
+    if (lockRef.current || gameStateRef.current !== "playing") return
+    const card = cardsRef.current.find((item) => item.id === id)
     if (!card || card.isFlipped || card.isMatched) return
 
-    const nextFlipped = [...flippedIds, id]
-    setCards((current) => current.map((item) => item.id === id ? { ...item, isFlipped: true } : item))
+    const nextFlipped = [...flippedIdsRef.current, id]
+    const nextCards = cardsRef.current.map((item) => item.id === id ? { ...item, isFlipped: true } : item)
+    cardsRef.current = nextCards
+    flippedIdsRef.current = nextFlipped
+    setCards(nextCards)
     setFlippedIds(nextFlipped)
-    if (nextFlipped.length < 2) return
+    if (nextFlipped.length < 2) {
+      focusAvailableCard()
+      return
+    }
 
     lockRef.current = true
     setMoves((value) => value + 1)
     const [firstId, secondId] = nextFlipped
-    const first = cards.find((item) => item.id === firstId)!
-    const second = cards.find((item) => item.id === secondId)!
+    const first = cardsRef.current.find((item) => item.id === firstId)!
+    const second = cardsRef.current.find((item) => item.id === secondId)!
 
     if (first.label === second.label) {
       setMessage(`「${first.label}」がそろった！`)
-      window.setTimeout(() => {
-        setCards((current) => current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isMatched: true } : item))
+      resolutionTimerRef.current = window.setTimeout(() => {
+        const matchedCards = cardsRef.current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isMatched: true } : item)
+        cardsRef.current = matchedCards
+        flippedIdsRef.current = []
+        setCards(matchedCards)
         setFlippedIds([])
         setMatchedCount((value) => value + 1)
         lockRef.current = false
+        resolutionTimerRef.current = null
+        focusAvailableCard()
       }, 460)
     } else {
       setMessage("おしい！場所を覚えておこう")
-      window.setTimeout(() => {
-        setCards((current) => current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isFlipped: false } : item))
+      resolutionTimerRef.current = window.setTimeout(() => {
+        const hiddenCards = cardsRef.current.map((item) => item.id === firstId || item.id === secondId ? { ...item, isFlipped: false } : item)
+        cardsRef.current = hiddenCards
+        flippedIdsRef.current = []
+        setCards(hiddenCards)
         setFlippedIds([])
         lockRef.current = false
+        resolutionTimerRef.current = null
+        focusAvailableCard()
       }, 760)
     }
   }
 
   useEffect(() => {
     if (gameState !== "playing" || cards.length === 0 || matchedCount !== cards.length / 2) return
-    setGameState("finished")
-    const currentBest = bestRecords[difficulty.id]
-    if (!currentBest || moves < currentBest.moves || (moves === currentBest.moves && elapsedTime < currentBest.time)) {
-      setBestRecords({ ...bestRecords, [difficulty.id]: { moves, time: elapsedTime } })
+    const eventId = completionEventIdRef.current
+    if (eventId) {
+      completionEventIdRef.current = null
+      recordEvent({
+        type: "game.completed",
+        eventId,
+        occurredAt: new Date().toISOString(),
+        gameId: "memory",
+        score: Math.max(1, difficulty.pairs * 200 - moves * 10 - elapsedTime),
+        won: true,
+      })
     }
-  }, [bestRecords, cards.length, difficulty.id, elapsedTime, gameState, matchedCount, moves, setBestRecords])
+    gameStateRef.current = "finished"
+    setGameState("finished")
+    const recordKey = recordKeyFor(runGlobalDifficulty, difficulty.id)
+    const currentBest = bestRecords[recordKey]
+    if (!currentBest || moves < currentBest.moves || (moves === currentBest.moves && elapsedTime < currentBest.time)) {
+      setRecordSaveFailed(!setBestRecords({ ...bestRecords, [recordKey]: { moves, time: elapsedTime } }))
+    }
+  }, [bestRecords, cards.length, difficulty.id, difficulty.pairs, elapsedTime, gameState, matchedCount, moves, recordEvent, runGlobalDifficulty, setBestRecords])
 
-  const record = bestRecords[difficulty.id]
+  const record = bestRecords[recordKeyFor(runGlobalDifficulty, difficulty.id)]
   const stars = moves <= difficulty.pairs + 2 ? 3 : moves <= difficulty.pairs + 6 ? 2 : 1
+  const returnToSetup = () => {
+    returningToSetupRef.current = true
+    gameStateRef.current = "idle"
+    setGameState("idle")
+  }
 
   return (
     <GameShell title="にゃんこ神経衰弱" subtitle="最初のプレビューを覚えて、同じ絵のペアを見つけよう。" icon={Layers} tone="lavender">
       {gameState === "idle" && (
         <div className="game-start-view">
           <div className="game-intro-mark"><Layers aria-hidden="true" /></div>
-          <h3>カードの場所を覚えよう</h3>
-          <p>ゲーム開始直後に全部のカードが少しだけ見えるよ。少ない手数と短い時間で全ペアをそろえよう。</p>
+          <h3 ref={setupHeadingRef} tabIndex={-1}>カードの場所を覚えよう</h3>
+          <p>{activeGlobalDifficulty === "gentle"
+            ? "ゲーム開始後に8秒間ぜんぶ見えるよ。プレイ中も何度でもカードを見直せます。"
+            : activeGlobalDifficulty === "challenge"
+              ? "ゲーム開始後の1秒プレビューを覚えて、全ペアをそろえよう。"
+              : "ゲーム開始直後に全部のカードが少しだけ見えるよ。プレイ中に一度だけ見直せます。"}</p>
           <div className="game-difficulty-grid">
             {DIFFICULTIES.map((item) => {
-              const best = bestRecords[item.id]
+              const best = bestRecords[recordKeyFor(globalDifficulty, item.id)]
               return <button key={item.id} type="button" onClick={() => startGame(item)}>
-                <strong>{item.name}</strong><span>{item.description}</span><small>{best ? `ベスト ${best.moves}手 / ${formatTime(best.time)}` : "記録なし"}</small>
+                <strong>{item.name}</strong><span>{globalDifficulty === "gentle" ? "8秒プレビュー・見直し自由" : globalDifficulty === "challenge" ? "1秒プレビュー" : item.description}</span><small>{best ? `ベスト ${best.moves}手 / ${formatTime(best.time)}` : "記録なし"}</small>
               </button>
             })}
           </div>
@@ -150,13 +289,19 @@ export function CatMemoryGame() {
             <GameStat icon={Timer} label="時間" value={formatTime(elapsedTime)} />
             <GameStat icon={Sparkles} label="残り" value={`${difficulty.pairs - matchedCount}組`} />
           </div>
-          <p className={`game-live-message ${gameState === "preview" ? "is-preview" : ""}`} aria-live="polite">{message}</p>
-          <div className="memory-grid" data-pairs={difficulty.pairs}>
-            {cards.map((card) => {
+          <p className={`game-live-message ${gameState === "preview" ? "is-preview" : ""}`} aria-live="polite" aria-atomic="true">{message}</p>
+          {gameState === "playing" && runGlobalDifficulty !== "challenge" && (runGlobalDifficulty === "gentle" || reviewCount < 1) && flippedIds.length === 0 && (
+            <button type="button" className="memory-review-button" onClick={reviewCards}>
+              <Eye aria-hidden="true" />カードをもう一度見る
+            </button>
+          )}
+          <div ref={gridRef} className="memory-grid" data-pairs={difficulty.pairs} aria-label="記憶カード">
+            {cards.map((card, index) => {
               const Icon = card.icon
               const visible = card.isFlipped || card.isMatched
+              const position = `${cards.length}枚中${index + 1}番`
               return (
-                <button key={card.id} type="button" data-state={card.isMatched ? "matched" : visible ? "flipped" : "hidden"} onClick={() => flipCard(card.id)} disabled={gameState !== "playing" || visible} aria-label={visible ? card.label : "裏向きのカード"}>
+                <button key={card.id} type="button" data-state={card.isMatched ? "matched" : visible ? "flipped" : "hidden"} onClick={() => flipCard(card.id)} disabled={gameState !== "playing" || visible || flippedIds.length >= 2} aria-label={visible ? `${position}、${card.label}` : `${position}、裏向きのカード`}>
                   <span className="memory-card-inner">
                     <span className="memory-card-back"><PawPrint aria-hidden="true" /></span>
                     <span className="memory-card-front"><Icon aria-hidden="true" /><small>{card.label}</small></span>
@@ -172,12 +317,13 @@ export function CatMemoryGame() {
         <div className="game-result-view">
           <Trophy className="game-result-trophy" aria-hidden="true" />
           <p className="game-result-kicker">ぜんぶそろった！</p>
-          <h3>{moves}手</h3>
+          <h3 ref={resultHeadingRef} tabIndex={-1}>{moves}手</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
           <p>{difficulty.name}を{formatTime(elapsedTime)}でクリア。最後までよく覚えたね！</p>
-          <div className="game-result-record"><Clock3 aria-hidden="true" /><span>ベスト記録</span><strong>{record ? `${record.moves}手 / ${formatTime(record.time)}` : `${moves}手`}</strong></div>
+          <div className="game-result-record"><Clock3 aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : "ベスト記録"}</span><strong>{record ? `${record.moves}手 / ${formatTime(record.time)}` : recordSaveFailed ? "記録なし" : `${moves}手`}</strong></div>
+          {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={() => startGame()}><RotateCcw aria-hidden="true" />同じむずかしさで遊ぶ</GamePrimaryButton>
-          <button type="button" className="game-secondary-button" onClick={() => setGameState("idle")}>むずかしさを変える</button>
+          <button type="button" className="game-secondary-button" onClick={returnToSetup}>むずかしさを変える</button>
         </div>
       )}
     </GameShell>

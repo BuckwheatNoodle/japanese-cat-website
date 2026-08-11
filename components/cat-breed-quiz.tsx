@@ -4,10 +4,14 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
 import { assetPath } from "@/lib/utils"
 import { ArrowRight, Camera, CheckCircle, Eye, Lightbulb, Play, RotateCcw, Sparkles, Star, Timer, Trophy, XCircle } from "lucide-react"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { isFiniteNumberRecord, useLocalStorage } from "@/hooks/use-local-storage"
 import { GamePrimaryButton, GameShell, GameStat } from "@/components/game-shell"
+import { useProgression } from "@/components/progression-provider"
+import { createEventId } from "@/lib/progression"
 
 type BreedQuizState = "idle" | "playing" | "finished"
+type GlobalDifficulty = "gentle" | "standard" | "challenge"
+type QuestionCount = 5 | 10
 
 type BreedQuestion = {
   id: string
@@ -171,14 +175,27 @@ const BREED_QUESTIONS: BreedQuestion[] = [
 ]
 
 const TIME_PER_QUESTION = 15000 // 15秒
+const recordKeyFor = (mode: GlobalDifficulty, questionCount: QuestionCount) => `${mode}:${questionCount}`
+
+function shuffle<T>(items: readonly T[]): T[] {
+  const result = [...items]
+  for (let index = result.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    ;[result[index], result[target]] = [result[target], result[index]]
+  }
+  return result
+}
 
 export function CatBreedQuiz() {
+  const { state, recordEvent } = useProgression()
   const [gameState, setGameState] = useState<BreedQuizState>("idle")
   const [sessionQuestions, setSessionQuestions] = useState<BreedQuestion[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [score, setScore] = useState(0)
   const [correctCount, setCorrectCount] = useState(0)
-  const [questionCount, setQuestionCount] = useState<5 | 10>(10)
+  const [questionCount, setQuestionCount] = useState<QuestionCount>(10)
+  const [runQuestionCount, setRunQuestionCount] = useState<QuestionCount>(10)
+  const [runGlobalDifficulty, setRunGlobalDifficulty] = useState<GlobalDifficulty>("standard")
   const [timeProgress, setTimeProgress] = useState(100)
   const [questionStartTime, setQuestionStartTime] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
@@ -187,16 +204,54 @@ export function CatBreedQuiz() {
   const [showDescription, setShowDescription] = useState(false)
   const [showHint, setShowHint] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [highScore, setHighScore] = useLocalStorage("catBreedQuizHighScore", 0)
+  const [imageFailed, setImageFailed] = useState(false)
+  const [highScores, setHighScores] = useLocalStorage<Record<string, number>>("catBreedQuizHighScoresV2", {}, isFiniteNumberRecord)
+  const [recordSaveFailed, setRecordSaveFailed] = useState(false)
 
   const animationFrameRef = useRef<number | null>(null)
+  const focusFrameRef = useRef<number | null>(null)
+  const gameStateRef = useRef<BreedQuizState>("idle")
+  const answeredRef = useRef(false)
+  const advancingRef = useRef(false)
+  const imageLoadedRef = useRef(false)
+  const completionEventIdRef = useRef<string | null>(null)
+  const questionHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const feedbackButtonRef = useRef<HTMLButtonElement | null>(null)
+  const setupHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const resultHeadingRef = useRef<HTMLHeadingElement | null>(null)
+  const returningToSetupRef = useRef(false)
+  const globalDifficulty = state.settings.difficulty as GlobalDifficulty
+  const activeGlobalDifficulty = gameState === "idle" ? globalDifficulty : runGlobalDifficulty
+  const effectiveTimePerQuestion = activeGlobalDifficulty === "gentle" ? null : activeGlobalDifficulty === "challenge" ? 10000 : TIME_PER_QUESTION
+
+  const recordCompletion = useCallback(() => {
+    const eventId = completionEventIdRef.current
+    if (!eventId) return
+    completionEventIdRef.current = null
+    recordEvent({
+      type: "game.completed",
+      eventId,
+      occurredAt: new Date().toISOString(),
+      gameId: "breed",
+      score: Math.round((score / Math.max(1, sessionQuestions.length)) * (1000 / 160)),
+      won: sessionQuestions.length > 0 && correctCount >= Math.ceil(sessionQuestions.length / 2),
+    })
+  }, [correctCount, recordEvent, score, sessionQuestions.length])
 
   const startQuiz = () => {
-    const shuffled = [...BREED_QUESTIONS].sort(() => 0.5 - Math.random())
+    if (gameStateRef.current !== "idle" && gameStateRef.current !== "finished") return
+    gameStateRef.current = "playing"
+    answeredRef.current = false
+    advancingRef.current = false
+    imageLoadedRef.current = false
+    completionEventIdRef.current = createEventId("game-breed")
+    setRunQuestionCount(questionCount)
+    setRunGlobalDifficulty(globalDifficulty)
+    const shuffled = shuffle(BREED_QUESTIONS)
     // 各問題の選択肢もシャッフルする
     const questionsWithShuffledOptions = shuffled.slice(0, questionCount).map((q) => ({
       ...q,
-      options: [...q.options].sort(() => 0.5 - Math.random()) as [string, string, string, string],
+      options: shuffle(q.options) as [string, string, string, string],
     }))
     setSessionQuestions(questionsWithShuffledOptions)
 
@@ -210,12 +265,18 @@ export function CatBreedQuiz() {
     setShowDescription(false)
     setShowHint(false)
     setImageLoaded(false)
+    setImageFailed(false)
+    setRecordSaveFailed(false)
     setQuestionStartTime(Date.now())
     setTimeProgress(100)
   }
 
   const nextQuestion = useCallback(() => {
+    if (gameStateRef.current !== "playing" || !answeredRef.current || advancingRef.current) return
+    advancingRef.current = true
     if (currentQuestionIndex < sessionQuestions.length - 1) {
+      answeredRef.current = false
+      imageLoadedRef.current = false
       setCurrentQuestionIndex((prev) => prev + 1)
       setSelectedAnswer(null)
       setIsAnswered(false)
@@ -223,21 +284,25 @@ export function CatBreedQuiz() {
       setShowDescription(false)
       setShowHint(false)
       setImageLoaded(false)
+      setImageFailed(false)
       setQuestionStartTime(Date.now())
       setTimeProgress(100)
     } else {
+      gameStateRef.current = "finished"
+      recordCompletion()
       setGameState("finished")
     }
-  }, [currentQuestionIndex, sessionQuestions.length])
+  }, [currentQuestionIndex, recordCompletion, sessionQuestions.length])
 
   const handleAnswerClick = useCallback(
     (answer: string | null) => {
-      if (animationFrameRef.current) {
+      if (gameStateRef.current !== "playing" || answeredRef.current || (!imageLoadedRef.current && answer !== null)) return
+      answeredRef.current = true
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
         animationFrameRef.current = null
       }
 
-      if (isAnswered) return
       setIsAnswered(true)
 
       if (answer === null) {
@@ -245,8 +310,9 @@ export function CatBreedQuiz() {
       } else {
         setSelectedAnswer(answer)
         if (sessionQuestions.length > 0 && answer === sessionQuestions[currentQuestionIndex].correctBreed) {
-          const timeTaken = Date.now() - questionStartTime
-          const points = Math.floor(Math.max(0, TIME_PER_QUESTION - timeTaken) / 100) + 10
+          const points = effectiveTimePerQuestion === null
+            ? 160
+            : Math.floor((Math.max(0, effectiveTimePerQuestion - (Date.now() - questionStartTime)) / effectiveTimePerQuestion) * 150) + 10
           setScore((prev) => prev + points)
           setCorrectCount((value) => value + 1)
         }
@@ -254,21 +320,21 @@ export function CatBreedQuiz() {
 
       setShowDescription(true)
     },
-    [isAnswered, currentQuestionIndex, questionStartTime, nextQuestion, sessionQuestions],
+    [effectiveTimePerQuestion, currentQuestionIndex, questionStartTime, sessionQuestions],
   )
 
   useEffect(() => {
-    if (gameState === "playing" && !isAnswered && imageLoaded) {
+    if (gameState === "playing" && !isAnswered && imageLoaded && effectiveTimePerQuestion !== null) {
       const animate = () => {
         const elapsed = Date.now() - questionStartTime
         const adjustedElapsed = Math.max(0, elapsed - 40)
-        const remaining = TIME_PER_QUESTION - adjustedElapsed
+        const remaining = effectiveTimePerQuestion - adjustedElapsed
 
         if (remaining <= 0) {
           setTimeProgress(0)
           handleAnswerClick(null)
         } else {
-          setTimeProgress((remaining / TIME_PER_QUESTION) * 100)
+          setTimeProgress((remaining / effectiveTimePerQuestion) * 100)
           animationFrameRef.current = requestAnimationFrame(animate)
         }
       }
@@ -276,17 +342,47 @@ export function CatBreedQuiz() {
     }
 
     return () => {
-      if (animationFrameRef.current) {
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
     }
-  }, [gameState, isAnswered, questionStartTime, handleAnswerClick, imageLoaded])
+  }, [effectiveTimePerQuestion, gameState, isAnswered, questionStartTime, handleAnswerClick, imageLoaded])
 
   useEffect(() => {
-    if (gameState === "finished" && score > highScore) {
-      setHighScore(score)
+    if (gameState === "playing" && !isAnswered) focusFrameRef.current = window.requestAnimationFrame(() => questionHeadingRef.current?.focus())
+    if (gameState === "playing" && isAnswered) focusFrameRef.current = window.requestAnimationFrame(() => feedbackButtonRef.current?.focus())
+    if (gameState === "finished") focusFrameRef.current = window.requestAnimationFrame(() => resultHeadingRef.current?.focus())
+    if (gameState === "idle" && returningToSetupRef.current) {
+      returningToSetupRef.current = false
+      focusFrameRef.current = window.requestAnimationFrame(() => setupHeadingRef.current?.focus())
     }
-  }, [gameState, score, highScore, setHighScore])
+    return () => {
+      if (focusFrameRef.current !== null) window.cancelAnimationFrame(focusFrameRef.current)
+      focusFrameRef.current = null
+    }
+  }, [currentQuestionIndex, gameState, isAnswered])
+
+  useEffect(() => {
+    if (gameState === "playing") advancingRef.current = false
+  }, [currentQuestionIndex, gameState])
+
+  useEffect(() => {
+    if (gameState !== "finished") return
+    const recordKey = recordKeyFor(runGlobalDifficulty, runQuestionCount)
+    if (score > (highScores[recordKey] ?? 0)) setRecordSaveFailed(!setHighScores({ ...highScores, [recordKey]: score }))
+    recordCompletion()
+  }, [gameState, highScores, recordCompletion, runGlobalDifficulty, runQuestionCount, score, setHighScores])
+
+  const returnToSetup = () => {
+    returningToSetupRef.current = true
+    gameStateRef.current = "idle"
+    answeredRef.current = false
+    advancingRef.current = false
+    imageLoadedRef.current = false
+    setImageFailed(false)
+    setGameState("idle")
+  }
 
   const renderContent = () => {
     if (gameState === "finished") {
@@ -295,12 +391,13 @@ export function CatBreedQuiz() {
         <div className="game-result-view">
           <Trophy className="game-result-trophy" aria-hidden="true" />
           <p className="game-result-kicker">品種クイズ終了！</p>
-          <h3>{correctCount} / {sessionQuestions.length}問正解</h3>
+          <h3 ref={resultHeadingRef} tabIndex={-1}>{correctCount} / {sessionQuestions.length}問正解</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
           <p>{score}点をゲット。写真の特徴を見つける目が、ぐんと育ったね！</p>
-          <div className="game-result-record"><Camera aria-hidden="true" /><span>ハイスコア</span><strong>{Math.max(score, highScore)}点</strong></div>
+          <div className="game-result-record"><Camera aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${runQuestionCount}問コースのベスト`}</span><strong>{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0) : Math.max(score, highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0)}点</strong></div>
+          {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={startQuiz}><RotateCcw aria-hidden="true" />もう一度挑戦</GamePrimaryButton>
-          <button type="button" className="game-secondary-button" onClick={() => setGameState("idle")}>問題数を変える</button>
+          <button type="button" className="game-secondary-button" onClick={returnToSetup}>問題数を変える</button>
         </div>
       )
     }
@@ -317,20 +414,58 @@ export function CatBreedQuiz() {
             <GameStat icon={Sparkles} label="正解" value={`${correctCount}問`} />
             <GameStat icon={Trophy} label="スコア" value={`${score}点`} />
           </div>
-          <div className="quiz-time-track" aria-label={`残り時間${Math.ceil(timeProgress / (100 / 15))}秒`}><span style={{ width: `${timeProgress}%` }} /></div>
+          {effectiveTimePerQuestion === null
+            ? <p className="quiz-untimed-note"><Timer aria-hidden="true" />時間制限なし・写真をゆっくり見てね</p>
+            : <div className="quiz-time-track" aria-label={`残り時間${Math.ceil((timeProgress / 100) * (effectiveTimePerQuestion / 1000))}秒`}><span style={{ width: `${timeProgress}%` }} /></div>}
 
           {/* 猫の画像 */}
           <div className="breed-photo-card">
             {isTimedOut && (
               <span className="quiz-timeout"><Timer aria-hidden="true" />時間切れ</span>
             )}
-            <Image src={currentQuestion.imageUrl || assetPath("/placeholder.svg")} alt="品種を当てる猫の写真" width={520} height={420} priority={currentQuestionIndex === 0} onLoad={() => { setQuestionStartTime(Date.now()); setImageLoaded(true) }} />
+            <Image
+              key={currentQuestion.id}
+              src={currentQuestion.imageUrl}
+              alt="品種を当てる猫の写真"
+              width={520}
+              height={420}
+              priority={currentQuestionIndex === 0}
+              onLoad={() => {
+                if (gameStateRef.current !== "playing" || answeredRef.current || imageLoadedRef.current) return
+                imageLoadedRef.current = true
+                setQuestionStartTime(Date.now())
+                setImageLoaded(true)
+              }}
+              onError={() => {
+                if (gameStateRef.current !== "playing" || answeredRef.current || imageLoadedRef.current) return
+                imageLoadedRef.current = true
+                setQuestionStartTime(Date.now())
+                setImageLoaded(true)
+                setImageFailed(true)
+                setShowHint(true)
+              }}
+            />
             {!imageLoaded && <span className="breed-photo-loading">写真を準備中…</span>}
+            {imageFailed && <span className="breed-photo-loading" role="status">写真を読み込めなかったため、ヒントを表示しています。</span>}
             <span className="breed-photo-number">第{currentQuestionIndex + 1}問</span>
           </div>
 
-          <div className="breed-question-heading"><h3>この猫の品種は？</h3>{!isAnswered && <button type="button" onClick={() => setShowHint(true)} disabled={showHint}><Lightbulb aria-hidden="true" />ヒント</button>}</div>
-          {showHint && !showDescription && <div className="breed-hint"><Eye aria-hidden="true" /><p>{currentQuestion.description}</p></div>}
+          <div className="breed-question-heading">
+            <h3 ref={questionHeadingRef} tabIndex={-1}>この猫の品種は？</h3>
+            {!isAnswered && (
+              <button
+                type="button"
+                onClick={() => setShowHint((value) => !value)}
+                aria-expanded={showHint}
+                aria-controls="breed-question-hint"
+              >
+                <Lightbulb aria-hidden="true" />{showHint ? "ヒントを閉じる" : "ヒント"}
+              </button>
+            )}
+          </div>
+          <div id="breed-question-hint" className="breed-hint" role="status" aria-live="polite" hidden={!showHint || showDescription}>
+            <Eye aria-hidden="true" /><p>{currentQuestion.description}</p>
+          </div>
 
           <div className="quiz-options">
             {currentQuestion.options.map((option) => {
@@ -341,7 +476,7 @@ export function CatBreedQuiz() {
                 <button type="button"
                   key={option}
                   onClick={() => handleAnswerClick(option)}
-                  disabled={isAnswered}
+                  disabled={!imageLoaded || isAnswered}
                   data-state={state}
                 >
                   {option}
@@ -354,7 +489,7 @@ export function CatBreedQuiz() {
           {showDescription && (
             <div className={`quiz-feedback ${selectedAnswer === currentQuestion.correctBreed ? "is-correct" : "is-wrong"}`} aria-live="polite">
               <div><strong>{currentQuestion.correctBreed}</strong><p>{currentQuestion.description}</p></div>
-              <button type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の写真"}<ArrowRight aria-hidden="true" /></button>
+              <button ref={feedbackButtonRef} type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の写真"}<ArrowRight aria-hidden="true" /></button>
             </div>
           )}
         </div>
@@ -364,14 +499,14 @@ export function CatBreedQuiz() {
     return (
       <div className="game-start-view">
         <div className="game-intro-mark"><Camera aria-hidden="true" /></div>
-        <h3>写真をよく見て当てよう</h3>
-        <p>20品種からランダム出題。写真の毛・耳・顔の形を観察して、迷ったらヒントも使えます。</p>
+        <h3 ref={setupHeadingRef} tabIndex={-1}>写真をよく見て当てよう</h3>
+        <p>20品種からランダム出題。{effectiveTimePerQuestion === null ? "時間制限なしで" : `1問${effectiveTimePerQuestion / 1000}秒で`}、迷ったら開閉できるヒントも使えます。</p>
         <div className="game-mode-options">
-          {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as 5 | 10)} aria-pressed={questionCount === count}>
+          {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as QuestionCount)} aria-pressed={questionCount === count}>
             <strong>{count}問コース</strong><span>{count === 5 ? "まずは気軽に" : "猫博士を目指す"}</span>
           </button>)}
         </div>
-        <div className="game-record-pill"><Trophy aria-hidden="true" />ハイスコア <strong>{highScore}点</strong></div>
+        <div className="game-record-pill"><Trophy aria-hidden="true" />このコースのベスト <strong>{highScores[recordKeyFor(globalDifficulty, questionCount)] ?? 0}点</strong></div>
         <GamePrimaryButton onClick={startQuiz}><Play aria-hidden="true" />写真クイズ開始</GamePrimaryButton>
       </div>
     )
