@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Lightbulb, Play, RotateCcw, Trophy } from "lucide-react"
+import { Cat, Fish, Heart, Lightbulb, PawPrint, Play, RotateCcw, Trophy } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 
 type SimonGameState = "idle" | "showing" | "input" | "success" | "gameover"
@@ -12,15 +12,15 @@ type PadColor = {
   id: number
   color: string
   activeColor: string
-  emoji: string
+  icon: React.ElementType
   label: string
 }
 
 const PADS: PadColor[] = [
-  { id: 0, color: "bg-red-300", activeColor: "bg-red-500", emoji: "😺", label: "あか" },
-  { id: 1, color: "bg-blue-300", activeColor: "bg-blue-500", emoji: "😸", label: "あお" },
-  { id: 2, color: "bg-yellow-300", activeColor: "bg-yellow-500", emoji: "😻", label: "きいろ" },
-  { id: 3, color: "bg-green-300", activeColor: "bg-green-500", emoji: "😽", label: "みどり" },
+  { id: 0, color: "bg-red-300", activeColor: "bg-red-500", icon: Heart, label: "あか" },
+  { id: 1, color: "bg-blue-300", activeColor: "bg-blue-500", icon: Cat, label: "あお" },
+  { id: 2, color: "bg-yellow-300", activeColor: "bg-yellow-500", icon: PawPrint, label: "きいろ" },
+  { id: 3, color: "bg-green-300", activeColor: "bg-green-500", icon: Fish, label: "みどり" },
 ]
 
 const SHOW_INTERVAL = 600
@@ -33,7 +33,6 @@ export function CatSimonGame() {
   const [activePad, setActivePad] = useState<number | null>(null)
   const [level, setLevel] = useState(0)
   const [highScore, setHighScore] = useLocalStorage("catSimonHighScore", 0)
-  const [flashWrong, setFlashWrong] = useState<number | null>(null)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -79,7 +78,6 @@ export function CatSimonGame() {
     setSequence(newSeq)
     setLevel(1)
     setInputIndex(0)
-    setFlashWrong(null)
     playSequence(newSeq)
   }
 
@@ -113,7 +111,6 @@ export function CatSimonGame() {
       }
     } else {
       // Wrong
-      setFlashWrong(padId)
       setGameState("gameover")
       const finalLevel = sequence.length
       if (finalLevel > highScore) {
@@ -180,8 +177,8 @@ export function CatSimonGame() {
         <div className="grid grid-cols-2 gap-3 md:gap-4 w-full max-w-xs mx-auto">
           {PADS.map((pad) => {
             const isActive = activePad === pad.id
-            const isWrong = flashWrong === pad.id && gameState === "gameover"
             const isDisabled = gameState !== "input"
+            const Icon = pad.icon
 
             return (
               <button
@@ -189,14 +186,12 @@ export function CatSimonGame() {
                 onClick={() => handlePadClick(pad.id)}
                 disabled={isDisabled}
                 className={`aspect-square rounded-2xl text-4xl md:text-5xl flex flex-col items-center justify-center gap-1 transition-all duration-200 border-4 ${
-                  isWrong
-                    ? "bg-red-600 border-red-700 scale-95"
-                    : isActive
-                      ? `${pad.activeColor} border-white scale-105 shadow-lg shadow-current/30`
-                      : `${pad.color} border-[#EAD8C0] ${!isDisabled ? "hover:scale-105 hover:shadow-md cursor-pointer active:scale-95" : "opacity-80"}`
+                  isActive
+                    ? `${pad.activeColor} border-white scale-105 shadow-lg shadow-current/30`
+                    : `${pad.color} border-[#EAD8C0] ${!isDisabled ? "hover:scale-105 hover:shadow-md cursor-pointer active:scale-95" : "opacity-80"}`
                 }`}
               >
-                <span className={isActive ? "animate-bounce" : ""}>{pad.emoji}</span>
+                <Icon className={`w-10 h-10 md:w-12 md:h-12 text-white ${isActive ? "animate-bounce" : ""}`} aria-hidden="true" />
                 <span className="text-xs md:text-sm font-bold text-white/80">{pad.label}</span>
               </button>
             )

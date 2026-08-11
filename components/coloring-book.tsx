@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import NextImage from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Palette, Undo2, Redo2, Download, Pipette, Eraser, RotateCcw } from "lucide-react"
+import { Check, Palette, Undo2, Redo2, Download, Pipette, Eraser, RotateCcw } from "lucide-react"
+import { useSkin } from "@/components/skin-provider"
 
 // 塗り絵用のSVGデータ
 const COLORING_PAGES = [
@@ -112,6 +114,7 @@ type ColoringState = {
 }
 
 export function ColoringBook() {
+  const { skin } = useSkin()
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0])
   const [tool, setTool] = useState<"paint" | "eyedropper" | "eraser">("paint")
@@ -332,12 +335,22 @@ export function ColoringBook() {
   }
 
   return (
-    <section className="w-full">
+    <section className="feature-screen coloring-screen" aria-labelledby="coloring-title">
+      <div className="screen-hero coloring-hero">
+        <div>
+          <p className="screen-kicker">CAT COLORING STUDIO</p>
+          <h2 id="coloring-title">ねこのぬりえ工房</h2>
+          <p>色を選んでタップ。もどす・やりなおす・保存もできるよ。</p>
+        </div>
+        <div className="coloring-hero-art" aria-hidden="true">
+          <NextImage src={skin.assets.activityColoring} alt="" fill sizes="150px" />
+        </div>
+      </div>
       <Card className="bg-white/80 border-2 border-dashed border-[#EAD8C0]/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
         <CardHeader className="bg-[#FDEEDC]/60 rounded-t-lg">
           <CardTitle className="flex items-center justify-center text-xl md:text-2xl space-x-2">
             <Palette className="w-5 h-5 md:w-6 md:h-6" />
-            <span>ぬりえ</span>
+            <span>ぬりえキャンバス</span>
             <Palette className="w-5 h-5 md:w-6 md:h-6" />
           </CardTitle>
         </CardHeader>
@@ -349,6 +362,7 @@ export function ColoringBook() {
                 key={page.id}
                 onClick={() => setCurrentPageIndex(index)}
                 variant={index === currentPageIndex ? "default" : "outline"}
+                aria-pressed={index === currentPageIndex}
                 className={`text-sm ${
                   index === currentPageIndex
                     ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white"
@@ -356,7 +370,7 @@ export function ColoringBook() {
                 }`}
               >
                 {page.title}
-                {coloringStates[page.id] && <span className="ml-1 text-xs opacity-70">●</span>}
+                {coloringStates[page.id] && <Check className="ml-1 h-4 w-4 opacity-70" aria-label="色ぬり中" />}
               </Button>
             ))}
           </div>
@@ -374,7 +388,7 @@ export function ColoringBook() {
               <h3 className="font-semibold mb-2 text-[#8A6E59]">いろ</h3>
               <div className="grid grid-cols-6 gap-2">
                 {COLOR_PALETTE.map((color) => (
-                  <button key={color} onClick={() => setSelectedColor(color)}
+                  <button key={color} onClick={() => setSelectedColor(color)} aria-label={`${color}を選ぶ`} aria-pressed={selectedColor === color}
                     className={`w-8 h-8 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
                     style={{ backgroundColor: color }} />
                 ))}
@@ -410,7 +424,7 @@ export function ColoringBook() {
             <div className="mb-3">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {COLOR_PALETTE.map((color) => (
-                  <button key={color} onClick={() => setSelectedColor(color)}
+                  <button key={color} onClick={() => setSelectedColor(color)} aria-label={`${color}を選ぶ`} aria-pressed={selectedColor === color}
                     className={`w-9 h-9 flex-shrink-0 rounded-lg border-2 transition-all ${selectedColor === color ? "border-[#8A6E59] scale-110" : "border-gray-300"}`}
                     style={{ backgroundColor: color }} />
                 ))}
@@ -421,10 +435,10 @@ export function ColoringBook() {
               <Button onClick={() => setTool("eyedropper")} size="sm" className={`${tool === "eyedropper" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC] text-[#8A6E59]"}`}><Pipette className="w-4 h-4 mr-1" />スポイト</Button>
               <Button onClick={() => setTool("eraser")} size="sm" className={`${tool === "eraser" ? "bg-[#D4A57A] hover:bg-[#C7946A] text-white" : "bg-white hover:bg-[#FDEEDC] text-[#8A6E59]"}`}><Eraser className="w-4 h-4 mr-1" />けす</Button>
               <div className="w-px bg-[#EAD8C0] mx-1" />
-              <Button onClick={handleUndo} size="sm" variant="outline" disabled={!currentState || currentState.undoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4" /></Button>
-              <Button onClick={handleRedo} size="sm" variant="outline" disabled={!currentState || currentState.redoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4" /></Button>
-              <Button onClick={handleReset} size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4" /></Button>
-              <Button onClick={downloadImage} size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4" /></Button>
+              <Button onClick={handleUndo} aria-label="もどす" size="sm" variant="outline" disabled={!currentState || currentState.undoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Undo2 className="w-4 h-4" /></Button>
+              <Button onClick={handleRedo} aria-label="やりなおす" size="sm" variant="outline" disabled={!currentState || currentState.redoStack.length === 0} className="bg-white hover:bg-[#FDEEDC]"><Redo2 className="w-4 h-4" /></Button>
+              <Button onClick={handleReset} aria-label="リセット" size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><RotateCcw className="w-4 h-4" /></Button>
+              <Button onClick={downloadImage} aria-label="ぬりえを保存" size="sm" variant="outline" className="bg-white hover:bg-[#FDEEDC]"><Download className="w-4 h-4" /></Button>
             </div>
           </div>
         </CardContent>

@@ -1,88 +1,68 @@
 "use client"
 
-import { Cat, Volume2, VolumeX } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import Image from "next/image"
+import { Cat, Cherry, Music2, VolumeX } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { assetPath } from "@/lib/utils"
+import { useSkin } from "@/components/skin-provider"
 
 export function Header() {
+  const { skin } = useSkin()
   const [isMusicEnabled, setIsMusicEnabled] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
-
-    audio.volume = 0.3
+    audio.volume = 0.22
     audio.loop = true
-
-    // ユーザーインタラクション後に自動再生を試行
-    const handleFirstInteraction = () => {
-      if (isMusicEnabled && !audio.paused) return
-
-      if (isMusicEnabled) {
-        audio.play().catch(() => {
-          console.log("Audio playback failed")
-        })
-      }
-
-      document.removeEventListener("click", handleFirstInteraction)
-      document.removeEventListener("touchstart", handleFirstInteraction)
-    }
-
-    if (isMusicEnabled) {
-      document.addEventListener("click", handleFirstInteraction)
-      document.addEventListener("touchstart", handleFirstInteraction)
-    }
-
-    return () => {
-      document.removeEventListener("click", handleFirstInteraction)
-      document.removeEventListener("touchstart", handleFirstInteraction)
-    }
-  }, [isMusicEnabled])
+  }, [])
 
   const toggleMusic = async () => {
     const audio = audioRef.current
     if (!audio) return
 
+    if (isMusicEnabled) {
+      audio.pause()
+      setIsMusicEnabled(false)
+      return
+    }
+
     try {
-      if (isMusicEnabled) {
-        audio.pause()
-        setIsMusicEnabled(false)
-      } else {
-        await audio.play()
-        setIsMusicEnabled(true)
-      }
-    } catch (error) {
-      console.log("Audio toggle failed:", error)
-      setIsMusicEnabled(!isMusicEnabled)
+      await audio.play()
+      setIsMusicEnabled(true)
+    } catch {
+      setIsMusicEnabled(false)
     }
   }
 
   return (
     <>
-      <audio ref={audioRef} preload="auto">
+      <audio ref={audioRef} preload="metadata">
         <source src={assetPath("/sounds/bgm.mp3")} type="audio/mpeg" />
       </audio>
 
-      <header className="sticky top-0 z-50 w-full py-4 md:py-5 bg-[#FDEEDC]/80 border-b-2 border-[#EAD8C0] backdrop-blur-sm">
-        <div className="container mx-auto flex items-center justify-between px-4">
-          <div className="flex items-center space-x-2 md:space-x-4 flex-1 justify-center">
-            <Cat className="w-8 h-8 md:w-10 md:h-10 text-[#D4A57A] transition-transform hover:rotate-12" />
-            <h1 className="text-2xl md:text-4xl font-bold tracking-wider text-center">美雪の猫ページ</h1>
-            <Cat className="w-8 h-8 md:w-10 md:h-10 text-[#D4A57A] transform -scale-x-100 transition-transform hover:-rotate-12" />
-          </div>
-
-          {/* 音楽オンオフボタン */}
-          <Button
+      <header className="site-header">
+        <div className="header-inner">
+          <Cat className="header-cat" aria-hidden="true" strokeWidth={2.2} />
+          <h1>美雪の猫ページ</h1>
+          <button
+            type="button"
+            className="music-button"
             onClick={toggleMusic}
-            size="sm"
-            variant="outline"
-            className="bg-white/80 hover:bg-white border-[#EAD8C0] text-[#8A6E59] hover:text-[#5C3A21]"
-            aria-label={isMusicEnabled ? "音楽をオフ" : "音楽をオン"}
+            aria-label={isMusicEnabled ? "BGMを止める" : "BGMを流す"}
+            aria-pressed={isMusicEnabled}
           >
-            {isMusicEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </Button>
+            <Cherry className="music-cherry" aria-hidden="true" />
+            {isMusicEnabled ? (
+              <Music2 className="music-status" aria-hidden="true" />
+            ) : (
+              <VolumeX className="music-status" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+        <div className="awning" aria-hidden="true">
+          <Image src={skin.assets.awning} alt="" fill sizes="100vw" priority />
         </div>
       </header>
     </>

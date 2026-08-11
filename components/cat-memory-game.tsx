@@ -3,32 +3,32 @@
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Layers, Play, RotateCcw, Trophy, Timer } from "lucide-react"
+import { Bell, Cat, Cherry, Eye, Fish, Heart, Layers, Leaf, Moon, PawPrint, Play, RotateCcw, Smile, Star, Sun, Trophy, Timer } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 
 type MemoryGameState = "idle" | "playing" | "finished"
 
 type MemoryCard = {
   id: number
-  emoji: string
+  icon: React.ElementType
   label: string
   isFlipped: boolean
   isMatched: boolean
 }
 
 const CAT_PAIRS = [
-  { emoji: "🐱", label: "ねこ" },
-  { emoji: "🐈", label: "あるくねこ" },
-  { emoji: "🐈‍⬛", label: "くろねこ" },
-  { emoji: "😺", label: "にっこりねこ" },
-  { emoji: "😻", label: "ハートねこ" },
-  { emoji: "🙀", label: "びっくりねこ" },
-  { emoji: "😸", label: "えがおねこ" },
-  { emoji: "😹", label: "なみだねこ" },
-  { emoji: "😽", label: "キスねこ" },
-  { emoji: "😼", label: "にやりねこ" },
-  { emoji: "🐾", label: "にくきゅう" },
-  { emoji: "🐟", label: "おさかな" },
+  { icon: Cat, label: "ねこ" },
+  { icon: PawPrint, label: "にくきゅう" },
+  { icon: Fish, label: "おさかな" },
+  { icon: Heart, label: "ハート" },
+  { icon: Smile, label: "にっこり" },
+  { icon: Eye, label: "きらきら目" },
+  { icon: Star, label: "おほしさま" },
+  { icon: Moon, label: "おつきさま" },
+  { icon: Sun, label: "おひさま" },
+  { icon: Bell, label: "すず" },
+  { icon: Leaf, label: "はっぱ" },
+  { icon: Cherry, label: "さくらんぼ" },
 ]
 
 type Difficulty = { name: string; pairs: number; cols: string }
@@ -64,8 +64,8 @@ export function CatMemoryGame() {
     setDifficulty(diff)
     const selected = shuffleArray(CAT_PAIRS).slice(0, diff.pairs)
     const doubled = selected.flatMap((p, i) => [
-      { id: i * 2, emoji: p.emoji, label: p.label, isFlipped: false, isMatched: false },
-      { id: i * 2 + 1, emoji: p.emoji, label: p.label, isFlipped: false, isMatched: false },
+      { id: i * 2, icon: p.icon, label: p.label, isFlipped: false, isMatched: false },
+      { id: i * 2 + 1, icon: p.icon, label: p.label, isFlipped: false, isMatched: false },
     ])
     setCards(shuffleArray(doubled))
     setFlippedIds([])
@@ -101,7 +101,7 @@ export function CatMemoryGame() {
       const first = cards.find((c) => c.id === firstId)!
       const second = cards.find((c) => c.id === secondId)!
 
-      if (first.emoji === second.emoji) {
+      if (first.label === second.label) {
         // Match
         setTimeout(() => {
           setCards((prev) =>
@@ -181,8 +181,9 @@ export function CatMemoryGame() {
             <span>残り: {cards.length / 2 - matchedCount}組</span>
           </div>
           <div className={`grid ${difficulty.cols} gap-2 md:gap-3 mx-auto max-w-lg`}>
-            {cards.map((card) => (
-              <button
+            {cards.map((card) => {
+              const CardIcon = card.icon
+              return <button
                 key={card.id}
                 onClick={() => handleCardClick(card.id)}
                 className={`aspect-square rounded-xl text-3xl md:text-4xl flex items-center justify-center transition-all duration-300 transform ${
@@ -193,14 +194,15 @@ export function CatMemoryGame() {
                       : "bg-[#D4A57A] border-2 border-[#C7946A] hover:scale-105 hover:shadow-md cursor-pointer"
                 }`}
                 disabled={card.isFlipped || card.isMatched}
+                aria-label={card.isFlipped || card.isMatched ? card.label : "カードをめくる"}
               >
                 {card.isFlipped || card.isMatched ? (
-                  <span className="animate-fade-in">{card.emoji}</span>
+                  <CardIcon className="w-8 h-8 md:w-10 md:h-10 text-[#8A6E59] animate-fade-in" aria-hidden="true" />
                 ) : (
-                  <span className="text-white text-2xl">?</span>
+                  <PawPrint className="w-7 h-7 text-white" aria-hidden="true" />
                 )}
               </button>
-            ))}
+            })}
           </div>
         </div>
       )
