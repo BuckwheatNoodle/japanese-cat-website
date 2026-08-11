@@ -1,22 +1,24 @@
 "use client"
 
-import { Home, Gamepad2, Palette, CopySlash as Crystal, BookOpen } from "lucide-react"
+import Image from "next/image"
+import { useSkin } from "@/components/skin-provider"
+import type { SkinAssets } from "@/lib/skins"
 
 export type TabId = "home" | "games" | "coloring" | "fortune" | "diary"
 
 type Tab = {
   id: TabId
   label: string
-  icon: React.ElementType
+  assetKey: keyof Pick<SkinAssets, "navHome" | "navGames" | "navColoring" | "navFortune" | "navDiary">
   testId: string
 }
 
 const TABS: Tab[] = [
-  { id: "home", label: "ホーム", icon: Home, testId: "tab-home" },
-  { id: "games", label: "ゲーム", icon: Gamepad2, testId: "tab-games" },
-  { id: "coloring", label: "ぬりえ", icon: Palette, testId: "tab-coloring" },
-  { id: "fortune", label: "占い", icon: Crystal, testId: "tab-fortune" },
-  { id: "diary", label: "日記", icon: BookOpen, testId: "tab-diary" },
+  { id: "home", label: "ホーム", assetKey: "navHome", testId: "tab-home" },
+  { id: "games", label: "ゲーム", assetKey: "navGames", testId: "tab-games" },
+  { id: "coloring", label: "ぬりえ", assetKey: "navColoring", testId: "tab-coloring" },
+  { id: "fortune", label: "占い", assetKey: "navFortune", testId: "tab-fortune" },
+  { id: "diary", label: "日記", assetKey: "navDiary", testId: "tab-diary" },
 ]
 
 type BottomTabsProps = {
@@ -25,34 +27,26 @@ type BottomTabsProps = {
 }
 
 export function BottomTabs({ activeTab, onTabChange }: BottomTabsProps) {
+  const { skin } = useSkin()
+
   return (
-    <nav
-      data-testid="bottom-tabs"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t-2 border-[#EAD8C0] safe-area-bottom"
-    >
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+    <nav data-testid="bottom-tabs" className="bottom-tabs" aria-label="メインメニュー">
+      <div className="bottom-tabs-inner">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id
-          const Icon = tab.icon
           return (
             <button
               key={tab.id}
+              type="button"
               data-testid={tab.testId}
-              aria-selected={isActive}
+              aria-current={isActive ? "page" : undefined}
               onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                isActive
-                  ? "text-[#D4A57A]"
-                  : "text-[#8A6E59]/60 hover:text-[#8A6E59]"
-              }`}
+              className="bottom-tab"
             >
-              <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""} transition-transform`} />
-              <span className={`text-[10px] leading-tight ${isActive ? "font-bold" : ""}`}>
-                {tab.label}
+              <span className="tab-icon-wrap" aria-hidden="true">
+                <Image src={skin.assets[tab.assetKey]} alt="" fill sizes="40px" />
               </span>
-              {isActive && (
-                <div className="absolute bottom-1 w-6 h-0.5 rounded-full bg-[#D4A57A]" />
-              )}
+              <span>{tab.label}</span>
             </button>
           )
         })}
