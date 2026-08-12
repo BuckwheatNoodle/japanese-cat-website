@@ -189,6 +189,25 @@ test.describe("追加コンテンツ", () => {
     await expect(diary.getByRole("button", { name: /ランダムで読む/ })).toBeVisible()
   })
 
+  test("日記は当日までを公開し、未来日を表示しない", async ({ page }) => {
+    await page.goto("/")
+    await openPrimaryTab(page, "diary")
+    const dateResults = page.locator(".diary-search-results button time")
+    await expect(dateResults.first()).toHaveText("2026.08.12")
+    const resultDates = await dateResults.allTextContents()
+    expect(resultDates[0]).toBe("2026.08.12")
+    expect(resultDates).not.toContain("2026.08.13")
+    expect(resultDates).not.toContain("2026.09.01")
+  })
+
+  test("塗り絵の部位名を日本語で読み上げる", async ({ page }) => {
+    await page.goto("/")
+    await openPrimaryTab(page, "coloring")
+    await expect(page.locator('.coloring-canvas [aria-label="おすわりねこのしっぽをぬる"]')).toHaveCount(1)
+    await expect(page.locator('.coloring-canvas [aria-label*="tail"]')).toHaveCount(0)
+    await expect(page.locator('.coloring-canvas [aria-label*="left-paw"]')).toHaveCount(0)
+  })
+
   test("猫クラブで三匹の活動ファイルを切り替えられる", async ({ page }) => {
     await page.goto("/#club")
     const club = page.getByTestId("club-content")

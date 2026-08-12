@@ -32,6 +32,26 @@ const PAINTABLE_TAGS = new Set(["circle", "ellipse", "path", "rect", "polygon"])
 const SAFE_HEX = /^#[0-9a-f]{6}$/i
 const EMPTY_DOCUMENT: ColoringDocumentV3 = { version: 3, pages: {} }
 
+const REGION_LABELS: Record<string, string> = {
+  "awning-1": "ひさしの左端", "awning-2": "ひさしの左から二番目", "awning-3": "ひさしの左から三番目",
+  "awning-4": "ひさしの右から三番目", "awning-5": "ひさしの右から二番目", "awning-6": "ひさしの右端",
+  body: "からだ", "bottom-fin": "下のひれ", cherry: "さくらんぼ", counter: "カウンター", cushion: "クッション",
+  face: "かお", field: "野原", fish: "さかな", "fish-tail": "さかなのしっぽ", glass: "グラス", grass: "草原",
+  icecream: "アイスクリーム", "left-ear": "左耳", "left-paw": "左の前足", "lunch-box": "お弁当箱",
+  moon: "月", "night-sky": "夜空", "rice-ball": "おにぎり", "right-ear": "右耳", "right-paw": "右の前足",
+  sky: "空", soda: "クリームソーダ", sun: "太陽", tail: "しっぽ", "top-fin": "上のひれ", tummy: "おなか", window: "窓",
+}
+
+for (const flower of ["1", "2"] as const) {
+  REGION_LABELS[`flower-${flower}-center`] = `花${flower}の中心`
+  for (const petal of ["a", "b", "c", "d", "e"]) REGION_LABELS[`flower-${flower}${petal}`] = `花${flower}の花びら`
+}
+for (const star of ["1", "2", "3"]) REGION_LABELS[`star-${star}`] = `星${star}`
+
+export function coloringRegionLabel(name: string) {
+  return REGION_LABELS[name] ?? name
+}
+
 export function advanceColoringCompletionTracker(
   tracker: ColoringCompletionTracker,
   pageId: string,
@@ -130,8 +150,8 @@ export function renderSvg(page: ColoringPage, fills: FillMap): string {
           : safeTag.replace(/>$/, ` fill="${color}">`)
     }
     return safeTag.endsWith("/>")
-      ? safeTag.replace(/\/>$/, ` tabindex="0" role="button" aria-label="${page.title}の${name}をぬる"/>`)
-      : safeTag.replace(/>$/, ` tabindex="0" role="button" aria-label="${page.title}の${name}をぬる">`)
+      ? safeTag.replace(/\/>$/, ` tabindex="0" role="button" aria-label="${page.title}の${coloringRegionLabel(name)}をぬる"/>`)
+      : safeTag.replace(/>$/, ` tabindex="0" role="button" aria-label="${page.title}の${coloringRegionLabel(name)}をぬる">`)
   })
   return withInteractiveRegions.replace(/\srole=(?:"img"|'img')/i, ' role="group"')
 }
@@ -236,8 +256,25 @@ export function ColoringBook() {
     commit(currentFills, next, tool === "eraser" ? "色を消しました" : "きれいにぬれたよ！")
   }
 
+  const findNearbyRegion = (clientX: number, clientY: number) => {
+    const regions = canvasRef.current?.querySelectorAll<SVGElement>("[data-name]") ?? []
+    let closest: { region: SVGElement; distance: number } | null = null
+    for (const region of Array.from(regions)) {
+      const rect = region.getBoundingClientRect()
+      const horizontalDistance = Math.max(rect.left - clientX, 0, clientX - rect.right)
+      const verticalDistance = Math.max(rect.top - clientY, 0, clientY - rect.bottom)
+      const distance = Math.hypot(horizontalDistance, verticalDistance)
+      if (distance <= 22 && (!closest || distance < closest.distance)) closest = { region, distance }
+    }
+    return closest?.region ?? null
+  }
+
   const handleCanvasClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target instanceof SVGElement) applyToRegion(event.target)
+    const directTarget = event.target instanceof SVGElement && event.target.hasAttribute("data-name")
+      ? event.target
+      : null
+    const target = directTarget ?? findNearbyRegion(event.clientX, event.clientY)
+    if (target) applyToRegion(target)
   }
 
   const handleCanvasKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

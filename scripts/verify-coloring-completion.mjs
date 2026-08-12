@@ -50,9 +50,19 @@ vm.runInNewContext(transpiled, {
   Symbol,
 }, { filename: sourcePath })
 
-const { advanceColoringCompletionTracker, renderSvg } = loadedModule.exports
+const { advanceColoringCompletionTracker, coloringRegionLabel, renderSvg } = loadedModule.exports
 assert.equal(typeof advanceColoringCompletionTracker, "function")
+assert.equal(typeof coloringRegionLabel, "function")
 assert.equal(typeof renderSvg, "function")
+
+const coloringPagesSource = await readFile(path.join(projectRoot, "lib", "coloring-pages.ts"), "utf8")
+const englishRegionNames = [...coloringPagesSource.matchAll(/data-name="([A-Za-z][A-Za-z0-9-]*)"/g)].map((match) => match[1])
+for (const name of englishRegionNames) {
+  assert.doesNotMatch(coloringRegionLabel(name), /^[A-Za-z]/, `${name} needs a Japanese accessible label`)
+}
+assert.equal(coloringRegionLabel("tail"), "しっぽ")
+assert.equal(coloringRegionLabel("left-paw"), "左の前足")
+assert.equal(coloringRegionLabel("背景"), "背景")
 
 const renderedSvg = renderSvg({
   id: "render-check",
@@ -67,6 +77,18 @@ assert.equal((renderedSvg.match(/role="button"/g) ?? []).length, 2)
 assert.match(renderedSvg, /<path[^>]*aria-label="描画確認の背景をぬる"\/>/)
 assert.match(renderedSvg, /<circle[^>]*fill="#f17469"[^>]*aria-label="描画確認の丸をぬる"\/>/)
 assert.match(renderedSvg, /<svg role="group">/)
+
+const englishNamedSvg = renderSvg({
+  id: "label-check",
+  title: "読み上げ確認",
+  difficulty: "easy",
+  difficultyLabel: "入門",
+  description: "",
+  svg: '<svg role="img"><path data-name="tail" d="M0 0h10v10H0Z" fill="white"/><path data-name="left-paw" d="M10 0h10v10H10Z" fill="white"/></svg>',
+}, {})
+assert.match(englishNamedSvg, /aria-label="読み上げ確認のしっぽをぬる"/)
+assert.match(englishNamedSvg, /aria-label="読み上げ確認の左の前足をぬる"/)
+assert.doesNotMatch(englishNamedSvg, /aria-label="[^"]*(?:tail|left-paw)/)
 
 const runStep = (tracker, pageId, percent) => advanceColoringCompletionTracker(tracker, pageId, percent)
 

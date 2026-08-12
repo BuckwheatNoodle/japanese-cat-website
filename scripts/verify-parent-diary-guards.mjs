@@ -206,6 +206,20 @@ assert.equal(selectedMetadataEntry.collectionId, "naokun-poop-pirate", "親が�
 assert.deepEqual(Array.from(selectedMetadataEntry.catIds), ["cat-maron", "cat-kuro"], "親が明示した正規猫だけを反映します")
 assert.equal(pictureModule.mergeDiaryEntries([{ ...builtInOverride, hidden: true }]).length, 0, "非表示overrideは従来どおり組み込み日記を隠します")
 
+const releaseCandidates = [
+  { ...builtInEntries[0], date: "2026-08-31" },
+  { ...builtInEntries[0], date: "2026-09-01" },
+]
+const publishedOnAugust = pictureModule.publishedDiaryEntries(releaseCandidates, "2026-08-31")
+assert.deepEqual(Array.from(publishedOnAugust, (entry) => entry.date), ["2026-08-31"], "未来日記は公開日まで一覧へ出しません")
+assert.equal(pictureModule.publishedDiaryEntries(releaseCandidates, "").length, 0, "現在日を確認するまでは未来日記を描画しません")
+
+const boundaryNavigation = pictureModule.diaryEntryNeighbors(releaseCandidates, "2026-08-31")
+assert.equal(boundaryNavigation.previousEntry, null)
+assert.equal(boundaryNavigation.nextEntry.date, "2026-09-01", "月をまたいでも次の日記へ進めます")
+assert.equal(boundaryNavigation.index, 0)
+assert.equal(boundaryNavigation.total, 2)
+
 const beforeMidnight = new Date(2026, 7, 12, 23, 59, 30, 0)
 const afterMidnight = new Date(2026, 7, 13, 0, 0, 30, 0)
 const actionEntry = { date: "2026-08-12", catIds: [] }

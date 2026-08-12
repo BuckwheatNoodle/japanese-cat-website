@@ -83,6 +83,28 @@ export function mergeDiaryEntries(overrides: readonly DiaryContentOverride[]) {
   return [...merged.values()].sort((a, b) => b.date.localeCompare(a.date))
 }
 
+export function publishedDiaryEntries(
+  entries: readonly DisplayDiaryEntry[],
+  todayKey: string,
+) {
+  if (!todayKey) return []
+  return entries.filter((entry) => entry.date <= todayKey)
+}
+
+export function diaryEntryNeighbors(
+  entries: readonly DisplayDiaryEntry[],
+  selectedDate: string,
+) {
+  const chronological = [...entries].sort((a, b) => a.date.localeCompare(b.date))
+  const index = chronological.findIndex((entry) => entry.date === selectedDate)
+  return {
+    index,
+    total: chronological.length,
+    previousEntry: index > 0 ? chronological[index - 1] : null,
+    nextEntry: index >= 0 && index < chronological.length - 1 ? chronological[index + 1] : null,
+  }
+}
+
 export function diaryReadMetadataSignature(
   entry: Pick<DisplayDiaryEntry, "catIds" | "collectionId">,
 ) {
@@ -138,19 +160,21 @@ export function PictureDiary() {
   }, [])
 
   useEffect(() => {
+    if (!todayKey) return
     const refresh = () => {
       try {
         const result = readContentOverrides(window.localStorage, "applied")
         const overrides = result.ok ? result.value.diaryEntries : []
-        const nextEntries = mergeDiaryEntries(overrides)
+        const nextEntries = publishedDiaryEntries(mergeDiaryEntries(overrides), todayKey)
         const nextMonths = [...new Set(nextEntries.map((entry) => entry.date.slice(0, 7)))].sort((a, b) => b.localeCompare(a))
         setEntries(nextEntries)
         setDisplayedMonth((current) => nextMonths.includes(current) ? current : nextMonths[0] ?? current)
         setSelectedDate((current) => nextEntries.some((entry) => entry.date === current) ? current : nextEntries[0]?.date ?? "")
       } catch {
-        setEntries(DIARY_ENTRIES)
-        setDisplayedMonth(DIARY_ENTRIES[0].date.slice(0, 7))
-        setSelectedDate(DIARY_ENTRIES[0].date)
+        const nextEntries = publishedDiaryEntries(DIARY_ENTRIES, todayKey)
+        setEntries(nextEntries)
+        setDisplayedMonth(nextEntries[0]?.date.slice(0, 7) ?? todayKey.slice(0, 7))
+        setSelectedDate(nextEntries[0]?.date ?? "")
       } finally {
         setOverridesReady(true)
       }
@@ -165,7 +189,7 @@ export function PictureDiary() {
       window.removeEventListener("miyuki:content-overrides-applied", refresh)
       window.removeEventListener("storage", onStorage)
     }
-  }, [])
+  }, [todayKey])
 
   const entriesByDate = useMemo(
     () => new Map(entries.map((entry) => [entry.date, entry])),
@@ -181,10 +205,12 @@ export function PictureDiary() {
   )
   const calendarWeeks = useMemo(() => createCalendarWeeks(displayedMonth), [displayedMonth])
   const selectedEntry = entriesByDate.get(selectedDate) ?? monthEntries.at(-1) ?? entries[0]
-  const selectedEntryIndex = selectedEntry ? monthEntries.findIndex((entry) => entry.date === selectedEntry.date) : -1
+  const selectedEntryDate = selectedEntry?.date ?? ""
+  const { index: selectedEntryIndex, total: diaryEntryTotal, previousEntry, nextEntry } = useMemo(
+    () => diaryEntryNeighbors(entries, selectedEntryDate),
+    [entries, selectedEntryDate],
+  )
   const monthIndex = availableMonths.indexOf(displayedMonth)
-  const previousEntry = selectedEntryIndex > 0 ? monthEntries[selectedEntryIndex - 1] : null
-  const nextEntry = selectedEntryIndex >= 0 && selectedEntryIndex < monthEntries.length - 1 ? monthEntries[selectedEntryIndex + 1] : null
   const favoriteDates = useMemo(() => new Set(state.diary.favoriteDates), [state.diary.favoriteDates])
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     if (favoritesOnly && !favoriteDates.has(entry.date)) return false
@@ -214,6 +240,7 @@ export function PictureDiary() {
 
   const selectEntry = (entry: DisplayDiaryEntry, moveToDetail = true) => {
     recordDiaryRead(entry)
+    setDisplayedMonth(entry.date.slice(0, 7))
     setSelectedDate(entry.date)
     if (moveToDetail) {
       window.requestAnimationFrame(() => {
@@ -440,7 +467,7 @@ export function PictureDiary() {
             <ChevronLeft aria-hidden="true" />
             <span><small>前の日記</small>{previousEntry ? `${previousEntry.date.slice(-2).replace(/^0/, "")}日` : "ありません"}</span>
           </button>
-          <span className="diary-entry-position">{selectedEntryIndex + 1} / {monthEntries.length}</span>
+          <span className="diary-entry-position">{selectedEntryIndex + 1} / {diaryEntryTotal}</span>
           <button type="button" disabled={!nextEntry} onClick={() => nextEntry && selectEntry(nextEntry, false)}>
             <span><small>次の日記</small>{nextEntry ? `${nextEntry.date.slice(-2).replace(/^0/, "")}日` : "ありません"}</span>
             <ChevronRight aria-hidden="true" />

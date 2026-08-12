@@ -1991,6 +1991,7 @@
 .coloring-canvas { min-width: 100%; max-width: 145%; margin: auto; transition: width 180ms ease; }
 .coloring-canvas svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 8px 10px rgba(76,48,31,.12)); }
 .coloring-canvas [data-name] { cursor: crosshair; transition: filter 100ms ease; }
+.coloring-canvas [data-name]:focus-visible { outline: 6px solid var(--ring); outline-offset: 7px; filter: brightness(.94) drop-shadow(0 0 8px color-mix(in srgb, var(--ring) 72%, transparent)); }
 .coloring-canvas [data-name]:hover { filter: brightness(.96); }
 .coloring-canvas[data-tool="eyedropper"] [data-name] { cursor: copy; }
 .coloring-canvas[data-tool="eraser"] [data-name] { cursor: cell; }
