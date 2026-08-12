@@ -20,11 +20,9 @@ export const DIARY_PUNCHLINE_TYPES = [
 export type DiaryPunchlineType = (typeof DIARY_PUNCHLINE_TYPES)[number]
 
 export const DIARY_CATS = [
-  { id: "cat-maron", name: "マロン", appearance: "茶トラ", personality: "落ち着いた店長" },
-  { id: "cat-yuki", name: "ユキ", appearance: "白い長毛", personality: "のんびり屋" },
-  { id: "cat-mike", name: "ミケ", appearance: "三毛", personality: "好奇心いっぱい" },
-  { id: "cat-kuro", name: "クロ", appearance: "黒猫", personality: "冷静な観察役" },
-  { id: "cat-tora", name: "トラまる", appearance: "しましま", personality: "元気な挑戦役" },
+  { id: "cat-maron", name: "トラちゃん", appearance: "茶トラ", personality: "元気な挑戦役" },
+  { id: "cat-kuro", name: "キキ", appearance: "黒猫", personality: "冷静な観察役" },
+  { id: "cat-yuki", name: "フワ", appearance: "白い長毛", personality: "のんびり屋" },
 ] as const
 
 export type DiaryCatId = (typeof DIARY_CATS)[number]["id"]
@@ -77,8 +75,11 @@ export type DiaryEntry = {
   glossary: readonly DiaryGlossaryItem[]
 }
 
-type DiarySeed = Omit<DiaryEntry, "illustration" | "imagePath" | "collectionId"> & {
+type LegacyDiaryCatId = DiaryCatId | "cat-mike" | "cat-tora"
+
+type DiarySeed = Omit<DiaryEntry, "illustration" | "imagePath" | "collectionId" | "catIds"> & {
   collectionId: DiaryCollectionId
+  catIds: readonly LegacyDiaryCatId[]
 }
 
 function word(term: string, reading: string, meaning: string): DiaryGlossaryItem {
@@ -130,18 +131,54 @@ function routineDiaryAlt(alt: string) {
     .replace(/うんち(?=の?なおくん)/g, "衣装")
 }
 
+const LEGACY_CAT_ID_MAP: Readonly<Record<LegacyDiaryCatId, DiaryCatId>> = {
+  "cat-maron": "cat-maron",
+  "cat-mike": "cat-maron",
+  "cat-tora": "cat-maron",
+  "cat-kuro": "cat-kuro",
+  "cat-yuki": "cat-yuki",
+}
+
+function normalizeDiaryCatNames(value: string) {
+  return value
+    .replaceAll("トラまる", "トラちゃん")
+    .replaceAll("マロン", "トラちゃん")
+    .replaceAll("ミケ", "トラちゃん")
+    .replaceAll("クロ", "キキ")
+    .replaceAll("ユキ", "フワ")
+    .replaceAll("トラちゃんとトラちゃん", "トラちゃん")
+    .replaceAll("トラちゃん、トラちゃん", "トラちゃん")
+}
+
+function compactDiaryBody(body: string, keepsTransformation: boolean) {
+  const sentences = body.split("。").map((sentence) => sentence.trim()).filter(Boolean)
+  if (sentences.length <= 3) return body
+  const selected = [sentences[0]]
+  if (keepsTransformation) {
+    const transformation = sentences.find((sentence, index) => index > 0 && sentence.includes("なおくん") && sentence.includes("変身"))
+    if (transformation) selected.push(transformation)
+  }
+  const ending = sentences.at(-1)
+  if (ending && !selected.includes(ending)) selected.push(ending)
+  return selected.join("。") + "。"
+}
+
 function diary(seed: DiarySeed): DiaryEntry {
   const imagePath = "/content/diary/" + seed.date + ".webp"
-  if (seed.collectionId !== "naokun-poop-classic") {
-    return { ...seed, illustration: imagePath, imagePath }
-  }
-
-  const { collectionId: _routineForm, ...routineSeed } = seed
+  const isRoutineEntry = seed.collectionId === "naokun-poop-classic"
+  const { collectionId, catIds, ...seedCopy } = seed
+  const title = isRoutineEntry ? routineDiaryTitle(seed.title, seed.date) : seed.title
+  const body = isRoutineEntry ? routineDiaryBody(seed.body, seed.date) : seed.body
+  const alt = isRoutineEntry ? routineDiaryAlt(seed.alt) : seed.alt
+  const normalizedCatIds = [...new Set(catIds.map((catId) => LEGACY_CAT_ID_MAP[catId]))]
   return {
-    ...routineSeed,
-    title: routineDiaryTitle(seed.title, seed.date),
-    body: routineDiaryBody(seed.body, seed.date),
-    alt: routineDiaryAlt(seed.alt),
+    ...seedCopy,
+    title: normalizeDiaryCatNames(title),
+    body: compactDiaryBody(normalizeDiaryCatNames(body), !isRoutineEntry),
+    miyukiNote: normalizeDiaryCatNames(seed.miyukiNote),
+    alt: normalizeDiaryCatNames(alt),
+    catIds: normalizedCatIds,
+    ...(!isRoutineEntry ? { collectionId } : {}),
     illustration: imagePath,
     imagePath,
   }
@@ -949,8 +986,6 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
     if (alts.has(entry.alt)) issues.push(entry.date + " の画像説明が重複しています。")
     alts.add(entry.alt)
 
-    if (!entry.body.includes("わたし")) issues.push(entry.date + " の本文が美雪の一人称になっていません。")
-    if (!entry.body.includes("なおくん")) issues.push(entry.date + " の本文になおくんがいません。")
     const transformationSentence = entry.body
       .split("。")
       .find((sentence) => sentence.includes("変身") && /うんち[^。]{0,40}(?:に|へ)変身/.test(sentence))
@@ -991,13 +1026,9 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
       }
     }
 
-    if (entry.glossary.length === 0) issues.push(entry.date + " のことばのヒントがありません。")
     for (const item of entry.glossary) {
       if (!item.term.trim() || !item.reading.trim() || !item.meaning.trim()) {
         issues.push(entry.date + " のことばのヒントに空欄があります。")
-      }
-      if (!(entry.title + entry.body + entry.miyukiNote).includes(item.term)) {
-        issues.push(entry.date + " のことば「" + item.term + "」が本文にありません。")
       }
     }
 

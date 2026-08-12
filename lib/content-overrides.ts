@@ -123,7 +123,6 @@ export const BUILT_IN_DIARY_ASSETS = [
   "/images/diary-2025-08-11.webp",
   "/images/diary-2025-08-10.webp",
   "/skins/cream-soda/activity-diary.webp",
-  "/content/story/paw-key-discovery.webp",
   "/cute-tabby-sitting.webp",
 ] as const
 

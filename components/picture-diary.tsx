@@ -235,13 +235,8 @@ export function PictureDiary() {
       return
     }
     recordDiaryRead(selectedEntry)
-    const glossarySpeech = selectedEntry.glossary
-      .map((item) => item.term + "、" + item.reading + "。" + item.meaning)
-      .join("。")
     const spokenDiary = selectedEntry.title
       + "。" + selectedEntry.body
-      + "。美雪のひとこと。" + selectedEntry.miyukiNote
-      + (glossarySpeech ? "。ことばのヒント。" + glossarySpeech : "")
     const utterance = new SpeechSynthesisUtterance(spokenDiary)
     utterance.lang = "ja-JP"
     utterance.volume = Math.max(0.2, state.settings.sfxVolume)
@@ -267,14 +262,13 @@ export function PictureDiary() {
         <div>
           <p className="screen-kicker">MIYUKI&apos;S PICTURE DIARY</p>
           <h2 id="diary-title">美雪の絵日記</h2>
-          <p>カレンダーで日付を選ぶと、その日の事件記録を読めます。なおくんの変身は物語の中のマスコット表現です。</p>
+          <p>カレンダーで日付を選ぶと、美雪と三匹の猫の日々を短い記録で読めます。</p>
         </div>
       </div>
 
       <div className="diary-cast-strip" aria-label="絵日記の登場人物">
         <span><b>美雪</b><small>記録・検証・ツッコミ担当</small></span>
-        <span className="is-naokun"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-cloud.webp")} alt="" width={34} height={34} /></i><b>なおくん</b><small>美雪の兄・変身役を自分から希望</small></span>
-        <span><b>いつもの5匹</b><small>マロン・ユキ・ミケ・クロ・トラまる</small></span>
+        <span><b>いつもの3匹</b><small>トラちゃん・キキ・フワ</small></span>
       </div>
 
       <section className="diary-calendar" aria-labelledby="calendar-heading">
@@ -394,26 +388,6 @@ export function PictureDiary() {
               </button>
             ) : null}
             <span className="sr-only" aria-live="polite">{speechMessage}</span>
-            <div className="miyuki-note">
-              <PawPrint aria-hidden="true" />
-              <div>
-                <strong>美雪のひとこと</strong>
-                <p>{selectedEntry.miyukiNote}</p>
-              </div>
-            </div>
-            {selectedEntry.glossary.length > 0 ? (
-              <div className="miyuki-note" aria-label="ことばのヒント">
-                <Sparkles aria-hidden="true" />
-                <div>
-                  <strong>ことばのヒント</strong>
-                  {selectedEntry.glossary.map((item) => (
-                    <p key={selectedEntry.date + "-" + item.term}>
-                      <b>{item.term}（{item.reading}）</b>：{item.meaning}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
 

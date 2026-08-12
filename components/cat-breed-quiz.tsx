@@ -178,24 +178,24 @@ const TIME_PER_QUESTION = 15000 // 15秒
 const recordKeyFor = (mode: GlobalDifficulty, questionCount: QuestionCount) => `${mode}:${questionCount}`
 
 const BREED_CORRECT_REACTIONS = [
-  "美雪『写真だけで正解！』なおくんは自分の品種を『うんち兄』と申告。猫審査員が受け付けを閉じました。",
-  "猫たちから肉球スタンプ。なおくんも押そうとして、肉球がないことを今思い出しました。",
-  "大正解！ なおくんは猫博士の虫めがねを反対向きに持ち、決め顔だけ拡大しています。",
+  "美雪『写真だけで正解！』トラちゃんから大きな肉球スタンプが届きました。",
+  "大正解！ キキがしっぽをぴんと立てて合格を知らせています。",
+  "猫博士級の観察力！ フワも写真の横で得意そうな顔です。",
 ] as const
 
 function breedReaction(question: BreedQuestion, selectedAnswer: string | null, timedOut: boolean, index: number) {
-  if (timedOut) return "時間切れでも特徴を読めば収穫あり。なおくんの回答は『すごく猫』。猫たち『広すぎます』"
+  if (timedOut) return "時間切れでも特徴を読めば収穫あり。耳・目・毛・しっぽを順番に見てみよう。"
   if (selectedAnswer === question.correctBreed) return BREED_CORRECT_REACTIONS[index % BREED_CORRECT_REACTIONS.length]
-  if ((selectedAnswer?.length ?? 0) >= 16) return `なおくん『${selectedAnswer}と${question.correctBreed}、名前の長さはいい勝負！』美雪『クイズは文字数勝負ではありません』`
-  return `美雪『正解は${question.correctBreed}！』なおくんは「${selectedAnswer ?? "ひみつ"}も親せきかも」と交渉中。猫本人は写真の外を見ています。`
+  if ((selectedAnswer?.length ?? 0) >= 16) return `美雪『正解は${question.correctBreed}！ 長い名前は、区切って覚えると分かりやすいよ』`
+  return `美雪『正解は${question.correctBreed}！』写真の耳・目・毛・しっぽをもう一度見てみよう。`
 }
 
 function breedResultCopy(correct: number, total: number) {
   const ratio = total ? correct / total : 0
-  if (ratio === 1) return "全問正解で猫写真館の名誉館長！ なおくんは副館長の札を自作しましたが、裏に『見習い』と書かれています。"
-  if (ratio >= 0.8) return "見分ける目はかなり本格派。猫たちはモデル料におやつを希望、なおくんはなぜか自分の分も請求中です。"
-  if (ratio >= 0.5) return "半分以上正解！ 美雪の特徴メモは正確、なおくんのメモは全部『かわいい』でした。気持ちは分かります。"
-  return "名前が長い品種も、耳・目・毛・しっぽに分ければ覚えやすいよ。なおくんはまず自分の帽子の特徴から復習中。"
+  if (ratio === 1) return "全問正解で猫写真館の名誉館長！ 三匹から金の肉球スタンプです。"
+  if (ratio >= 0.8) return "見分ける目はかなり本格派。トラちゃん、キキ、フワも拍手しています。"
+  if (ratio >= 0.5) return "半分以上正解！ 特徴メモを見返せば、もっと見分けられそうです。"
+  return "名前が長い品種も、耳・目・毛・しっぽに分ければ覚えやすいよ。"
 }
 
 function shuffle<T>(items: readonly T[]): T[] {

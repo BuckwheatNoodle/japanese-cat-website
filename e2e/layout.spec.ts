@@ -123,6 +123,60 @@ test.describe("ゲームタブ", () => {
   })
 })
 
+test.describe("なおくん表示範囲と三匹の正史", () => {
+  test("日記と変身セレクト以外にはなおくんを表示しない", async ({ page }) => {
+    const browserErrors: string[] = []
+    page.on("console", (message) => {
+      if (message.type() === "error") browserErrors.push(message.text())
+    })
+    page.on("pageerror", (error) => browserErrors.push(error.message))
+
+    await page.goto("/")
+    await expect(page.getByText("今日のなおくん")).toHaveCount(0)
+    await expect(page.locator("body")).not.toContainText("なおくん")
+    await expect(page.locator('img[alt*="活動パスポートを持つ美雪と、トラちゃん、キキ、フワ"]')).toHaveCount(1)
+
+    await openPrimaryTab(page, "games")
+    await expect(page.getByText("なおくん変身セレクト", { exact: true })).toHaveCount(1)
+    await expect(page.getByText("トラちゃん・フワ・キキを見分けて保護。犬は見送る", { exact: true })).toBeVisible()
+    await expect(page.getByTestId("games-content")).not.toContainText("なおくんと犬")
+
+    await openPrimaryTab(page, "coloring")
+    await expect(page.getByTestId("coloring-content")).not.toContainText("なおくん")
+    await openPrimaryTab(page, "fortune")
+    await expect(page.getByTestId("fortune-content")).not.toContainText("なおくん")
+
+    await openPrimaryTab(page, "diary")
+    const diary = page.getByTestId("diary-content")
+    await expect(diary).toContainText("いつもの3匹")
+    await expect(diary).toContainText("トラちゃん・キキ・フワ")
+    await expect(diary).not.toContainText("美雪の兄・変身役")
+    const visibleDiaryBody = await diary.locator(".diary-entry-body").first().innerText()
+    expect(visibleDiaryBody.split("。").filter(Boolean).length).toBeLessThanOrEqual(3)
+
+    await page.goto("/#club")
+    await expect(page.getByTestId("club-content")).toBeVisible()
+    await expect(page.getByTestId("club-content")).not.toContainText("なおくん")
+    await expect(page.getByTestId("club-content")).not.toContainText("分岐ストーリー")
+    await expect(page.getByRole("button", { name: /いつもの三匹図鑑/ })).toBeVisible()
+    await page.getByRole("button", { name: /いつもの三匹図鑑/ }).click()
+
+    const collection = page.getByTestId("collections-content")
+    await expect(collection).toBeVisible()
+    await expect(collection).not.toContainText("なおくん")
+    await expect(collection).toContainText("トラちゃん")
+    await expect(collection).toContainText("キキ")
+    await expect(collection).toContainText("フワ")
+    for (const legacyName of ["マロン", "ユキ", "ミケ", "クロ", "トラまる"]) {
+      await expect(collection).not.toContainText(legacyName)
+    }
+    const collectionHero = page.getByRole("img", { name: "図鑑を開く美雪と、トラちゃん、キキ、フワ" })
+    await expect(collectionHero).toBeVisible()
+    await expect(collectionHero.locator('img[src*="cat-book-three-cats.webp"]')).toBeVisible()
+    expect(browserErrors).toEqual([])
+  })
+})
+
 test.describe("スクリーンショット", () => {
   test("ホームタブ", async ({ page }) => {
     await page.goto("/")

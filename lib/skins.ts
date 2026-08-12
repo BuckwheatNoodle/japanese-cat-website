@@ -78,7 +78,7 @@ const CREAM_SODA_SKIN: SkinDefinition = {
       activityColoring: "/skins/cream-soda/activity-coloring.webp",
       activityFortune: "/skins/cream-soda/activity-fortune.webp",
       activityDiary: "/skins/cream-soda/activity-diary.webp",
-      passportHero: "/skins/cream-soda/passport/today-board.webp",
+      passportHero: "/skins/cream-soda/passport/today-board-three-cats.webp",
       gameGuide: "/cute-tabby-waving.webp",
       footerTrim: "/skins/cream-soda/footer-trim-cropped.webp",
       navHome: "/skins/cream-soda/nav-home.webp",
@@ -129,7 +129,6 @@ const CREAM_SODA_SKIN: SkinDefinition = {
         white: "/white-cat.webp",
         black: "/black-cat.webp",
         dog: "/dog.webp",
-        poop: "/poop-icon.webp",
       },
     },
 }

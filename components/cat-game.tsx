@@ -11,7 +11,7 @@ import { useSkin } from "@/components/skin-provider"
 import { createEventId } from "@/lib/progression"
 
 type GameState = "idle" | "countdown" | "playing" | "gameOver"
-type TargetType = "tabby" | "white" | "black" | "dog" | "poop"
+type TargetType = "tabby" | "white" | "black" | "dog"
 type DifficultyId = "easy" | "normal" | "speed"
 type GlobalDifficulty = "gentle" | "standard" | "challenge"
 
@@ -34,7 +34,6 @@ const TARGET_RULES = {
   white: { points: 30, lifespan: 3300, label: "白猫" },
   black: { points: 50, lifespan: 2300, label: "黒猫" },
   dog: { points: -20, lifespan: 3800, label: "わんちゃん" },
-  poop: { points: -20, lifespan: 4600, label: "なおくん" },
 } satisfies Record<TargetType, { points: number; lifespan: number; label: string }>
 
 const DIFFICULTIES = [
@@ -176,8 +175,8 @@ export function CatGame() {
     spawnCountRef.current += 1
     const random = Math.random()
     const type: TargetType = spawnNumber > 0 && spawnNumber % 7 === 0
-      ? "poop"
-      : random < 0.08 ? "dog" : random < 0.2 ? "poop" : random < 0.27 ? "black" : random < 0.47 ? "white" : "tabby"
+      ? "dog"
+      : random < 0.12 ? "dog" : random < 0.22 ? "black" : random < 0.44 ? "white" : "tabby"
     const config = TARGET_RULES[type]
     setTargets((current) => [
       ...current.slice(-7),
@@ -308,12 +307,12 @@ export function CatGame() {
   }
 
   return (
-    <GameShell title="保護ねこゲーム" subtitle="猫だけを保護して、なおくんとわんちゃんは見送ろう。連続保護でコンボ倍率アップ！" icon={PawPrint} tone="coral">
+    <GameShell title="保護ねこゲーム" subtitle="三匹の猫を保護して、わんちゃんは見送ろう。連続保護でコンボ倍率アップ！" icon={PawPrint} tone="coral">
       {gameState === "idle" && (
         <div className="game-start-view">
           <div className="game-intro-mark"><ShieldCheck aria-hidden="true" /></div>
           <h3 ref={setupHeadingRef} tabIndex={-1}>レスキュー隊の準備はいい？</h3>
-          <p>茶トラ・白猫・黒猫だけが保護対象です。なおくんやわんちゃんをタップすると20点減点され、コンボも途切れます。</p>
+          <p>トラちゃん・フワ・キキが保護対象です。わんちゃんをタップすると20点減点され、コンボも途切れます。</p>
           <div className="game-difficulty-grid" aria-label="むずかしさを選ぶ">
             {DIFFICULTIES.map((item) => (
               <button key={item.id} type="button" className={difficultyId === item.id ? "is-selected" : ""} onClick={() => setDifficultyId(item.id)} aria-pressed={difficultyId === item.id}>
@@ -322,7 +321,7 @@ export function CatGame() {
             ))}
           </div>
           <div className="rescue-legend">
-            <span><Cat aria-hidden="true" />猫は保護して得点</span><span><Target aria-hidden="true" />4連続で×2</span><span><Heart aria-hidden="true" />なおくんは見送る</span><span><PawPrint aria-hidden="true" />誤タップは−20点</span>
+            <span><Cat aria-hidden="true" />三匹を保護して得点</span><span><Target aria-hidden="true" />4連続で×2</span><span><Heart aria-hidden="true" />犬は見送る</span><span><PawPrint aria-hidden="true" />誤タップは−20点</span>
           </div>
           <GamePrimaryButton onClick={prepareGame}><Play aria-hidden="true" />このモードで始める</GamePrimaryButton>
         </div>
@@ -330,12 +329,12 @@ export function CatGame() {
 
       {gameState === "countdown" && (
         <>
-          <div className="game-countdown" aria-hidden="true"><span>{countdown || "GO!"}</span><p>猫だけを保護・なおくんとわんちゃんは見送り！</p></div>
+          <div className="game-countdown" aria-hidden="true"><span>{countdown || "GO!"}</span><p>三匹を保護・わんちゃんは見送り！</p></div>
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {countdown === 3
-              ? "3秒後にゲームが始まります。猫だけを保護して、なおくんとわんちゃんはタップせず見送ってね。"
+              ? "3秒後にゲームが始まります。三匹の猫だけを保護して、わんちゃんはタップせず見送ってね。"
               : countdown === 0
-                ? "ゲームスタート！ 猫だけを保護して、なおくんとわんちゃんは見送りです。"
+                ? "ゲームスタート！ 三匹の猫だけを保護して、わんちゃんは見送りです。"
                 : ""}
           </p>
         </>
@@ -363,7 +362,7 @@ export function CatGame() {
             </button>
             <span id="rescue-keyboard-status" className="sr-only" role="status" aria-live="polite" aria-atomic="true">{rescueAnnouncement}</span>
           </div>
-          <div ref={stageRef} className="rescue-stage" aria-label="猫だけを保護し、なおくんとわんちゃんを見送るゲームエリア">
+          <div ref={stageRef} className="rescue-stage" aria-label="三匹の猫を保護し、わんちゃんを見送るゲームエリア">
             {targets.map((item) => (
               <button
                 key={item.id}
@@ -384,7 +383,7 @@ export function CatGame() {
             <div aria-hidden="true">
               {floatingScores.map((entry) => <span key={entry.id} className={`rescue-feedback ${entry.positive ? "is-positive" : "is-negative"}`} style={{ left: entry.x, top: entry.y }}>{entry.text}</span>)}
             </div>
-            <div className="rescue-stage-hint" aria-hidden="true">猫だけを保護／なおくん・犬は見送り</div>
+            <div className="rescue-stage-hint" aria-hidden="true">三匹を保護／犬は見送り</div>
           </div>
         </div>
       )}
@@ -397,8 +396,8 @@ export function CatGame() {
           <div className="game-result-stars" aria-label={`${rating}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= rating ? "is-on" : ""} aria-hidden="true" />)}</div>
           <p>{rescued}匹を保護・ベストコンボ{bestCombo}回・誤タップ{mistakes}回</p>
           <p>{mistakes === 0
-            ? "猫だけを見分けて、なおくんとわんちゃんを上手に見送れました！"
-            : "なおくんか、わんちゃんをタップしてしまいました。次は猫だけを保護しよう！"}</p>
+            ? "三匹を見分けて、わんちゃんを上手に見送れました！"
+            : "わんちゃんをタップしてしまいました。次は三匹だけを保護しよう！"}</p>
           <div className="game-result-record"><Clock3 aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${playedDifficulty.name}のベスト`}</span><strong>{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, runDifficultyId)] ?? 0) : Math.max(score, highScores[recordKeyFor(runGlobalDifficulty, runDifficultyId)] ?? 0)}点</strong></div>
           {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={prepareGame}><RotateCcw aria-hidden="true" />もう一度遊ぶ</GamePrimaryButton>

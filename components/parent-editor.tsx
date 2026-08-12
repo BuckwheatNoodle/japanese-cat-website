@@ -104,11 +104,9 @@ const TRANSFORMATION_LABELS: Record<DiaryOverrideTransformationForm, string> = {
 }
 
 const CAT_LABELS: Record<DiaryOverrideCatId, string> = {
-  "cat-maron": "マロン",
-  "cat-yuki": "ユキ",
-  "cat-mike": "ミケ",
-  "cat-kuro": "クロ",
-  "cat-tora": "トラまる",
+  "cat-maron": "トラちゃん",
+  "cat-kuro": "キキ",
+  "cat-yuki": "フワ",
 }
 
 function createEmptyDiary(): DiaryForm {

@@ -20,10 +20,10 @@ const ACTIVITIES: Array<{
   shortLabel: string
   description: string
 }> = [
-  { id: "games", label: "ゲーム攻略室", shortLabel: "ゲーム", description: "6競技から選んでベスト記録を更新。なおくんの珍プレーも検証できます。" },
+  { id: "games", label: "ゲーム攻略室", shortLabel: "ゲーム", description: "6競技から選んでベスト記録を更新できます。" },
   { id: "coloring", label: "カラー設計室", shortLabel: "ぬりえ", description: "配色と細部を自分で設計。作品は端末に自動保存されます。" },
-  { id: "fortune", label: "今日のねこ占い", shortLabel: "占い", description: "名前ごとの結果を比較。まれになおくんが勝手に乱入します。" },
-  { id: "diary", label: "美雪の事件記録", shortLabel: "日記", description: "美雪・なおくん・猫が起こした事件と、そのオチを調査します。" },
+  { id: "fortune", label: "今日のねこ占い", shortLabel: "占い", description: "名前ごとの結果と、今日のアドバイスを確認できます。" },
+  { id: "diary", label: "美雪の事件記録", shortLabel: "日記", description: "美雪と三匹の猫の日々を短い記録で読めます。" },
 ]
 
 export function HomePassport({ visitedTabs, lastActivity, recommendation, onNavigate }: HomePassportProps) {
@@ -50,7 +50,7 @@ export function HomePassport({ visitedTabs, lastActivity, recommendation, onNavi
         <div className="passport-board-art">
           <Image
             src={skin.assets.passportHero}
-            alt="パスポートを持つ美雪と、うんち帽子で喜ぶなおくん、2匹の猫"
+            alt="活動パスポートを持つ美雪と、トラちゃん、キキ、フワ"
             fill
             sizes="(max-width: 719px) 92vw, 360px"
           />
@@ -105,7 +105,7 @@ export function HomePassport({ visitedTabs, lastActivity, recommendation, onNavi
       {completed && (
         <div className="passport-complete" role="status">
           <Trophy aria-hidden="true" />
-          <span><strong>全エリア調査完了。</strong>美雪が記録を確認している横で、なおくんは勝手に「うんち調査本部長」の名札を作りました。</span>
+          <span><strong>全エリア調査完了。</strong>トラちゃん、キキ、フワから大きな肉球スタンプが届きました。</span>
         </div>
       )}
     </section>

@@ -1073,7 +1073,7 @@
 
 .diary-cast-strip {
   display: grid;
-  grid-template-columns: .8fr 1.45fr .8fr;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
   gap: 7px;
   margin: 0 0 14px;
 }
@@ -1090,13 +1090,6 @@
   background: color-mix(in srgb, var(--skin-mint) 28%, white);
   box-shadow: 0 3px 0 color-mix(in srgb, var(--skin-line) 45%, transparent);
   text-align: center;
-}
-
-.diary-cast-strip > span.is-naokun {
-  position: relative;
-  grid-template-columns: 34px minmax(0, 1fr);
-  text-align: left;
-  background: color-mix(in srgb, var(--skin-butter) 48%, white);
 }
 
 .diary-cast-strip i { grid-row: 1 / 3; align-self: center; font-size: 1.35rem; font-style: normal; }
@@ -1857,7 +1850,7 @@
 .rescue-stage::before { position: absolute; inset: auto 0 25%; height: 14px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.72) 19px 34px); content: ""; }
 .rescue-target { position: absolute; display: grid; width: 70px; height: 70px; place-items: center; padding: 2px; border: 0; border-radius: 22px; background: rgba(255,255,255,.75); box-shadow: 0 6px 0 rgba(92,58,33,.16), 0 8px 16px rgba(92,58,33,.12); transform: translate(-50%, -50%); animation: target-arrive .22s ease both; touch-action: none; }
 .rescue-target:active { transform: translate(-50%, -47%) scale(.92); box-shadow: 0 2px 0 rgba(92,58,33,.16); }
-.rescue-target[data-kind="dog"], .rescue-target[data-kind="poop"] { background: color-mix(in srgb, var(--skin-butter) 62%, white); }
+.rescue-target[data-kind="dog"] { background: color-mix(in srgb, var(--skin-butter) 62%, white); }
 .rescue-target img { width: 62px; height: 62px; object-fit: contain; pointer-events: none; }
 .rescue-target small { position: absolute; right: -3px; top: -4px; display: grid; min-width: 27px; height: 27px; place-items: center; border: 2px solid white; border-radius: 999px; color: white; background: var(--skin-action); font-size: .7rem; font-weight: 800; }
 .rescue-feedback { position: absolute; z-index: 3; pointer-events: none; font-size: 1.1rem; font-weight: 900; text-shadow: 0 2px white; transform: translate(-50%, -50%); animation: score-float .85s ease-out both; }

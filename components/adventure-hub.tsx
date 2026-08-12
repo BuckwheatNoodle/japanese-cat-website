@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import {
   ArrowRight,
-  BookHeart,
   Check,
   CircleDollarSign,
   Clock3,
@@ -17,7 +16,7 @@ import { ExperienceArtwork } from "@/components/experience-artwork"
 import styles from "@/components/experience.module.css"
 import type { ActionCheck } from "@/lib/progression"
 
-export type AdventureDestination = "room" | "collections" | "story"
+export type AdventureDestination = "room" | "collections"
 
 export type AdventureMission = {
   id: string
@@ -38,7 +37,6 @@ export type AdventureHubProps = {
   collectionCount: number
   collectionTotal: number
   roomItemCount: number
-  storyChapterLabel?: string
   onClaimMission: (missionId: string) => ActionCheck
   onOpen: (destination: AdventureDestination) => void
 }
@@ -92,22 +90,12 @@ const ENTRANCES: Array<{
   {
     id: "collections",
     eyebrow: "COLLECTION BOOK",
-    title: "コレクション図鑑",
-    description: "発見条件と、猫・なおくん変身の記録を確認します。",
-    art: "/content/collections/cat-book.webp",
-    alt: "猫となおくんの変身カードが並ぶ図鑑",
+    title: "いつもの三匹図鑑",
+    description: "トラちゃん・キキ・フワの発見記録を確認します。",
+    art: "/content/collections/cat-book-three-cats.webp",
+    alt: "図鑑を開く美雪と、トラちゃん、キキ、フワ",
     icon: LibraryBig,
     tone: "butter",
-  },
-  {
-    id: "story",
-    eyebrow: "CAT CAFE STORY",
-    title: "分岐ストーリー",
-    description: "選択によって結末が変わる、猫カフェの事件ファイル。",
-    art: "/content/story/paw-key-discovery.webp",
-    alt: "不思議な扉を見つけた美雪と猫たちとなおくん",
-    icon: BookHeart,
-    tone: "blush",
   },
 ]
 
@@ -118,7 +106,6 @@ export function AdventureHub({
   collectionCount,
   collectionTotal,
   roomItemCount,
-  storyChapterLabel = "第1話をプレイ",
   onClaimMission,
   onOpen,
 }: AdventureHubProps) {
@@ -359,9 +346,7 @@ export function AdventureHub({
             const Icon = entrance.icon
             const meta = entrance.id === "room"
               ? `家具 ${roomItemCount}こ`
-              : entrance.id === "collections"
-                ? `発見 ${collectionCount} / ${collectionTotal}`
-                : storyChapterLabel
+              : `発見 ${collectionCount} / ${collectionTotal}`
 
             return (
               <button

@@ -28,17 +28,17 @@ const presentationMultiplierFor = (mode: GlobalDifficulty) => mode === "gentle" 
 const recordKeyFor = (mode: GlobalDifficulty, speedId: SpeedId) => `${mode}:${speedId}`
 
 const SIMON_SUCCESS_REACTIONS = [
-  "美雪『正解！』なおくんは一個の順番で、もう優勝パレードを始めました。",
-  "猫たちがしっぽで同じ順番を再現。なおくんのしっぽ役は、本人の腕だそうです。",
-  "ぴったり！ なおくんは最後の色だけ三倍大きな声で発表。音量は採点に入りません。",
-  "猫審査員から肉球スタンプ。なおくんは額へ押してもらう場所を探しています。",
+  "美雪『正解！』トラちゃんが優勝パレードを始めました。",
+  "キキがしっぽで同じ順番を再現しています。",
+  "ぴったり！ フワからやさしい肉球拍手です。",
+  "三匹の猫審査員から肉球スタンプが届きました。",
 ] as const
 
 function simonResultCopy(level: number) {
-  if (level >= 10) return "美雪『十個以上！』猫たちは大拍手。なおくんは順番を忘れないうちに、勝利ポーズだけ先に保存しました。"
-  if (level >= 6) return "猫たち『かなり覚えたにゃ』。なおくんは色ではなく、自分の決め顔の順番を六個覚えました。"
-  if (level >= 3) return "美雪『いい記録！』なおくんは次の作戦として、全部同じ色を押す案を提出。すぐ却下です。"
-  return "猫たちはもう一度見せる準備OK。なおくんは一色目からアンコールを求めています。ゆっくり再挑戦しよう！"
+  if (level >= 10) return "美雪『十個以上！』三匹から大きな拍手です。"
+  if (level >= 6) return "三匹『かなり覚えたにゃ』。色の順番をもう一度記録しよう。"
+  if (level >= 3) return "美雪『いい記録！』次は一つ長い順番を目指そう。"
+  return "三匹はもう一度見せる準備OK。ゆっくり再挑戦しよう！"
 }
 
 export function CatSimonGame() {
@@ -209,7 +209,7 @@ export function CatSimonGame() {
       setGameState("retry")
       const expected = PADS[currentSequence[inputIndexRef.current]]?.label ?? "正しい色"
       const chosen = PADS[padId]?.label ?? "その色"
-      setSceneMessage(`猫たち『いまは${expected}にゃ』。なおくん『${chosen}も応援していました』。美雪『色に応援席はありません』`)
+      setSceneMessage(`三匹『いまは${expected}にゃ』。選んだ${chosen}の場所も覚えておこう。`)
       timeoutRef.current = window.setTimeout(() => showSequence(sequenceRef.current), 900)
     } else {
       clearVisualTimers()

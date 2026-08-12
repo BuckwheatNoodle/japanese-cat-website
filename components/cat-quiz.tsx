@@ -401,27 +401,27 @@ const TIME_PER_QUESTION = 10000 // 10秒 (ミリ秒)
 const recordKeyFor = (mode: GlobalDifficulty, questionCount: number) => `${mode}:${questionCount}`
 
 const QUIZ_CORRECT_REACTIONS = [
-  "美雪『正解！』なおくんは猫博士の白衣を前後逆に着たまま、先におじぎしました。",
-  "猫審査員が肉球を一回。なおくんは自分の答えではないのに二回おじぎしています。",
-  "ぴったり！ 美雪が博士ノートへ記録する横で、なおくんは表紙に大きく『うんち博士』と追記中。",
+  "美雪『正解！』トラちゃんから大きな肉球スタンプです。",
+  "猫審査員のキキが、しっぽをぴんと立てて合格を知らせています。",
+  "ぴったり！ 美雪が博士ノートへ記録し、フワも拍手しています。",
 ] as const
 
 function quizReaction(question: QuizQuestion, selectedAnswer: string | null, timedOut: boolean, questionIndex: number) {
-  if (timedOut) return "時間切れでも答えを読めば一歩前進。なおくんの珍回答は『時計が速すぎる』でした。猫たちは時計を確認しています。"
+  if (timedOut) return "時間切れでも答えを読めば一歩前進。解説を確認して次へ進もう。"
   if (selectedAnswer === question.correctAnswer) return QUIZ_CORRECT_REACTIONS[questionIndex % QUIZ_CORRECT_REACTIONS.length]
-  if (selectedAnswer?.includes("ゼリー")) return "美雪『猫はゼリーではありません』。なおくんはスプーンを隠し、猫たちへ深くおわびしました。"
-  if (selectedAnswer?.includes("電気")) return "猫たち『充電口はありません』。なおくんはコンセントを探すふりをして、そっと席へ戻りました。"
-  if (selectedAnswer?.includes("猫袋")) return "なおくん『猫袋なら、ぼくも入れる？』猫たち『売り切れです』。そもそも正解の名前ではありません。"
-  if (selectedAnswer?.includes("猫は小判が好き")) return "なおくんは小判を猫用おやつと交換しようと交渉中。猫店長『ことわざを最初から読み直してください』"
-  return `なおくんの珍回答も「${selectedAnswer ?? "ひみつ"}」。美雪『同じ間違いなら仲間だね』猫たち『次は解説を読むにゃ』`
+  if (selectedAnswer?.includes("ゼリー")) return "美雪『猫はゼリーではありません』。解説で正しい特徴を確認しよう。"
+  if (selectedAnswer?.includes("電気")) return "三匹『猫に充電口はありません』。正しい答えを見てみよう。"
+  if (selectedAnswer?.includes("猫袋")) return "美雪『その名前ではありません』。正しい呼び方を覚えよう。"
+  if (selectedAnswer?.includes("猫は小判が好き")) return "ことわざを最初から読み直すと、正しい意味が見えてきます。"
+  return `選んだ答えは「${selectedAnswer ?? "ひみつ"}」。解説を読んで、次の一問へ進もう。`
 }
 
 function quizResultCopy(correct: number, total: number) {
   const ratio = total ? correct / total : 0
-  if (ratio === 1) return "全問正解！ 猫たちから博士認定。なおくんは助手認定を待たず、名札だけ自分で作りました。"
-  if (ratio >= 0.8) return "かなりの猫博士！ なおくんは間違えた問題だけ三回説明し、なぜか自分が先生の顔です。"
-  if (ratio >= 0.5) return "半分以上正解！ 美雪の博士ノートが増え、なおくんの珍回答ノートはもっと増えました。"
-  return "今日覚えた答えが次の得点。猫たちは復習席へ、なおくんは最初から勝利席へ座っています。"
+  if (ratio === 1) return "全問正解！ トラちゃん、キキ、フワから猫博士認定です。"
+  if (ratio >= 0.8) return "かなりの猫博士！ 間違えた問題だけ復習すれば完璧です。"
+  if (ratio >= 0.5) return "半分以上正解！ 美雪の博士ノートで解説を見返そう。"
+  return "今日覚えた答えが次の得点。三匹と一緒に復習しよう。"
 }
 
 function shuffle<T>(items: readonly T[]): T[] {

@@ -30,7 +30,7 @@ const GAMES: GameDef[] = [
   {
     id: "rescue",
     title: "保護ねこゲーム",
-    description: "猫だけを見分けて保護。なおくんと犬は見送る",
+    description: "トラちゃん・フワ・キキを見分けて保護。犬は見送る",
     detail: "反射神経・コンボ競技",
     icon: PawPrint,
     tone: "coral",

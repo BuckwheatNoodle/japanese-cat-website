@@ -211,28 +211,6 @@ export type RoomItemDefinition = {
   starter?: boolean
 }
 
-export type StoryChoiceDefinition = {
-  id: string
-  label: string
-}
-
-export type StoryNodeDefinition = {
-  id: string
-  chapterId: string
-  title: string
-  summary: string
-  reward: number
-  choices?: StoryChoiceDefinition[]
-  unlockChapterId?: string
-}
-
-export type StoryChapterDefinition = {
-  id: string
-  title: string
-  description: string
-  nodeIds: string[]
-}
-
 export type ProgressionBackupV1 = {
   kind: typeof PROGRESSION_BACKUP_KIND
   formatVersion: typeof PROGRESSION_VERSION
@@ -266,7 +244,7 @@ const DAILY_MISSION_POOL: readonly DailyMissionDefinition[] = [
   {
     id: "read-diary",
     title: "事件記録を1件調査",
-    description: "美雪となおくんの絵日記を1件選び、オチまで確認する",
+    description: "美雪の絵日記を1件選び、最後まで確認する",
     goal: 1,
     reward: 12,
   },
@@ -296,80 +274,80 @@ const DAILY_MISSION_FLAVORS: Record<DailyMissionId, readonly DailyMissionFlavor[
     {
       character: "美雪からの指令",
       title: "ゲーム攻略記録を提出",
-      description: "好きなゲームを1回完了し、スコアか到達記録を残す。なおくんは頼んでいない表彰台を準備中。",
-      completionLine: "美雪「任務完了！」なおくんは勝手に、うんちトロフィーになって喜びました。",
+      description: "好きなゲームを1回完了し、スコアか到達記録を残す。",
+      completionLine: "美雪「任務完了！」三匹から肉球スタンプが届きました。",
     },
     {
-      character: "マロン店長のお願い",
+      character: "トラちゃんのお願い",
       title: "しっぽ応援団へ結果報告",
       description: "好きなゲームを1回完了し、猫たちへ今回の結果を報告する。",
-      completionLine: "猫たちのしっぽが一斉にぴん！なおくんは二回転して、応援うんちになりました。",
+      completionLine: "トラちゃん、キキ、フワのしっぽが一斉にぴん！",
     },
     {
-      character: "なおくんからの挑戦",
-      title: "変身前のかたならし",
-      description: "好きなゲームを1回完了する。猫審査員は最前列で無言採点中。",
-      completionLine: "なおくん「よし、勝利のうんちポーズ！」猫たちは無言で満点の札を上げました。",
+      character: "キキからの挑戦",
+      title: "猫審査員へ結果報告",
+      description: "好きなゲームを1回完了する。三匹の猫審査員は最前列で採点中。",
+      completionLine: "キキが満点の札を上げ、トラちゃんとフワも拍手しました。",
     },
   ],
   "read-diary": [
     {
-      character: "ミケの事件メモ",
-      title: "今日のうんち事件簿",
+      character: "キキの事件メモ",
+      title: "今日の猫事件簿",
       description: "絵日記を1件選び、猫の行動と最後のオチを確認する。",
-      completionLine: "犯人は変身したなおくんでした。本人は肉球しおりをもらって大満足！",
+      completionLine: "最後まで読んだ印に、キキから肉球しおりが届きました。",
     },
     {
       character: "美雪からの調査依頼",
       title: "笑える日記を調査！",
-      description: "絵日記を1件調査し、なおくんの作戦がどこで崩れたかを見つける。",
-      completionLine: "なおくんは自分の変身回だけ三回読み、猫たちは先にオチを覚えました。",
+      description: "絵日記を1件読み、その日の出来事と結末を確認する。",
+      completionLine: "美雪と三匹の出来事を、最後まで確認できました。",
     },
     {
       character: "猫読書会のお題",
       title: "猫読書会の事件検討",
       description: "絵日記を1件読み、美雪のツッコミと猫の反応を比較する。",
-      completionLine: "読書会の金賞は、またもやうんち役のなおくん。本人だけ立って拍手しています。",
+      completionLine: "猫読書会は三匹そろって大きな拍手で閉会しました。",
     },
   ],
   "draw-fortune": [
     {
-      character: "ユキの水晶だより",
-      title: "まるい影の正体を占おう",
-      description: "今日のねこみくじを引いて、なおくんの変身予報も確かめよう。",
-      completionLine: "予報は『ところにより、なおくんがうんち』。本人は傘より先にポーズを用意しました。",
+      character: "フワの水晶だより",
+      title: "今日の運勢を占おう",
+      description: "今日のねこみくじを引いて、運勢とアドバイスを確かめよう。",
+      completionLine: "フワが水晶の横から、今日のラッキーカラーを知らせました。",
     },
     {
       character: "美雪からのお願い",
-      title: "ラッキーうんち欄はある？",
-      description: "今日のねこみくじを引こう。なおくんが横から結果をのぞいているよ。",
-      completionLine: "ラッキー項目には無かったのに、なおくんは金のうんちへ自主変身！猫はほそ目です。",
+      title: "ラッキー項目を確認",
+      description: "今日のねこみくじを引き、ラッキーアイテムと色を確認する。",
+      completionLine: "美雪が今日のラッキー項目をきちんと記録しました。",
     },
     {
       character: "猫会議の決定",
       title: "大吉を一枚くださいにゃ",
       description: "今日のねこみくじを引いて、猫会議へ結果を届けよう。",
-      completionLine: "猫会議は大吉で閉会。なおくんだけ『うんち吉』を自作して持ち帰りました。",
+      completionLine: "猫会議は大吉で閉会。三匹が結果を大切に持ち帰りました。",
     },
   ],
   "finish-coloring": [
     {
-      character: "きなこ博士の色研究",
-      title: "なおくんは何色うんち？",
-      description: "ぬりえを1作品完成させる。なおくんの『全部茶色案』は採用しなくてもよい。",
-      completionLine: "すてきな一枚が完成！なおくんは空いているすみに、小さなうんちサインを描きました。",
+      character: "トラちゃんの色研究",
+      title: "お気に入りの三色を選ぼう",
+      description: "ぬりえを1作品完成させ、好きな色の組み合わせを見つける。",
+      completionLine: "すてきな一枚が完成！トラちゃんから肉球サインが届きました。",
     },
     {
       character: "美雪アトリエのお題",
       title: "配色作品を1点完成",
       description: "ぬりえを1作品完成させ、色の組み合わせを記録する。",
-      completionLine: "猫たちは肉球スタンプで合格。なおくんは虹色うんちの額縁になって喜んでいます。",
+      completionLine: "トラちゃん、キキ、フワが肉球スタンプで合格を知らせました。",
     },
     {
       character: "猫いろ会議のお願い",
       title: "猫いろ会議へ作品提出",
       description: "ぬりえを1作品完成させる。色数や配色の方針は自分で決める。",
-      completionLine: "猫会議で作品賞に決定！なおくんの『全部茶色案』は次回まで保留です。",
+      completionLine: "猫会議で作品賞に決定！三匹が選んだ色も好評でした。",
     },
   ],
 }
@@ -388,22 +366,15 @@ export const ROOM_ITEM_DEFINITIONS: readonly RoomItemDefinition[] = [
   { id: "center-cat-tree", name: "ねこタワー", description: "みんなが集まるカフェの遊び場。", slot: "floorCenter", price: 70, assetKey: "room/center-cat-tree" },
   { id: "center-piano", name: "肉球ピアノ", description: "踏むとかわいい音が鳴る小さなピアノ。", slot: "floorCenter", price: 80, assetKey: "room/center-piano" },
   { id: "right-cat-bed", name: "ふかふかベッド", description: "お昼寝にぴったりの雲形ベッド。", slot: "floorRight", price: 25, assetKey: "room/right-cat-bed" },
-  { id: "right-treasure", name: "なおくん宝箱", description: "なおくんが集めた変身グッズ入り。", slot: "floorRight", price: 60, assetKey: "room/right-treasure" },
+  { id: "right-treasure", name: "三匹の宝箱", description: "トラちゃん、キキ、フワのおもちゃ入り。", slot: "floorRight", price: 60, assetKey: "room/right-treasure" },
 ] as const
 
-export const STORY_CHAPTERS: readonly StoryChapterDefinition[] = [
-  { id: "cafe-opening", title: "第1話　ねこカフェ開店！", description: "美雪とねこたちの、はじめての一日。", nodeIds: ["cafe-opening-1", "cafe-opening-2"] },
-  { id: "lost-star", title: "第2話　なくした星のさくらんぼ", description: "夜のカフェで光る手がかりを探そう。", nodeIds: ["lost-star-1", "lost-star-2"] },
-  { id: "festival-night", title: "第3話　にゃんこ夏まつり", description: "なおくんの変身でお祭りを盛り上げよう。", nodeIds: ["festival-night-1", "festival-night-2"] },
-] as const
-
-export const STORY_NODES: readonly StoryNodeDefinition[] = [
-  { id: "cafe-opening-1", chapterId: "cafe-opening", title: "最初のお客さま", summary: "しましま店長といっしょに、開店の看板を出そう。", reward: 8, choices: [{ id: "kitchen", label: "キッチンを調べる" }, { id: "garden", label: "中庭を調べる" }] },
-  { id: "cafe-opening-2", chapterId: "cafe-opening", title: "クリームソーダ大作戦", summary: "カップから離れた撮影台で、なおくんがまさかのクリームソーダうんちに変身！", reward: 100, choices: [{ id: "cherry-king-ending", label: "さくらんぼ王エンド" }, { id: "cat-hero-ending", label: "やさしい猫チームエンド" }], unlockChapterId: "lost-star" },
-  { id: "lost-star-1", chapterId: "lost-star", title: "夜の足あと", summary: "クロの光る足あとをたどって、星のさくらんぼを探そう。", reward: 10, choices: [{ id: "window", label: "窓辺をさがす" }, { id: "shelf", label: "本棚をさがす" }] },
-  { id: "lost-star-2", chapterId: "lost-star", title: "うちゅうへ出発", summary: "うちゅううんちになったなおくんが、さくらんぼを連れて帰る。", reward: 20, choices: [{ id: "moon-ending", label: "月あかりお迎えエンド" }, { id: "comet-ending", label: "ロボット船長エンド" }], unlockChapterId: "festival-night" },
-  { id: "festival-night-1", chapterId: "festival-night", title: "屋台のお手伝い", summary: "ねこパンケーキをきれいに並べよう。", reward: 12, choices: [{ id: "cats", label: "ねこ形にならべる" }, { id: "stars", label: "星形にならべる" }] },
-  { id: "festival-night-2", chapterId: "festival-night", title: "なおくんの大変身パレード", summary: "指揮者うんちか芸術家うんちを選んで、みんなでフィナーレ！", reward: 25, choices: [{ id: "music-ending", label: "にゃんこ大合奏エンド" }, { id: "art-ending", label: "夜空のアートエンド" }] },
+// The removed story feature stays represented only as opaque IDs so older
+// backups can be read without shipping its copy, artwork, or active rewards.
+const LEGACY_STORY_GRAPH = [
+  { id: "cafe-opening", nodes: [{ id: "cafe-opening-1", choices: ["kitchen", "garden"] }, { id: "cafe-opening-2", choices: ["cherry-king-ending", "cat-hero-ending"] }] },
+  { id: "lost-star", nodes: [{ id: "lost-star-1", choices: ["window", "shelf"] }, { id: "lost-star-2", choices: ["moon-ending", "comet-ending"] }] },
+  { id: "festival-night", nodes: [{ id: "festival-night-1", choices: ["cats", "stars"] }, { id: "festival-night-2", choices: ["music-ending", "art-ending"] }] },
 ] as const
 
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -518,7 +489,9 @@ const NAOKUN_FORM_IDS = new Set([
   "naokun-poop-cake", "naokun-poop-hero", "naokun-poop-ghost", "naokun-poop-cat",
 ])
 const ROOM_ITEM_BY_ID = new Map(ROOM_ITEM_DEFINITIONS.map((item) => [item.id, item]))
-const STORY_NODE_BY_ID = new Map(STORY_NODES.map((node) => [node.id, node]))
+const LEGACY_STORY_NODE_BY_ID: ReadonlyMap<string, { id: string; choices: readonly string[]; chapterId: string }> = new Map(LEGACY_STORY_GRAPH.flatMap((chapter) => (
+  chapter.nodes.map((node) => [node.id, { ...node, chapterId: chapter.id }] as const)
+)))
 const SKIN_IDS = new Set(["season-auto", "cream-soda", "spring-strawberry", "summer-soda", "autumn-caramel", "winter-berry"])
 
 function pickKnownUnlocks(
@@ -542,23 +515,28 @@ function sanitizeStateReferences(state: AppStateV1): { state: AppStateV1; change
   const completedNodeIds: string[] = []
   const unlockedChapterIds: string[] = []
   const choices: Record<string, string> = {}
-  for (const chapter of STORY_CHAPTERS) {
-    if (chapter.id !== "cafe-opening") {
-      const previousChapter = STORY_CHAPTERS[STORY_CHAPTERS.indexOf(chapter) - 1]
-      const previousFinal = previousChapter?.nodeIds.at(-1)
-      if (!previousFinal || !completedNodeIds.includes(previousFinal)) break
-    }
-    unlockedChapterIds.push(chapter.id)
-    for (const nodeId of chapter.nodeIds) {
-      if (!state.story.completedNodeIds.includes(nodeId)) break
-      const node = STORY_NODE_BY_ID.get(nodeId)
-      const nodeChoices = node?.choices ?? []
-      if (nodeChoices.length > 0) {
-        const choice = state.story.choices[nodeId]
-        if (!nodeChoices.some((candidate) => candidate.id === choice)) break
-        choices[nodeId] = choice
+  const hasLegacyStoryProgress = state.story.unlockedChapterIds.includes("cafe-opening")
+    || state.story.completedNodeIds.some((nodeId) => LEGACY_STORY_NODE_BY_ID.has(nodeId))
+  if (hasLegacyStoryProgress) {
+    for (const chapter of LEGACY_STORY_GRAPH) {
+      if (chapter.id !== "cafe-opening") {
+        const previousChapter = LEGACY_STORY_GRAPH[LEGACY_STORY_GRAPH.indexOf(chapter) - 1]
+        const previousFinal = previousChapter?.nodes.at(-1)?.id
+        if (!previousFinal || !completedNodeIds.includes(previousFinal)) break
       }
-      completedNodeIds.push(nodeId)
+      unlockedChapterIds.push(chapter.id)
+      for (const legacyNode of chapter.nodes) {
+        const nodeId = legacyNode.id
+        if (!state.story.completedNodeIds.includes(nodeId)) break
+        const node = LEGACY_STORY_NODE_BY_ID.get(nodeId)
+        const nodeChoices = node?.choices ?? []
+        if (nodeChoices.length > 0) {
+          const choice = state.story.choices[nodeId]
+          if (!nodeChoices.some((candidate) => candidate === choice)) break
+          choices[nodeId] = choice
+        }
+        completedNodeIds.push(nodeId)
+      }
     }
   }
 
@@ -665,7 +643,7 @@ export function createInitialAppState(dateKey = getLocalDateKey(), timestamp = n
       },
     },
     story: {
-      unlockedChapterIds: ["cafe-opening"],
+      unlockedChapterIds: [],
       completedNodeIds: [],
       choices: {},
     },
@@ -984,68 +962,15 @@ function unlockMilestoneCollections(
   const unlockCat = (id: string, source: string) => {
     state = unlockCollection(state, "cat", id, unlockedAt, source)
   }
-  const unlockNaokun = (id: string, source: string) => {
-    state = unlockCollection(state, "naokun-form", id, unlockedAt, source)
-  }
-
-  const distinctDiaryCount = state.stats.readDiaryDates.length
   const gameIds = Object.keys(state.stats.gameHighScores)
-  const equippedItemIds = Object.values(state.room.equipped)
-  const claimedMissionCount = state.daily.claimedMissionIds.length
 
   if (state.stats.fortunesDrawn >= 1) {
     unlockCat("cat-yuki", "fortune")
-    unlockNaokun("naokun-poop-soda", "fortune")
   }
-  if (distinctDiaryCount >= 1) unlockNaokun("naokun-poop-classic", "diary-1")
-  if (distinctDiaryCount >= 3) unlockCat("cat-mike", "diary-3")
-  if (distinctDiaryCount >= 5) unlockNaokun("naokun-poop-bakery", "diary-5")
-  if (distinctDiaryCount >= 10) unlockNaokun("naokun-poop-cake", "diary-10")
 
   if (gameIds.includes("memory")) {
     unlockCat("cat-kuro", "game-memory")
-    unlockNaokun("naokun-poop-ninja", "game-memory")
   }
-  if (state.stats.gamesWon >= 1) unlockCat("cat-tora", "game-win")
-  if (state.stats.gamesPlayed >= 5) unlockNaokun("naokun-poop-rainbow", "games-5")
-  if ((state.stats.gameHighScores.quiz ?? 0) >= 5_000) unlockNaokun("naokun-poop-detective", "quiz-score")
-  if ((state.stats.gameHighScores.rescue ?? 0) >= 10) unlockNaokun("naokun-poop-samurai", "rescue-score")
-  if ((state.stats.gameHighScores.simon ?? 0) >= 6) unlockNaokun("naokun-poop-space", "simon-level")
-  if (gameIds.length >= 3) unlockNaokun("naokun-poop-robot", "games-3-kinds")
-  if (state.stats.gamesPlayed >= 2 && state.settings.soundEnabled) unlockNaokun("naokun-poop-music", "games-with-sound")
-
-  if (state.stats.coloringsCompleted >= 1) {
-    unlockCat("cat-kinako", "coloring-1")
-    unlockNaokun("naokun-poop-mermaid", "coloring-1")
-  }
-  if (state.stats.coloringsCompleted >= 3) unlockNaokun("naokun-poop-artist", "coloring-3")
-
-  if (equippedItemIds.length >= 4) unlockCat("cat-sora", "room-4-slots")
-  if (equippedItemIds.includes("floor-flowers")) unlockNaokun("naokun-poop-cactus", "room-flowers")
-  if (state.wallet.totalSpent >= 60) unlockCat("cat-sakura", "room-special")
-  if (event.type === "room.itemEquipped") {
-    const item = ROOM_ITEM_DEFINITIONS.find((candidate) => candidate.id === event.itemId)
-    if (item?.slot === "table") unlockNaokun("naokun-poop-chef", "room-table")
-  }
-
-  if (claimedMissionCount >= 1) unlockNaokun("naokun-poop-gold", "mission-claim")
-  if (claimedMissionCount >= 2) unlockCat("cat-latte", "missions-2")
-
-  if (state.stats.storyNodesCompleted >= 1) unlockCat("cat-chibi", "story-1")
-  if (state.story.choices["cafe-opening-2"] === "cherry-king-ending") unlockNaokun("naokun-poop-gold", "story-cherry-king")
-  if (state.story.choices["cafe-opening-2"] === "cat-hero-ending") unlockNaokun("naokun-poop-hero", "story-cat-hero")
-  if (state.story.choices["lost-star-2"] === "moon-ending") unlockNaokun("naokun-poop-space", "story-moon-ending")
-  if (state.story.choices["lost-star-2"] === "comet-ending") unlockNaokun("naokun-poop-robot", "story-comet-ending")
-  if (state.story.choices["festival-night-2"] === "music-ending") unlockNaokun("naokun-poop-music", "story-music-ending")
-  if (state.story.choices["festival-night-2"] === "art-ending") unlockNaokun("naokun-poop-artist", "story-art-ending")
-
-  if (state.settings.skinId === "spring-strawberry") unlockNaokun("naokun-poop-sakura", "skin-spring")
-  if (state.settings.skinId === "autumn-caramel") unlockNaokun("naokun-poop-pumpkin", "skin-autumn")
-  if (state.settings.skinId === "winter-berry") unlockNaokun("naokun-poop-snowman", "skin-winter")
-
-  const discoveredCount = Object.keys(state.collections.cats).length + Object.keys(state.collections.naokunForms).length
-  if (discoveredCount >= 10) unlockNaokun("naokun-poop-princess", "collections-10")
-  if (Object.keys(state.collections.cats).length >= 10) unlockNaokun("naokun-poop-cat", "all-cats")
 
   return state
 }
@@ -1207,31 +1132,7 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       break
     }
     case "story.nodeCompleted": {
-      const node = STORY_NODES.find((candidate) => candidate.id === event.nodeId)
-      if (!node || !state.story.unlockedChapterIds.includes(node.chapterId) || state.story.completedNodeIds.includes(node.id)) return previousState
-      const chapter = STORY_CHAPTERS.find((candidate) => candidate.id === node.chapterId)
-      const nodeIndex = chapter?.nodeIds.indexOf(node.id) ?? -1
-      if (!chapter || nodeIndex < 0 || chapter.nodeIds.slice(0, nodeIndex).some((nodeId) => !state.story.completedNodeIds.includes(nodeId))) return previousState
-
-      const choices = node.choices ?? []
-      const validChoice = choices.length > 0
-        ? typeof event.choiceId === "string" && choices.some((choice) => choice.id === event.choiceId)
-        : event.choiceId === undefined
-      if (!validChoice) return previousState
-      state = {
-        ...state,
-        stats: { ...state.stats, storyNodesCompleted: state.stats.storyNodesCompleted + 1 },
-        story: {
-          ...state.story,
-          completedNodeIds: [...state.story.completedNodeIds, node.id],
-          unlockedChapterIds: node.unlockChapterId
-            ? unique([...state.story.unlockedChapterIds, node.unlockChapterId])
-            : state.story.unlockedChapterIds,
-          choices: choices.length > 0 ? { ...state.story.choices, [node.id]: event.choiceId as string } : state.story.choices,
-        },
-      }
-      state = applyReward(state, `story:${node.id}`, node.reward)
-      break
+      return previousState
     }
     case "settings.updated": {
       state = {

@@ -12,7 +12,6 @@ import { ProgressionProvider, useProgression } from "@/components/progression-pr
 import { AdventureHub } from "@/components/adventure-hub"
 import { CollectionBook, COLLECTION_CATALOG } from "@/components/collection-book"
 import { RoomStudio, ROOM_ITEM_CATALOG } from "@/components/room-studio"
-import { StoryMode, STORY_CHAPTERS_UI } from "@/components/story-mode"
 import type { ActivityTab } from "@/components/home-passport"
 import type { ActionCheck } from "@/lib/progression"
 
@@ -22,24 +21,12 @@ const PictureDiary = dynamic(() => import("@/components/picture-diary").then((mo
 const SettingsCenter = dynamic(() => import("@/components/settings-center").then((module) => module.SettingsCenter), { loading: () => <FeatureLoading /> })
 const ParentEditor = dynamic(() => import("@/components/parent-editor").then((module) => module.ParentEditor), { loading: () => <FeatureLoading /> })
 
-type AuxiliaryView = "club" | "room" | "collections" | "story" | "settings" | "parent"
+type AuxiliaryView = "club" | "room" | "collections" | "settings" | "parent"
 type ViewId = TabId | AuxiliaryView
 
 const TAB_IDS: TabId[] = ["home", "games", "coloring", "fortune", "diary"]
-const VIEW_IDS: ViewId[] = [...TAB_IDS, "club", "room", "collections", "story", "settings", "parent"]
+const VIEW_IDS: ViewId[] = [...TAB_IDS, "club", "room", "collections", "settings", "parent"]
 const ACTIVITY_TABS: ActivityTab[] = ["games", "coloring", "fortune", "diary"]
-const STORY_PROGRESS = {
-  "cafe-opening": { startNodeId: "opening", firstNodeId: "cafe-opening-1", finalNodeId: "cafe-opening-2" },
-  "lost-star": { startNodeId: "night-opening", firstNodeId: "lost-star-1", finalNodeId: "lost-star-2" },
-  "festival-night": { startNodeId: "festival-opening", firstNodeId: "festival-night-1", finalNodeId: "festival-night-2" },
-} as const
-
-type StoryChapterId = keyof typeof STORY_PROGRESS
-
-function getStoryProgress(chapterId: string) {
-  return STORY_PROGRESS[chapterId as StoryChapterId]
-}
-
 function FeatureLoading() {
   return <div className="feature-loading" role="status" aria-live="polite"><PawPrint aria-hidden="true" />ねこたちが準備しています…</div>
 }
@@ -54,7 +41,6 @@ function MiyukiCatApp() {
     ready,
     dailyMissions,
     storageWarnings,
-    recordEvent,
     purchase,
     equip,
     unequip,
@@ -129,10 +115,10 @@ function MiyukiCatApp() {
     owned: state.inventory.ownedItemIds.includes(item.id),
   })), [state.inventory.ownedItemIds])
 
-  const unlockedCollectionIds = useMemo(() => [...new Set([
-    ...Object.keys(state.collections.cats).map((id) => id === "tabby" ? "cat-maron" : id),
-    ...Object.keys(state.collections.naokunForms),
-  ])], [state.collections.cats, state.collections.naokunForms])
+  const unlockedCollectionIds = useMemo(() => {
+    const discovered = new Set(Object.keys(state.collections.cats).map((id) => id === "tabby" ? "cat-maron" : id))
+    return COLLECTION_CATALOG.filter((entry) => discovered.has(entry.id)).map((entry) => entry.id)
+  }, [state.collections.cats])
 
   const missionCards = dailyMissions.map((mission) => ({
     id: mission.id,
@@ -146,32 +132,9 @@ function MiyukiCatApp() {
     status: mission.claimed ? "claimed" as const : mission.completed ? "complete" as const : "open" as const,
   }))
 
-  const completedStoryChapterIds = STORY_CHAPTERS_UI
-    .filter((chapter) => {
-      const progress = getStoryProgress(chapter.id)
-      return progress ? state.story.completedNodeIds.includes(progress.finalNodeId) : false
-    })
-    .map((chapter) => chapter.id)
-  const nextStoryChapter = STORY_CHAPTERS_UI.find((chapter) => (
-    state.story.unlockedChapterIds.includes(chapter.id) && !completedStoryChapterIds.includes(chapter.id)
-  ))
-  const storyChapterLabel = nextStoryChapter ? `第${nextStoryChapter.number}話をプレイ` : "全3話クリア！"
-
   const claimMission = (missionId: string): ActionCheck => {
     const mission = dailyMissions.find((candidate) => candidate.id === missionId)
     return mission ? claim(mission.id) : { ok: false, reason: "not-found" }
-  }
-
-  const finishStory = (chapterId: string, endingChoiceId: string | undefined) => {
-    const chapterProgress = getStoryProgress(chapterId)
-    if (!chapterProgress) return false
-    return recordEvent({
-      type: "story.nodeCompleted",
-      eventId: `story:${chapterId}:${chapterProgress.finalNodeId}`,
-      occurredAt: new Date().toISOString(),
-      nodeId: chapterProgress.finalNodeId,
-      ...(endingChoiceId ? { choiceId: endingChoiceId } : {}),
-    })
   }
 
   const mainTab = TAB_IDS.includes(activeView as TabId) ? activeView as TabId : null
@@ -201,7 +164,6 @@ function MiyukiCatApp() {
               lastActivity={lastActivity}
               recommendation={recommendation}
               coins={state.wallet.nyanCoins}
-              dateKey={state.daily.date}
             />
           </div>
         )}
@@ -220,7 +182,6 @@ function MiyukiCatApp() {
               collectionCount={unlockedCollectionIds.length}
               collectionTotal={COLLECTION_CATALOG.length}
               roomItemCount={state.inventory.ownedItemIds.length}
-              storyChapterLabel={storyChapterLabel}
               onClaimMission={claimMission}
               onOpen={(destination) => changeView(destination)}
             />
@@ -243,29 +204,6 @@ function MiyukiCatApp() {
         {activeView === "collections" && (
           <div data-testid="collections-content" className="screen-enter">
             <CollectionBook unlockedIds={unlockedCollectionIds} onBack={() => changeView("club")} />
-          </div>
-        )}
-
-        {activeView === "story" && (
-          <div data-testid="story-content" className="screen-enter">
-            <StoryMode
-              chapters={STORY_CHAPTERS_UI}
-              unlockedChapterIds={state.story.unlockedChapterIds}
-              completedChapterIds={completedStoryChapterIds}
-              onChoose={(chapterId, nodeId, choiceId) => {
-                const chapterProgress = getStoryProgress(chapterId)
-                if (!chapterProgress || nodeId !== chapterProgress.startNodeId) return true
-                return recordEvent({
-                  type: "story.nodeCompleted",
-                  eventId: `story:${chapterId}:${chapterProgress.firstNodeId}`,
-                  occurredAt: new Date().toISOString(),
-                  nodeId: chapterProgress.firstNodeId,
-                  choiceId,
-                })
-              }}
-              onComplete={finishStory}
-              onBack={() => changeView("club")}
-            />
           </div>
         )}
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import { BookOpenCheck, Cat, Heart, MessageCircle, Palette, PartyPopper, RotateCcw, Sparkles, Star, Users } from "lucide-react"
+import { BookOpenCheck, Cat, Heart, MessageCircle, Palette, RotateCcw, Sparkles, Star, Users } from "lucide-react"
 import { useSkin } from "@/components/skin-provider"
 import { useProgression } from "@/components/progression-provider"
 import { getLocalDateKey } from "@/lib/progression"
@@ -31,21 +31,14 @@ const LUCKY_COLORS = [
 ] as const
 
 const ADVICE = [
-  { main: "「ありがとう」をひとつ伝えると、うれしいことが増えそう。", study: "好きな教科から始めると集中できるよ。", friend: "友だちの話を最後まで聞いてみよう。", play: "みんなでできる遊びがおすすめ。", miyuki: "いい日になりそう。なおくんは先に猫へ三回お礼してるよ。", cat: "猫たちの返事は、しっぽを一回ぴん！", image: "/content/fortune/gratitude.webp", imageAlt: "美雪が猫に花を渡して感謝を伝えるイラスト" },
-  { main: "少し体を動かすと、元気がもっとわいてくる日。", study: "10分だけ集中してから休けいしよう。", friend: "自分から元気にあいさつしてみよう。", play: "外遊びやリズム遊びがぴったり。", miyuki: "なおくんの準備運動、なぜか最後はうんちポーズ。", cat: "猫たちは見なかったふりで毛づくろい中。", image: "/content/fortune/energy.webp", imageAlt: "美雪と猫たちが元気に体を動かすイラスト" },
-  { main: "急がなくて大丈夫。自分のペースがいちばん。", study: "じっくり考える問題にちょうせんしよう。", friend: "やさしい言葉をひとつ届けてみよう。", play: "読書やお絵かきでのんびりしよう。", miyuki: "のんびり大賛成。なおくんはもう雲うんちで昼寝してるよ。", cat: "ふわふわなので、猫ベッドに仮採用。", image: "/content/fortune/own-pace.webp", imageAlt: "猫たちが読書やお絵かきをしてのんびり過ごすイラスト" },
-  { main: "小さな予定をひとつ決めると、すっきり進めそう。", study: "宿題はできるところから始めよう。", friend: "困っている子がいたら声をかけてみよう。", play: "パズルや工作がおすすめ。", miyuki: "予定表の一番下に『なおくん変身』って勝手に書かれてる。", cat: "猫会議で、今日も全員一致の予定です。", image: "/content/fortune/small-plan.webp", imageAlt: "美雪と猫たちが絵カードで小さな予定を立てるイラスト" },
-  { main: "きれいな色や形を見つけると、いい気分になれそう。", study: "ノートを好きな色で見やすくまとめよう。", friend: "友だちのすてきなところを伝えてみよう。", play: "ぬりえや飾り作りにぴったり。", miyuki: "虹色を選んだら、なおくんまで七色うんちになりました。", cat: "まぶしいので、猫たちは目を細めています。", image: "/content/fortune/colors.webp", imageAlt: "猫たちがきれいな虹と色とりどりの形を描くイラスト" },
-  { main: "笑顔が幸運を連れてきてくれる日。", study: "クイズみたいに楽しく覚えてみよう。", friend: "みんなが笑える話をしてみよう。", play: "新しいゲームを考えてみよう。", miyuki: "なおくんが笑わせる係に立候補。もう変身帽子をかぶってるよ。", cat: "開始前なのに、猫席は満員です。", image: "/content/fortune/laughter.webp", imageAlt: "美雪と猫たちが新しいゲームを考えて笑うイラスト" },
-  { main: "昨日できなかったことに、もう一度挑戦してみよう。", study: "少しむずかしい問題をひとつ選ぼう。", friend: "思っていることをやさしく伝えてみよう。", play: "やったことのない遊びに挑戦。", miyuki: "失敗しても大丈夫。なおくんは変身を三回失敗して全部楽しそう。", cat: "四回目は猫みみうんちを希望します。", image: "/content/fortune/try-again.webp", imageAlt: "仲間に応援されながら輪くぐりに再挑戦する猫のイラスト" },
-  { main: "思いやりの気持ちが、幸運を運んでくれる日。", study: "分からないところはだれかに聞いてみよう。", friend: "ひとりの子がいたら声をかけてみよう。", play: "みんなが楽しめる遊びを選ぼう。", miyuki: "やさしい日だね。なおくんは猫へ特等席をゆずりました。", cat: "その席、うんちクッション付きならもっと最高。", image: "/content/fortune/kindness.webp", imageAlt: "猫たちが窓辺の特等席とクッションを譲り合うイラスト" },
-] as const
-
-const NAOKUN_VISITS = [
-  { title: "雲うんちで乱入！", line: "『占いの雲はぼくに任せて！』と浮いたけれど、猫に座布団と間違われました。", image: "/content/collections/naokun/poop-cloud.webp" },
-  { title: "うんちシェフで乱入！", line: "厨房の外でラッキーおやつの注文札を並べる気満々。猫たちは札より先に一列になりました。", image: "/content/collections/naokun/poop-chef.webp" },
-  { title: "宇宙うんちで乱入！", line: "ラッキー星を取りに出発。美雪に『まず玄関からね』と止められました。", image: "/content/collections/naokun/poop-space.webp" },
-  { title: "金のうんち王で乱入！", line: "『今日の主役はぼく？』。猫たちはまぶしくて全員ほそ目になりました。", image: "/content/collections/naokun/poop-gold.webp" },
+  { main: "「ありがとう」をひとつ伝えると、うれしいことが増えそう。", study: "好きな教科から始めると集中できるよ。", friend: "友だちの話を最後まで聞いてみよう。", play: "みんなでできる遊びがおすすめ。", miyuki: "いい日になりそう。まずは三匹に、おはようを伝えよう。", cat: "トラちゃんの返事は、しっぽを一回ぴん！", image: "/content/fortune/gratitude.webp", imageAlt: "美雪が猫に花を渡して感謝を伝えるイラスト" },
+  { main: "少し体を動かすと、元気がもっとわいてくる日。", study: "10分だけ集中してから休けいしよう。", friend: "自分から元気にあいさつしてみよう。", play: "外遊びやリズム遊びがぴったり。", miyuki: "準備運動をしたら、すっきり始められそう。", cat: "キキは窓辺まで軽やかにジャンプ。", image: "/content/fortune/energy.webp", imageAlt: "美雪と猫たちが元気に体を動かすイラスト" },
+  { main: "急がなくて大丈夫。自分のペースがいちばん。", study: "じっくり考える問題にちょうせんしよう。", friend: "やさしい言葉をひとつ届けてみよう。", play: "読書やお絵かきでのんびりしよう。", miyuki: "のんびり大賛成。深呼吸してから始めよう。", cat: "フワはもう、ふかふかベッドでお昼寝中。", image: "/content/fortune/own-pace.webp", imageAlt: "猫たちが読書やお絵かきをしてのんびり過ごすイラスト" },
+  { main: "小さな予定をひとつ決めると、すっきり進めそう。", study: "宿題はできるところから始めよう。", friend: "困っている子がいたら声をかけてみよう。", play: "パズルや工作がおすすめ。", miyuki: "今日やることを、ひとつだけメモしてみよう。", cat: "三匹はおやつの時間だけ全員一致です。", image: "/content/fortune/small-plan.webp", imageAlt: "美雪と猫たちが絵カードで小さな予定を立てるイラスト" },
+  { main: "きれいな色や形を見つけると、いい気分になれそう。", study: "ノートを好きな色で見やすくまとめよう。", friend: "友だちのすてきなところを伝えてみよう。", play: "ぬりえや飾り作りにぴったり。", miyuki: "好きな三色を選んで、すてきな組み合わせを作ろう。", cat: "トラちゃんはオレンジ色がお気に入り。", image: "/content/fortune/colors.webp", imageAlt: "猫たちがきれいな虹と色とりどりの形を描くイラスト" },
+  { main: "笑顔が幸運を連れてきてくれる日。", study: "クイズみたいに楽しく覚えてみよう。", friend: "みんなが笑える話をしてみよう。", play: "新しいゲームを考えてみよう。", miyuki: "小さな楽しいことを、ひとつ見つけよう。", cat: "三匹の遊び席は、もう満員です。", image: "/content/fortune/laughter.webp", imageAlt: "美雪と猫たちが新しいゲームを考えて笑うイラスト" },
+  { main: "昨日できなかったことに、もう一度挑戦してみよう。", study: "少しむずかしい問題をひとつ選ぼう。", friend: "思っていることをやさしく伝えてみよう。", play: "やったことのない遊びに挑戦。", miyuki: "失敗しても大丈夫。できたところまで数えてみよう。", cat: "キキは二回目のジャンプで大成功。", image: "/content/fortune/try-again.webp", imageAlt: "仲間に応援されながら輪くぐりに再挑戦する猫のイラスト" },
+  { main: "思いやりの気持ちが、幸運を運んでくれる日。", study: "分からないところはだれかに聞いてみよう。", friend: "ひとりの子がいたら声をかけてみよう。", play: "みんなが楽しめる遊びを選ぼう。", miyuki: "やさしい日だね。席をひとつ譲ってみよう。", cat: "フワが窓辺の特等席を半分あけました。", image: "/content/fortune/kindness.webp", imageAlt: "猫たちが窓辺の特等席とクッションを譲り合うイラスト" },
 ] as const
 
 function hashText(value: string) {
@@ -60,14 +53,12 @@ function hashText(value: string) {
 function makeFortune(name: string, dateKey = getLocalDateKey()) {
   const seed = hashText(`${name.trim()}-${dateKey}`)
   const typeIndex = seed % CAT_TYPES.length
-  const naokunVisit = (seed >>> 9) % 7 === 0
   return {
     catType: CAT_TYPES[typeIndex],
     stars: 3 + (seed % 3),
     luckyItem: LUCKY_ITEMS[(seed >>> 3) % LUCKY_ITEMS.length],
     luckyColor: LUCKY_COLORS[(seed >>> 5) % LUCKY_COLORS.length],
     advice: ADVICE[typeIndex],
-    naokunVisit: naokunVisit ? NAOKUN_VISITS[(seed >>> 12) % NAOKUN_VISITS.length] : null,
   }
 }
 
@@ -216,19 +207,6 @@ export function CatFortune() {
             <p><Cat aria-hidden="true" /><span><strong>猫たち</strong>{fortune.advice.cat}</span></p>
           </div>
 
-          {fortune.naokunVisit && (
-            <aside className="fortune-naokun-visit" aria-label={`レア演出、${fortune.naokunVisit.title}`}>
-              <span className="fortune-naokun-art">
-                <Image src={assetPath(fortune.naokunVisit.image)} alt={fortune.naokunVisit.title} fill sizes="104px" />
-              </span>
-              <span className="fortune-naokun-copy">
-                <small><PartyPopper aria-hidden="true" /> RARE! なおくん乱入</small>
-                <strong>{fortune.naokunVisit.title}</strong>
-                <span>{fortune.naokunVisit.line}</span>
-              </span>
-            </aside>
-          )}
-
           <button type="button" className="secondary-action" onClick={resetFortune}>
             <RotateCcw aria-hidden="true" />
             名前を変える
@@ -286,48 +264,6 @@ export function CatFortune() {
         .fortune-banter strong {
           color: var(--skin-ink);
           font-size: .78rem;
-        }
-        .fortune-naokun-visit {
-          display: grid;
-          grid-template-columns: 96px minmax(0, 1fr);
-          align-items: center;
-          gap: 11px;
-          margin-top: 12px;
-          padding: 10px;
-          border: 2px solid var(--skin-coral);
-          border-radius: 19px;
-          background: linear-gradient(145deg, color-mix(in srgb, var(--skin-blush) 52%, white), color-mix(in srgb, var(--skin-butter) 38%, white));
-          box-shadow: 0 4px 0 color-mix(in srgb, var(--skin-coral) 28%, transparent);
-          text-align: left;
-        }
-        .fortune-naokun-art {
-          position: relative;
-          display: block;
-          overflow: hidden;
-          aspect-ratio: 1;
-          border-radius: 15px;
-          background: var(--skin-paper-warm);
-        }
-        .fortune-naokun-art :global(img) { object-fit: cover; }
-        .fortune-naokun-copy {
-          display: grid;
-          gap: 4px;
-          min-width: 0;
-        }
-        .fortune-naokun-copy small {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: var(--skin-coral-strong);
-          font-size: .75rem;
-          font-weight: 900;
-          letter-spacing: .04em;
-        }
-        .fortune-naokun-copy small :global(svg) { width: 14px; height: 14px; }
-        .fortune-naokun-copy > strong { color: var(--skin-ink); font-size: .92rem; }
-        .fortune-naokun-copy > span { color: var(--skin-ink-soft); font-size: .78rem; line-height: 1.55; }
-        @media (max-width: 360px) {
-          .fortune-naokun-visit { grid-template-columns: 78px minmax(0, 1fr); }
         }
       `}</style>
     </section>

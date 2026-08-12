@@ -123,15 +123,15 @@ const fortuneEvent = (name) => {
   })
 }
 const miyukiFortune = fortuneEvent("美雪")
-const naokunFortune = fortuneEvent("なおくん")
+const kikiFortune = fortuneEvent("キキ")
 let fortuneState = createInitialAppState(fortuneDate, `${fortuneDate}T00:00:00.000Z`)
 const afterMiyukiFortune = reduceProgression(fortuneState, miyukiFortune)
-const afterTwoNames = reduceProgression(afterMiyukiFortune, naokunFortune)
+const afterTwoNames = reduceProgression(afterMiyukiFortune, kikiFortune)
 assert.equal(hasProcessedEvent(afterTwoNames, miyukiFortune.eventId), true)
-assert.equal(hasProcessedEvent(afterTwoNames, naokunFortune.eventId), true)
+assert.equal(hasProcessedEvent(afterTwoNames, kikiFortune.eventId), true)
 assert.equal(afterTwoNames.stats.fortunesDrawn, 2)
 assert.equal(afterTwoNames.daily.progress["draw-fortune"], 1)
-assert.equal(afterMiyukiFortune.wallet.nyanCoins, fortuneState.wallet.nyanCoins + 14)
+assert.equal(afterMiyukiFortune.wallet.nyanCoins, fortuneState.wallet.nyanCoins + 10)
 assert.equal(afterTwoNames.wallet.nyanCoins, afterMiyukiFortune.wallet.nyanCoins)
 const duplicateFortuneReplay = reduceProgression(afterTwoNames, miyukiFortune)
 assert.equal(duplicateFortuneReplay, afterTwoNames)
@@ -143,7 +143,7 @@ const importedFortuneBackup = importProgressionBackup(fortuneBackup, fortuneDate
 assert.equal(importedFortuneBackup.ok, true)
 if (!importedFortuneBackup.ok) throw new Error("Fortune backup import unexpectedly failed")
 assert.equal(hasProcessedEvent(importedFortuneBackup.state, miyukiFortune.eventId), true)
-assert.equal(hasProcessedEvent(importedFortuneBackup.state, naokunFortune.eventId), true)
+assert.equal(hasProcessedEvent(importedFortuneBackup.state, kikiFortune.eventId), true)
 const replayAfterImport = reduceProgression(importedFortuneBackup.state, miyukiFortune)
 assert.equal(replayAfterImport, importedFortuneBackup.state)
 
@@ -159,28 +159,17 @@ for (const [dateKey, expected] of Object.entries(missionCompatibilityCases)) {
   assert.equal(JSON.stringify(actual), JSON.stringify(expected))
 }
 
-// All three story chapters must accept only their progression graph order.
-let storyState = createInitialAppState("2026-08-12", "2026-08-12T00:00:00.000Z")
-const storyEvents = [
-  ["cafe-opening-1", "kitchen"],
-  ["cafe-opening-2", "cherry-king-ending"],
-  ["lost-star-1", "window"],
-  ["lost-star-2", "moon-ending"],
-  ["festival-night-1", "cats"],
-  ["festival-night-2", "music-ending"],
-]
-for (const [nodeId, choiceId] of storyEvents) {
-  storyState = reduceProgression(storyState, eventAt(`story:test:${nodeId}`, "2026-08-12T02:00:00.000Z", {
-    type: "story.nodeCompleted",
-    nodeId,
-    ...(choiceId ? { choiceId } : {}),
-  }))
-}
-assert.equal(JSON.stringify(storyState.story.unlockedChapterIds), JSON.stringify(["cafe-opening", "lost-star", "festival-night"]))
-assert.equal(JSON.stringify(storyState.story.completedNodeIds), JSON.stringify(storyEvents.map(([nodeId]) => nodeId)))
-assert.ok(storyState.collections.naokunForms["naokun-poop-gold"])
-assert.ok(storyState.collections.naokunForms["naokun-poop-space"])
-assert.ok(storyState.collections.naokunForms["naokun-poop-music"])
+// Removed story events are ignored and can no longer grant hidden rewards.
+const storyState = createInitialAppState("2026-08-12", "2026-08-12T00:00:00.000Z")
+const storyAttempt = reduceProgression(storyState, eventAt("story:test:removed", "2026-08-12T02:00:00.000Z", {
+  type: "story.nodeCompleted",
+  nodeId: "cafe-opening-1",
+  choiceId: "kitchen",
+}))
+assert.equal(storyAttempt, storyState)
+assert.deepEqual([...storyState.story.unlockedChapterIds], [])
+assert.deepEqual([...storyState.story.completedNodeIds], [])
+assert.deepEqual(Object.keys(storyState.collections.naokunForms), [], "廃止した物語から変身報酬を解放しません")
 
 // v1 raw IDs migrate to distinct 128-bit exact tokens, including a known 32-bit collision pair.
 const collisionPair = ["event:103v8qo:iy1t0h", "event:v5oiz:167oqgy"]
@@ -253,4 +242,4 @@ assert.deepEqual([...repairedReferences.state.story.unlockedChapterIds], ["cafe-
 assert.equal(repairedReferences.state.settings.skinId, "cream-soda")
 assert.ok(repairedReferences.warnings.some((warning) => warning.includes("安全に整理")))
 
-console.log("Progression verification passed: daily and fortune idempotency, mission compatibility, backup replay protection, 3 story chapters, exact ledger migration/capacity, reference repair, and read-only protection.")
+console.log("Progression verification passed: daily and fortune idempotency, mission compatibility, removed-story compatibility, backup replay protection, exact ledger migration/capacity, reference repair, and read-only protection.")

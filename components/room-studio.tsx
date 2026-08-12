@@ -64,59 +64,59 @@ const ART_BY_ITEM: Record<string, string> = {
 const ROOM_REACTIONS: Record<string, Omit<RoomReaction, "title">> = {
   "wall-mint": {
     lead: "美雪「クリームソーダみたいで、すずしそう！」",
-    reply: "猫たちは壁を見上げ、なおくんはミントうんち役に立候補しました。",
+    reply: "トラちゃんは壁を見上げ、キキとフワは涼しい床でくつろぎました。",
   },
   "wall-strawberry": {
     lead: "美雪「いちごミルク色、かわいい！」",
-    reply: "猫たちは肉球で合格。なおくんは、いちごうんちになって壁と記念撮影です。",
+    reply: "フワが肉球で合格。三匹そろって壁の前で記念撮影です。",
   },
   "window-sunny": {
     lead: "美雪「ひなたで猫たちがお昼寝できるね」",
-    reply: "なおくんは太陽うんちになって照らす気満々。猫には本物の窓を選ばれました。",
+    reply: "トラちゃんが日なたを発見。キキとフワも並んでお昼寝を始めました。",
   },
   "window-starry": {
-    lead: "美雪「星がいっぱい！クロにも見せよう」",
-    reply: "クロが一番星を発見。なおくんは宇宙うんちになり、まだ部屋の中を飛んでいます。",
+    lead: "美雪「星がいっぱい！キキにも見せよう」",
+    reply: "キキが一番星を発見。トラちゃんとフワも窓辺へ集合しました。",
   },
   "shelf-cups": {
     lead: "美雪「肉球カップをきれいに並べたよ」",
-    reply: "猫たちが店員さん役。なおくんは離れた撮影台で、カップの絵札を持つうんち店長になりました。",
+    reply: "三匹が店員さん役。トラちゃんはカップの横で元気にお出迎えです。",
   },
   "shelf-books": {
     lead: "美雪「笑える日記は、この棚にしまおう」",
-    reply: "猫たちは静かに読書。なおくんは自分がうんちになる回だけ、こっそり前向きに並べました。",
+    reply: "キキは静かに読書。フワは開いた本を枕にして眠っています。",
   },
   "table-creamsoda": {
     lead: "美雪「テーブルをすてきに飾ったよ」",
-    reply: "猫たちは泡を観察中。なおくんは離れた撮影台で、ソーダ色うんちの絵札を掲げて得意顔です。",
+    reply: "三匹は泡をじっと観察中。トラちゃんだけ鼻に泡をつけています。",
   },
   "table-pancakes": {
     lead: "美雪「猫の顔、上手にできた！」",
-    reply: "猫たちはそっくり度を審査。なおくんは厨房の外の看板へうんち顔も描き足し、美雪にそっと消されました。",
+    reply: "三匹がそっくり度を審査。フワは自分の顔のパンケーキを選びました。",
   },
   "floor-yarn": {
     lead: "美雪「三色の毛糸、どれから遊ぶ？」",
-    reply: "猫たちは一斉にスタート。なおくんは毛糸に巻かれ、しましまうんち役になって笑っています。",
+    reply: "三匹が一斉にスタート。キキがいちばん先に毛糸玉をつかまえました。",
   },
   "floor-flowers": {
     lead: "美雪「お花のいい香りがするね」",
-    reply: "猫たちはそっとくんくん。なおくんは花うんちになって、かごの横で堂々とポーズ！",
+    reply: "三匹はそっとくんくん。フワは花かごの横で上品にポーズしました。",
   },
   "center-cat-tree": {
     lead: "美雪「いちばん上まで登れるかな？」",
-    reply: "猫たちは三秒で頂上へ。なおくんは木の下で、見守りうんち係を楽しんでいます。",
+    reply: "トラちゃんが三秒で頂上へ。キキとフワは下から見守っています。",
   },
   "center-piano": {
     lead: "美雪「肉球で、にゃんにゃん伴奏！」",
-    reply: "猫たちが一音ずつ演奏。なおくんは指揮者うんちになり、曲より大きくおじぎしました。",
+    reply: "三匹が一音ずつ演奏。最後はそろって大きくおじぎしました。",
   },
   "right-cat-bed": {
     lead: "美雪「ふかふかだから、順番に使おうね」",
-    reply: "猫たちが丸くなって満席。なおくんは雲うんちクッションになれてごきげんです。",
+    reply: "トラちゃん、キキ、フワが丸くなって、ベッドは満席です。",
   },
   "right-treasure": {
-    lead: "美雪「宝箱の中は、変身グッズだらけ！」",
-    reply: "猫たちが王冠を発見。なおくんは金のうんち王に変身し、まぶしくて全員ほそ目です。",
+    lead: "美雪「宝箱の中は、猫のおもちゃがいっぱい！」",
+    reply: "キキが王冠を発見。トラちゃんとフワはリボンを選びました。",
   },
 }
 
@@ -142,8 +142,8 @@ export function RoomStudio({
   const [selectedSlot, setSelectedSlot] = useState<RoomSlotId>("table")
   const [reaction, setReaction] = useState<RoomReaction>({
     title: "テーブルを選択中",
-    lead: "家具を配置すると、美雪・猫たち・なおくんの一言劇が始まります。",
-    reply: "なおくんはもう、次のうんち役を選んで待っています。",
+    lead: "家具を配置すると、美雪と三匹の一言劇が始まります。",
+    reply: "トラちゃん、キキ、フワは次の家具を待っています。",
   })
   const itemById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items])
   const selectedSlotInfo = ROOM_SLOTS.find((slot) => slot.id === selectedSlot) ?? ROOM_SLOTS[0]
@@ -157,7 +157,7 @@ export function RoomStudio({
       setReaction({
         title: `${ROOM_SLOTS.find((candidate) => candidate.id === slot)?.label ?? "家具"}を空けました`,
         lead: "美雪「次は何を置こうかな？」",
-        reply: "猫たちは空いた場所を一周。なおくんは次の変身スペースだと思っています。",
+        reply: "三匹は空いた場所を一周して、次の家具を待っています。",
       })
       return
     }
@@ -165,7 +165,7 @@ export function RoomStudio({
     const item = itemById.get(itemId)
     const scene = ROOM_REACTIONS[itemId] ?? {
       lead: "美雪「お部屋にぴったり！」",
-      reply: "猫たちも気に入った様子。なおくんは楽しい変身を考えています。",
+      reply: "トラちゃん、キキ、フワも気に入った様子です。",
     }
     setReaction({ title: `${item?.name ?? "家具"}を配置しました`, ...scene })
   }
