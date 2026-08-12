@@ -23,6 +23,8 @@ export type AdventureMission = {
   id: string
   title: string
   description: string
+  character?: string
+  completionLine?: string
   progress: number
   goal: number
   rewardCoins: number
@@ -49,21 +51,21 @@ type MissionClaimFeedback = {
 function claimFailureMessage(reason: Exclude<ActionCheck, { ok: true }>["reason"]) {
   switch (reason) {
     case "read-only":
-      return "記録が保護されているため、ごほうびを受け取れませんでした。"
+      return "記録が保護されているため、報酬を受け取れませんでした。"
     case "storage-capacity":
-      return "保存できる記録がいっぱいです。保護者といっしょにバックアップを確認してね。"
+      return "保存できる記録が上限に達しました。保護者メニューでバックアップを確認してください。"
     case "already-claimed":
-      return "このごほうびは、もう受け取りずみです。"
+      return "この報酬は受け取り済みです。"
     case "not-complete":
       return "このミッションは、まだ完了していません。"
     case "wrong-day":
-      return "日付が変わりました。きょうのミッションを確認してね。"
+      return "日付が変わりました。今日のミッションを確認してください。"
     case "not-found":
-      return "ミッションを見つけられませんでした。画面を更新して、もう一度ためしてね。"
+      return "ミッションを見つけられませんでした。画面を更新して、もう一度確認してください。"
     case "already-owned":
     case "not-enough-coins":
     case "locked":
-      return "ごほうびを受け取れませんでした。画面を更新して、もう一度ためしてね。"
+      return "報酬を受け取れませんでした。画面を更新して、もう一度確認してください。"
   }
 }
 
@@ -80,18 +82,18 @@ const ENTRANCES: Array<{
   {
     id: "room",
     eyebrow: "MY CAT CAFE",
-    title: "おへやづくり",
-    description: "集めた家具で、ねこカフェをかわいくしよう。",
+    title: "カフェ編集室",
+    description: "集めた家具を7つの場所へ配置し、レイアウトを設計します。",
     art: "/content/room/empty-cafe.webp",
-    alt: "クリームソーダ色の家具が並ぶ、かわいい猫カフェのお部屋",
+    alt: "家具を自由に置ける、クリームソーダ色の空の猫カフェ",
     icon: Home,
     tone: "mint",
   },
   {
     id: "collections",
     eyebrow: "COLLECTION BOOK",
-    title: "ねこと変身ずかん",
-    description: "出会った猫となおくんの変身を見返せるよ。",
+    title: "コレクション図鑑",
+    description: "発見条件と、猫・なおくん変身の記録を確認します。",
     art: "/content/collections/cat-book.webp",
     alt: "猫となおくんの変身カードが並ぶ図鑑",
     icon: LibraryBig,
@@ -100,8 +102,8 @@ const ENTRANCES: Array<{
   {
     id: "story",
     eyebrow: "CAT CAFE STORY",
-    title: "ものがたりモード",
-    description: "選んだ答えでお話が変わる、猫カフェの大事件。",
+    title: "分岐ストーリー",
+    description: "選択によって結末が変わる、猫カフェの事件ファイル。",
     art: "/content/story/paw-key-discovery.webp",
     alt: "不思議な扉を見つけた美雪と猫たちとなおくん",
     icon: BookHeart,
@@ -147,7 +149,7 @@ export function AdventureHub({
       const timeout = claimTimeoutsRef.current.get(mission.id)
       if (timeout !== undefined) window.clearTimeout(timeout)
       claimTimeoutsRef.current.delete(mission.id)
-      const message = `${mission.title}のごほうび、${mission.rewardCoins}にゃんコインを受け取りました。`
+      const message = `${mission.title}の報酬、${mission.rewardCoins}にゃんコインを受け取りました。${mission.completionLine ? ` ${mission.completionLine}` : ""}`
       nextFeedback[mission.id] = { state: "success", message }
       messages.push(message)
     })
@@ -191,9 +193,9 @@ export function AdventureHub({
     setPendingClaimIds(new Set(pendingClaimIdsRef.current))
     setClaimFeedback((current) => ({
       ...current,
-      [mission.id]: { state: "pending", message: `${mission.title}のごほうびを受け取っています。` },
+      [mission.id]: { state: "pending", message: `${mission.title}の報酬を受け取っています。` },
     }))
-    setClaimMessage(`${mission.title}のごほうびを受け取っています。`)
+    setClaimMessage(`${mission.title}の報酬を受け取っています。`)
 
     const requestFrame = window.requestAnimationFrame(() => {
       claimRequestFramesRef.current.delete(mission.id)
@@ -209,7 +211,7 @@ export function AdventureHub({
           claimTimeoutsRef.current.delete(mission.id)
           if (!pendingClaimIdsRef.current.delete(mission.id)) return
           setPendingClaimIds(new Set(pendingClaimIdsRef.current))
-          const message = "ごほうびの保存結果を確認できませんでした。画面を更新して、記録を確認してね。"
+          const message = "報酬の保存結果を確認できませんでした。画面を更新して、記録を確認してください。"
           setClaimFeedback((current) => ({
             ...current,
             [mission.id]: { state: "error", message },
@@ -229,7 +231,7 @@ export function AdventureHub({
       pendingClaimIdsRef.current.delete(mission.id)
       setPendingClaimIds(new Set(pendingClaimIdsRef.current))
       const message = unexpectedFailure || !result
-        ? "ごほうびの受け取り中に問題が起きました。もう一度ためしてね。"
+        ? "報酬の受け取り中に問題が起きました。もう一度確認してください。"
         : claimFailureMessage(result.reason)
       setClaimFeedback((current) => ({
         ...current,
@@ -250,11 +252,11 @@ export function AdventureHub({
       <header className={styles.adventureHero}>
         <div className={styles.heroCopy}>
           <p className={styles.kicker}><Sparkles aria-hidden="true" /> MIYUKI CAT CLUB</p>
-          <h2 id="adventure-title">きょうの猫クラブ</h2>
-          <p>遊んで集めて、猫カフェをもっとすてきにしよう。</p>
+          <h2 id="adventure-title">猫クラブ活動ボード</h2>
+          <p>今日の課題、獲得コイン、カフェの編集状況をまとめて管理します。</p>
           <div className={styles.heroStats} aria-label="猫クラブの記録">
             <span><CircleDollarSign aria-hidden="true" /><strong>{coins.toLocaleString("ja-JP")}</strong> にゃんコイン</span>
-            <span><Star aria-hidden="true" /><strong>{hasActivityToday ? "きょう活動したよ" : "きょうはこれから"}</strong></span>
+            <span><Star aria-hidden="true" /><strong>{hasActivityToday ? "本日の活動あり" : "本日は未活動"}</strong></span>
           </div>
         </div>
         <ExperienceArtwork
@@ -269,7 +271,7 @@ export function AdventureHub({
         <div className={styles.sectionHeading}>
           <div>
             <p className={styles.kicker}><Clock3 aria-hidden="true" /> TODAY&apos;S MISSION</p>
-            <h3 id="mission-title">きょうのミッション</h3>
+            <h3 id="mission-title">今日のミッション</h3>
           </div>
           <span className={styles.countBadge} aria-label={`完了 ${completedCount} / ${missions.length}`}>完了 {completedCount} / {missions.length}</span>
         </div>
@@ -277,7 +279,7 @@ export function AdventureHub({
         <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{claimMessage}</p>
 
         {missions.length === 0 ? (
-          <p className={styles.emptyNotice}>きょうのミッションは準備中だよ。猫とひと休みしよう。</p>
+          <p className={styles.emptyNotice}>今日のミッションは準備中です。更新後にもう一度確認してください。</p>
         ) : (
           <div className={styles.missionList}>
             {missions.map((mission) => {
@@ -292,6 +294,7 @@ export function AdventureHub({
                     {mission.status === "claimed" ? <Check /> : <Star />}
                   </span>
                   <div className={styles.missionCopy}>
+                    {mission.character ? <span className={styles.missionCharacter}>{mission.character}</span> : null}
                     <h4
                       ref={(node) => {
                         if (node) missionHeadingRefs.current.set(mission.id, node)
@@ -302,6 +305,9 @@ export function AdventureHub({
                       {mission.title}
                     </h4>
                     <p>{mission.description}</p>
+                    {mission.status === "claimed" && mission.completionLine ? (
+                      <p className={styles.missionPunchline}><Sparkles aria-hidden="true" />{mission.completionLine}</p>
+                    ) : null}
                     <div className={styles.progressRow}>
                       <progress
                         max={safeGoal}
@@ -324,10 +330,10 @@ export function AdventureHub({
                         disabled={isPending}
                         aria-busy={isPending}
                       >
-                        <Gift aria-hidden="true" /> {isPending ? "受け取り中…" : "うけとる"}
+                        <Gift aria-hidden="true" /> {isPending ? "受け取り中…" : "報酬を受け取る"}
                       </button>
                     ) : mission.status === "claimed" ? (
-                      <strong><Check aria-hidden="true" /> うけとったよ</strong>
+                      <strong><Check aria-hidden="true" /> 受け取り済み</strong>
                     ) : (
                       <small>あと {Math.max(0, safeGoal - safeProgress)}</small>
                     )}
@@ -344,7 +350,7 @@ export function AdventureHub({
         <div className={styles.sectionHeading}>
           <div>
             <p className={styles.kicker}><Sparkles aria-hidden="true" /> LET&apos;S EXPLORE</p>
-            <h3 id="entrance-title">どこへ行く？</h3>
+            <h3 id="entrance-title">活動エリア</h3>
           </div>
         </div>
 

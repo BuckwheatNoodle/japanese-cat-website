@@ -18,8 +18,8 @@ export const COLORING_PAGES: ColoringPage[] = [
     id: "hello-cat",
     title: "おすわりねこ",
     difficulty: "easy",
-    difficultyLabel: "かんたん",
-    description: "大きなパーツで、はじめてでもぬりやすいよ",
+    difficultyLabel: "入門",
+    description: "大きな7パーツで、配色の基本を試せます",
     svg: frame(`
       <circle data-name="face" cx="180" cy="91" r="55" fill="white"/>
       <path data-name="left-ear" d="M137 59 145 22 168 48Z" fill="white"/>
@@ -37,8 +37,8 @@ export const COLORING_PAGES: ColoringPage[] = [
     id: "cafe-cat",
     title: "ねこカフェ",
     difficulty: "normal",
-    difficultyLabel: "ふつう",
-    description: "クリームソーダとカフェを好きな色にしよう",
+    difficultyLabel: "標準",
+    description: "カフェ全体の色の組み合わせを設計します",
     svg: frame(`
       <path data-name="awning-1" d="M22 35h52v35H22c-12-8-12-27 0-35Z" fill="white"/><path data-name="awning-2" d="M74 35h52v35H74Z" fill="white"/><path data-name="awning-3" d="M126 35h52v35h-52Z" fill="white"/><path data-name="awning-4" d="M178 35h52v35h-52Z" fill="white"/><path data-name="awning-5" d="M230 35h52v35h-52Z" fill="white"/><path data-name="awning-6" d="M282 35h56c12 8 12 27 0 35h-56Z" fill="white"/>
       <rect data-name="counter" x="25" y="205" width="310" height="35" rx="10" fill="white"/>
@@ -51,8 +51,8 @@ export const COLORING_PAGES: ColoringPage[] = [
     id: "fish-picnic",
     title: "おさかなピクニック",
     difficulty: "normal",
-    difficultyLabel: "ふつう",
-    description: "ねこと魚、おべんとうをカラフルに",
+    difficultyLabel: "標準",
+    description: "空・草・猫・魚の配色バランスに挑戦",
     svg: frame(`
       <path data-name="sky" d="M9 9h342v118H9Z" fill="white"/><path data-name="grass" d="M9 127c55-22 98 18 154-4s108 10 188-3v131H9Z" fill="white"/><circle data-name="sun" cx="304" cy="50" r="24" fill="white"/>
       <circle data-name="face" cx="112" cy="112" r="39" fill="white"/><path data-name="left-ear" d="m82 91 3-31 25 20Z" fill="white"/><path data-name="right-ear" d="m134 80 24-20 1 32Z" fill="white"/><ellipse data-name="body" cx="112" cy="170" rx="45" ry="42" fill="white"/><path data-name="tail" d="M149 176c47-34 68 19 35 37-13 7-26-4-18-15" fill="white"/>
@@ -65,8 +65,8 @@ export const COLORING_PAGES: ColoringPage[] = [
     id: "flower-garden",
     title: "お花畑のねこ",
     difficulty: "challenge",
-    difficultyLabel: "むずかしい",
-    description: "花びらまでじっくりぬれる上級編",
+    difficultyLabel: "上級",
+    description: "細かな花びらを含む上級デザイン",
     svg: frame(`
       <path data-name="sky" d="M9 9h342v150H9Z" fill="white"/><path data-name="field" d="M9 157c58-23 113 15 169-5s106 15 173-3v102H9Z" fill="white"/>
       <circle data-name="face" cx="180" cy="95" r="44" fill="white"/><path data-name="left-ear" d="m145 72 5-35 28 24Z" fill="white"/><path data-name="right-ear" d="m183 61 28-24 5 36Z" fill="white"/><ellipse data-name="body" cx="180" cy="164" rx="52" ry="52" fill="white"/><ellipse data-name="tummy" cx="180" cy="174" rx="29" ry="35" fill="white"/><path data-name="tail" d="M225 166c51-26 72 28 39 50-17 11-33-3-23-16" fill="white"/>
@@ -79,8 +79,8 @@ export const COLORING_PAGES: ColoringPage[] = [
     id: "moon-cat",
     title: "星空のねこ",
     difficulty: "challenge",
-    difficultyLabel: "むずかしい",
-    description: "月と星をぬって夜空を完成させよう",
+    difficultyLabel: "上級",
+    description: "月・星・室内の明暗を組み立てる上級デザイン",
     svg: frame(`
       <rect data-name="night-sky" x="9" y="9" width="342" height="172" rx="22" fill="white"/><path data-name="moon" d="M288 39c-30 7-36 48-10 63 17 10 38 2 47-13-26 5-44-26-37-50Z" fill="white"/>
       <path data-name="star-1" d="m56 45 7 14 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2Z" fill="white"/><path data-name="star-2" d="m241 76 5 10 12 2-9 8 2 12-10-6-10 6 2-12-9-8 12-2Z" fill="white"/><path data-name="star-3" d="m102 112 4 9 10 1-7 7 1 10-8-5-9 5 2-10-8-7 10-1Z" fill="white"/>

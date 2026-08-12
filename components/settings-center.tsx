@@ -10,6 +10,9 @@ import {
   Eye,
   Gauge,
   HardDrive,
+  KeyRound,
+  Lock,
+  LockOpen,
   Music2,
   Palette,
   Play,
@@ -21,6 +24,12 @@ import {
   Volume2,
 } from "lucide-react"
 import { useProgression } from "@/components/progression-provider"
+import {
+  PARENT_PIN_KEY,
+  cleanParentPin,
+  hasConfiguredParentPin,
+  verifyParentPin,
+} from "@/lib/parent-access"
 import { MAX_BACKUP_CHARACTERS, type AccessibilitySettings } from "@/lib/progression"
 import { getLocalDateKey } from "@/lib/utils"
 import styles from "@/components/settings-center.module.css"
@@ -42,6 +51,8 @@ type BackupPreview = {
   coins: number | null
   gamesPlayed: number | null
 }
+
+type ParentPinStatus = "checking" | "configured" | "missing" | "unavailable"
 
 export type SettingsCenterProps = {
   onBack?: () => void
@@ -96,16 +107,22 @@ function Toggle({
 }
 
 export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterProps) {
-  const { state, ready, storageWarnings, updateSettings, exportBackup, importBackup } = useProgression()
+  const { state, ready, updateSettings, exportBackup, importBackup } = useProgression()
   const settings = state.settings
   const fileInputRef = useRef<HTMLInputElement>(null)
   const backupButtonRef = useRef<HTMLButtonElement>(null)
   const backupPreviewHeadingRef = useRef<HTMLHeadingElement>(null)
+  const backupAccessErrorRef = useRef<HTMLDivElement>(null)
+  const backupUnlockedHeadingRef = useRef<HTMLHeadingElement>(null)
   const statusRef = useRef<HTMLDivElement>(null)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [backupPreview, setBackupPreview] = useState<BackupPreview | null>(null)
   const [confirmRestore, setConfirmRestore] = useState(false)
+  const [parentPinStatus, setParentPinStatus] = useState<ParentPinStatus>("checking")
+  const [backupPin, setBackupPin] = useState("")
+  const [backupUnlocked, setBackupUnlocked] = useState(false)
+  const [backupAccessError, setBackupAccessError] = useState("")
 
   useEffect(() => {
     if (!ready) return
@@ -116,6 +133,37 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
     if (!backupPreview) return
     window.requestAnimationFrame(() => backupPreviewHeadingRef.current?.focus({ preventScroll: true }))
   }, [backupPreview])
+
+  useEffect(() => {
+    const syncParentPin = () => {
+      try {
+        setParentPinStatus(hasConfiguredParentPin(window.localStorage) ? "configured" : "missing")
+      } catch {
+        setParentPinStatus("unavailable")
+      }
+      setBackupUnlocked(false)
+      setBackupPin("")
+      setBackupAccessError("")
+      setBackupPreview(null)
+      setConfirmRestore(false)
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === PARENT_PIN_KEY) syncParentPin()
+    }
+    syncParentPin()
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [])
+
+  useEffect(() => {
+    if (!backupAccessError && parentPinStatus !== "unavailable") return
+    backupAccessErrorRef.current?.focus({ preventScroll: true })
+  }, [backupAccessError, parentPinStatus])
+
+  useEffect(() => {
+    if (!backupUnlocked) return
+    backupUnlockedHeadingRef.current?.focus({ preventScroll: true })
+  }, [backupUnlocked])
 
   const selectedSkin = useMemo(
     () => SKIN_CHOICES.some((choice) => choice.id === settings.skinId) ? settings.skinId : "cream-soda",
@@ -156,7 +204,51 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
     setMessage("読み上げの見本を再生しています。")
   }
 
+  const showBackupAccessError = (value: string) => {
+    setBackupAccessError(value)
+    setMessage("")
+  }
+
+  const unlockBackup = async () => {
+    let verification
+    try {
+      verification = await verifyParentPin(window.localStorage, backupPin)
+    } catch {
+      setParentPinStatus("unavailable")
+      showBackupAccessError("この端末でPINを確認できませんでした。ブラウザの保存設定を確認してください。")
+      return
+    }
+    if (!verification.ok) {
+      if (verification.reason === "invalid-format") {
+        showBackupAccessError("PINを数字4けたで入力してください。")
+      } else if (verification.reason === "not-configured") {
+        setParentPinStatus("missing")
+        showBackupAccessError("PINがまだ設定されていません。おうちの人の編集室で設定してください。")
+      } else if (verification.reason === "mismatch") {
+        showBackupAccessError("PINがちがいます。もう一度確認してください。")
+      } else {
+        setParentPinStatus("unavailable")
+        showBackupAccessError("この端末でPINを確認できませんでした。ブラウザの保存設定を確認してください。")
+      }
+      return
+    }
+    setBackupAccessError("")
+    setBackupPin("")
+    setBackupUnlocked(true)
+    setError("")
+  }
+
+  const lockBackup = () => {
+    setBackupUnlocked(false)
+    setBackupPin("")
+    setBackupAccessError("")
+    setBackupPreview(null)
+    setConfirmRestore(false)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
   const downloadBackup = () => {
+    if (!backupUnlocked) return
     const content = exportBackup()
     const blob = new Blob([content], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -170,6 +262,7 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
   }
 
   const previewBackup = async (file: File | undefined) => {
+    if (!backupUnlocked) return
     setBackupPreview(null)
     setConfirmRestore(false)
     setMessage("")
@@ -203,7 +296,7 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
   }
 
   const restoreBackup = () => {
-    if (!backupPreview || !confirmRestore) return
+    if (!backupUnlocked || !backupPreview || !confirmRestore) return
     const result = importBackup(backupPreview.raw)
     if (!result.ok) {
       setError(result.errors.join(" "))
@@ -241,9 +334,6 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
       </header>
 
       {!ready ? <p className={styles.notice}>設定を読み込んでいます…</p> : null}
-      {storageWarnings.length > 0 ? (
-        <div className={styles.warning} role="status"><AlertTriangle aria-hidden="true" /><span>{storageWarnings.join(" ")}</span></div>
-      ) : null}
       {error ? <div className={styles.error} role="alert"><AlertTriangle aria-hidden="true" />{error}</div> : null}
       {message ? <div ref={statusRef} className={styles.success} role="status" tabIndex={-1}><CheckCircle2 aria-hidden="true" />{message}</div> : null}
 
@@ -266,7 +356,7 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
         <Toggle
           checked={settings.readAloud}
           label="読み上げボタン"
-          note="日記やものがたりに読み上げボタンを出します"
+          note="日記と分岐ストーリーに読み上げボタンを表示します"
           onChange={(checked) => changeSettings({ readAloud: checked })}
         />
         <button type="button" className={styles.secondaryButton} onClick={testReadAloud}>
@@ -359,52 +449,114 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
         </div>
       </fieldset>
 
-      <section className={styles.panel} aria-labelledby="backup-title">
-        <h3 id="backup-title"><HardDrive aria-hidden="true" /> 記録のバックアップ</h3>
-        <p className={styles.helpText}>コイン・ミッション・図鑑・おへや・設定をJSONに保存します。おうちの人用PINと名前は入りません。</p>
-        <div className={styles.buttonRow}>
-          <button type="button" className={styles.primaryButton} onClick={downloadBackup}>
-            <Download aria-hidden="true" /> 書き出す
-          </button>
-          <button ref={backupButtonRef} type="button" className={styles.secondaryButton} onClick={() => fileInputRef.current?.click()}>
-            <Upload aria-hidden="true" /> JSONを選ぶ
-          </button>
-          <input
-            ref={fileInputRef}
-            className={styles.hiddenInput}
-            type="file"
-            accept="application/json,.json"
-            tabIndex={-1}
-            aria-hidden="true"
-            onChange={(event) => void previewBackup(event.currentTarget.files?.[0])}
-          />
-        </div>
-
-        {backupPreview ? (
-          <div className={styles.backupPreview}>
-            <h4 ref={backupPreviewHeadingRef} tabIndex={-1}>復元する前の確認</h4>
-            <dl>
-              <div><dt>ファイル</dt><dd>{backupPreview.filename}</dd></div>
-              <div><dt>形式</dt><dd>バージョン {backupPreview.version}</dd></div>
-              <div><dt>書き出し日</dt><dd>{backupPreview.exportedAt === "不明" ? "不明" : new Date(backupPreview.exportedAt).toLocaleString("ja-JP")}</dd></div>
-              <div><dt>にゃんコイン</dt><dd>{backupPreview.coins ?? "不明"}</dd></div>
-              <div><dt>遊んだゲーム</dt><dd>{backupPreview.gamesPlayed ?? "不明"} 回</dd></div>
-            </dl>
-            <label className={styles.confirmRow}>
-              <input type="checkbox" checked={confirmRestore} onChange={(event) => setConfirmRestore(event.currentTarget.checked)} />
-              <span>今の記録がこの内容に入れかわることを確認しました</span>
-            </label>
-            <div className={styles.buttonRow}>
-              <button type="button" className={styles.dangerButton} disabled={!confirmRestore} onClick={restoreBackup}>
-                <RotateCcw aria-hidden="true" /> この内容を復元
-              </button>
-              <button type="button" className={styles.ghostButton} onClick={cancelBackupPreview}>
-                やめる
-              </button>
-            </div>
+      {backupUnlocked ? (
+        <section className={styles.panel} aria-labelledby="backup-title">
+          <h3 ref={backupUnlockedHeadingRef} tabIndex={-1} id="backup-title"><HardDrive aria-hidden="true" /> おうちの人用・記録のバックアップ</h3>
+          <p className={styles.helpText}>コイン・ミッション・図鑑・カフェ編集・設定をJSONに保存します。PINと名前は含まれません。この画面を閉じると、次回はもう一度PINが必要です。</p>
+          <div className={styles.buttonRow}>
+            <button type="button" className={styles.primaryButton} onClick={downloadBackup}>
+              <Download aria-hidden="true" /> 書き出す
+            </button>
+            <button ref={backupButtonRef} type="button" className={styles.secondaryButton} onClick={() => fileInputRef.current?.click()}>
+              <Upload aria-hidden="true" /> JSONを選ぶ
+            </button>
+            <button type="button" className={styles.ghostButton} onClick={lockBackup}>
+              <Lock aria-hidden="true" /> バックアップを閉じる
+            </button>
+            <input
+              ref={fileInputRef}
+              className={styles.hiddenInput}
+              type="file"
+              accept="application/json,.json"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => void previewBackup(event.currentTarget.files?.[0])}
+            />
           </div>
-        ) : null}
-      </section>
+
+          {backupPreview ? (
+            <div className={styles.backupPreview}>
+              <h4 ref={backupPreviewHeadingRef} tabIndex={-1}>復元する前の確認</h4>
+              <dl>
+                <div><dt>ファイル</dt><dd>{backupPreview.filename}</dd></div>
+                <div><dt>形式</dt><dd>バージョン {backupPreview.version}</dd></div>
+                <div><dt>書き出し日</dt><dd>{backupPreview.exportedAt === "不明" ? "不明" : new Date(backupPreview.exportedAt).toLocaleString("ja-JP")}</dd></div>
+                <div><dt>にゃんコイン</dt><dd>{backupPreview.coins ?? "不明"}</dd></div>
+                <div><dt>遊んだゲーム</dt><dd>{backupPreview.gamesPlayed ?? "不明"} 回</dd></div>
+              </dl>
+              <label className={styles.confirmRow}>
+                <input type="checkbox" checked={confirmRestore} onChange={(event) => setConfirmRestore(event.currentTarget.checked)} />
+                <span>今の記録がこの内容に入れかわることを確認しました</span>
+              </label>
+              <div className={styles.buttonRow}>
+                <button type="button" className={styles.dangerButton} disabled={!confirmRestore} onClick={restoreBackup}>
+                  <RotateCcw aria-hidden="true" /> この内容を復元
+                </button>
+                <button type="button" className={styles.ghostButton} onClick={cancelBackupPreview}>
+                  やめる
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : (
+        <section className={`${styles.panel} ${styles.pinPanel}`} aria-labelledby="backup-lock-title">
+          <KeyRound aria-hidden="true" />
+          <h3 id="backup-lock-title">おうちの人用・記録のバックアップ</h3>
+          {parentPinStatus === "checking" ? (
+            <p role="status">PINの設定を確認しています…</p>
+          ) : parentPinStatus === "configured" ? (
+            <>
+              <p>書き出しと復元には、おうちの人用PINを入力してください。確認はこの画面を開いている間だけ有効です。</p>
+              <label className={styles.pinLabel}>
+                <span>4けたPIN</span>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="current-password"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={backupPin}
+                  onChange={(event) => {
+                    setBackupPin(cleanParentPin(event.currentTarget.value))
+                    setBackupAccessError("")
+                  }}
+                  onKeyDown={(event) => { if (event.key === "Enter") void unlockBackup() }}
+                  aria-describedby="backup-pin-help"
+                  aria-invalid={backupAccessError ? true : undefined}
+                />
+              </label>
+              <small id="backup-pin-help">編集室と同じ、数字4けたのPIN</small>
+              {backupAccessError ? (
+                <div ref={backupAccessErrorRef} className={styles.error} role="alert" aria-live="assertive" tabIndex={-1}>
+                  <AlertTriangle aria-hidden="true" />{backupAccessError}
+                </div>
+              ) : null}
+              <button type="button" className={styles.primaryButton} onClick={() => void unlockBackup()}>
+                <LockOpen aria-hidden="true" /> PINを確認してひらく
+              </button>
+            </>
+          ) : parentPinStatus === "missing" ? (
+            <>
+              <p>PINがまだありません。先におうちの人の編集室で、誤操作防止PINを設定してください。</p>
+              {backupAccessError ? (
+                <div ref={backupAccessErrorRef} className={styles.error} role="alert" aria-live="assertive" tabIndex={-1}>
+                  <AlertTriangle aria-hidden="true" />{backupAccessError}
+                </div>
+              ) : null}
+              {onOpenParentEditor ? (
+                <button type="button" className={styles.secondaryButton} onClick={onOpenParentEditor}>
+                  <ShieldCheck aria-hidden="true" /> 編集室でPINを設定する
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <div ref={backupAccessErrorRef} className={styles.error} role="alert" aria-live="assertive" tabIndex={-1}>
+              <AlertTriangle aria-hidden="true" />この端末ではPINを確認できません。ブラウザの保存設定を、おうちの人と確認してください。
+            </div>
+          )}
+        </section>
+      )}
 
       <section className={`${styles.panel} ${styles.parentLink}`} aria-labelledby="parent-link-title">
         <ShieldCheck aria-hidden="true" />

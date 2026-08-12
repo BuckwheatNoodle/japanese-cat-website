@@ -138,6 +138,8 @@ function MiyukiCatApp() {
     id: mission.id,
     title: mission.title,
     description: mission.description,
+    character: mission.character,
+    completionLine: mission.completionLine,
     progress: mission.progress,
     goal: mission.goal,
     rewardCoins: mission.reward,
@@ -189,16 +191,6 @@ function MiyukiCatApp() {
       <a className="skip-link" href="#main-content">本文へ移動</a>
       <Header coins={state.wallet.nyanCoins} onOpenClub={() => changeView("club")} onOpenSettings={() => changeView("settings")} />
 
-      {storageWarnings.length > 0 ? (
-        <aside className="app-storage-warning" role="status" aria-live="polite">
-          <AlertTriangle aria-hidden="true" />
-          <div>
-            <strong>記録についてのお知らせ</strong>
-            <p>{storageWarnings.join(" ")}</p>
-          </div>
-        </aside>
-      ) : null}
-
       <main id="main-content" className="main-stage" tabIndex={-1}>
         {activeView === "home" && (
           <div data-testid="home-content" className="screen-enter">
@@ -209,6 +201,7 @@ function MiyukiCatApp() {
               lastActivity={lastActivity}
               recommendation={recommendation}
               coins={state.wallet.nyanCoins}
+              dateKey={state.daily.date}
             />
           </div>
         )}
@@ -284,6 +277,15 @@ function MiyukiCatApp() {
 
         {activeView === "parent" && (
           <div data-testid="parent-content" className="screen-enter">
+            {storageWarnings.length > 0 ? (
+              <aside className="app-storage-warning" role="status" aria-live="polite">
+                <AlertTriangle aria-hidden="true" />
+                <div>
+                  <strong>保護者向け・記録の技術情報</strong>
+                  <p>{storageWarnings.join(" ")}</p>
+                </div>
+              </aside>
+            ) : null}
             <ParentEditor onBack={() => changeView("settings")} />
           </div>
         )}
@@ -291,8 +293,8 @@ function MiyukiCatApp() {
 
       <footer className="site-footer">
         <p>美雪の猫ページ</p>
-        <p>おうちの人といっしょに、安心して楽しんでね。</p>
-        <button type="button" className="footer-settings-link" onClick={() => changeView("settings")}>おうちの人へ・設定</button>
+        <p>ゲーム記録と作品は、この端末の中に保存されます。</p>
+        <button type="button" className="footer-settings-link" onClick={() => changeView("settings")}>設定・保護者メニュー</button>
       </footer>
 
       <BottomTabs activeTab={mainTab} onTabChange={(tab) => changeView(tab)} />

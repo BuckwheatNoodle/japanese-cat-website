@@ -34,21 +34,21 @@ const BREED_QUESTIONS: BreedQuestion[] = [
     imageUrl: assetPath("/siamese-cat-with-blue-eyes-and-cream-colored-body-.jpg"),
     correctBreed: "シャム",
     options: ["シャム", "ロシアンブルー", "オリエンタルショートヘア", "バーミーズ"],
-    description: "青い目とポイントカラーが美しい猫です",
+    description: "青い目と、顔・耳・足先などが濃い色になるポイントカラーが美しい猫です",
   },
   {
     id: "maine_coon",
     imageUrl: assetPath("/large-maine-coon-cat-with-long-fur-and-tufted-ears.jpg"),
     correctBreed: "メインクーン",
     options: ["メインクーン", "ノルウェージャンフォレストキャット", "サイベリアン", "ラグドール"],
-    description: "大型で房毛のある耳が特徴的な猫です",
+    description: "大型で、耳先に房毛（ふさげ）がある猫です",
   },
   {
     id: "british_shorthair",
     imageUrl: assetPath("/british-shorthair-cat-with-round-face-and-dense-gr.jpg"),
     correctBreed: "ブリティッシュショートヘア",
     options: ["ブリティッシュショートヘア", "ロシアンブルー", "シャルトリュー", "スコティッシュフォールド"],
-    description: "丸い顔と密な被毛が特徴的な猫です",
+    description: "丸い顔と、密な被毛（ひもう・体をおおう毛）が特徴的な猫です",
   },
   {
     id: "ragdoll",
@@ -74,14 +74,14 @@ const BREED_QUESTIONS: BreedQuestion[] = [
     imageUrl: assetPath("/russian-blue-cat-with-silver-blue-fur-and-green-ey.jpg"),
     correctBreed: "ロシアンブルー",
     options: ["ロシアンブルー", "シャルトリュー", "ブリティッシュショートヘア", "コラット"],
-    description: "銀青色の美しい被毛と緑の目が特徴です",
+    description: "銀青色の美しい被毛（ひもう・体をおおう毛）と緑の目が特徴です",
   },
   {
     id: "abyssinian",
     imageUrl: assetPath("/abyssinian-cat-with-ticked-coat-and-large-ears.jpg"),
     correctBreed: "アビシニアン",
     options: ["アビシニアン", "ソマリ", "ベンガル", "オシキャット"],
-    description: "ティックドコートと大きな耳が特徴的です",
+    description: "一本の毛に何色かが入るティックドコートと、大きな耳が特徴的です",
   },
   {
     id: "bengal",
@@ -102,7 +102,7 @@ const BREED_QUESTIONS: BreedQuestion[] = [
     imageUrl: assetPath("/norwegian-forest-cat-with-long-fur-and-bushy-tail.jpg"),
     correctBreed: "ノルウェージャンフォレストキャット",
     options: ["ノルウェージャンフォレストキャット", "メインクーン", "サイベリアン", "ラグドール"],
-    description: "北欧原産の大型長毛猫です",
+    description: "北欧（ヨーロッパ北部）で生まれた、大型の長毛猫です",
   },
   {
     id: "american_shorthair",
@@ -135,7 +135,7 @@ const BREED_QUESTIONS: BreedQuestion[] = [
     imageUrl: assetPath("/oriental-shorthair-cat-with-large-ears-and-slender.jpg"),
     correctBreed: "オリエンタルショートヘア",
     options: ["オリエンタルショートヘア", "シャム", "コーニッシュレックス", "デボンレックス"],
-    description: "大きな耳とスレンダーな体型が特徴です",
+    description: "大きな耳と、ほっそりした体つきが特徴です",
   },
   {
     id: "turkish_angora",
@@ -170,12 +170,33 @@ const BREED_QUESTIONS: BreedQuestion[] = [
     imageUrl: assetPath("/cornish-rex-cat-with-curly-coat-and-large-ears.jpg"),
     correctBreed: "コーニッシュレックス",
     options: ["コーニッシュレックス", "デボンレックス", "オリエンタルショートヘア", "スフィンクス"],
-    description: "カールした被毛と大きな耳が特徴的です",
+    description: "カールした被毛（ひもう・体をおおう毛）と大きな耳が特徴的です",
   },
 ]
 
 const TIME_PER_QUESTION = 15000 // 15秒
 const recordKeyFor = (mode: GlobalDifficulty, questionCount: QuestionCount) => `${mode}:${questionCount}`
+
+const BREED_CORRECT_REACTIONS = [
+  "美雪『写真だけで正解！』なおくんは自分の品種を『うんち兄』と申告。猫審査員が受け付けを閉じました。",
+  "猫たちから肉球スタンプ。なおくんも押そうとして、肉球がないことを今思い出しました。",
+  "大正解！ なおくんは猫博士の虫めがねを反対向きに持ち、決め顔だけ拡大しています。",
+] as const
+
+function breedReaction(question: BreedQuestion, selectedAnswer: string | null, timedOut: boolean, index: number) {
+  if (timedOut) return "時間切れでも特徴を読めば収穫あり。なおくんの回答は『すごく猫』。猫たち『広すぎます』"
+  if (selectedAnswer === question.correctBreed) return BREED_CORRECT_REACTIONS[index % BREED_CORRECT_REACTIONS.length]
+  if ((selectedAnswer?.length ?? 0) >= 16) return `なおくん『${selectedAnswer}と${question.correctBreed}、名前の長さはいい勝負！』美雪『クイズは文字数勝負ではありません』`
+  return `美雪『正解は${question.correctBreed}！』なおくんは「${selectedAnswer ?? "ひみつ"}も親せきかも」と交渉中。猫本人は写真の外を見ています。`
+}
+
+function breedResultCopy(correct: number, total: number) {
+  const ratio = total ? correct / total : 0
+  if (ratio === 1) return "全問正解で猫写真館の名誉館長！ なおくんは副館長の札を自作しましたが、裏に『見習い』と書かれています。"
+  if (ratio >= 0.8) return "見分ける目はかなり本格派。猫たちはモデル料におやつを希望、なおくんはなぜか自分の分も請求中です。"
+  if (ratio >= 0.5) return "半分以上正解！ 美雪の特徴メモは正確、なおくんのメモは全部『かわいい』でした。気持ちは分かります。"
+  return "名前が長い品種も、耳・目・毛・しっぽに分ければ覚えやすいよ。なおくんはまず自分の帽子の特徴から復習中。"
+}
 
 function shuffle<T>(items: readonly T[]): T[] {
   const result = [...items]
@@ -393,7 +414,8 @@ export function CatBreedQuiz() {
           <p className="game-result-kicker">品種クイズ終了！</p>
           <h3 ref={resultHeadingRef} tabIndex={-1}>{correctCount} / {sessionQuestions.length}問正解</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
-          <p>{score}点をゲット。写真の特徴を見つける目が、ぐんと育ったね！</p>
+          <p>{score}点。耳・顔・毛並みを観察して見分けた記録です。</p>
+          <p>{breedResultCopy(correctCount, sessionQuestions.length)}</p>
           <div className="game-result-record"><Camera aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${runQuestionCount}問コースのベスト`}</span><strong>{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0) : Math.max(score, highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0)}点</strong></div>
           {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={startQuiz}><RotateCcw aria-hidden="true" />もう一度挑戦</GamePrimaryButton>
@@ -415,7 +437,7 @@ export function CatBreedQuiz() {
             <GameStat icon={Trophy} label="スコア" value={`${score}点`} />
           </div>
           {effectiveTimePerQuestion === null
-            ? <p className="quiz-untimed-note"><Timer aria-hidden="true" />時間制限なし・写真をゆっくり見てね</p>
+            ? <p className="quiz-untimed-note"><Timer aria-hidden="true" />時間制限なし・特徴を比較して回答</p>
             : <div className="quiz-time-track" aria-label={`残り時間${Math.ceil((timeProgress / 100) * (effectiveTimePerQuestion / 1000))}秒`}><span style={{ width: `${timeProgress}%` }} /></div>}
 
           {/* 猫の画像 */}
@@ -488,7 +510,7 @@ export function CatBreedQuiz() {
           </div>
           {showDescription && (
             <div className={`quiz-feedback ${selectedAnswer === currentQuestion.correctBreed ? "is-correct" : "is-wrong"}`} aria-live="polite">
-              <div><strong>{currentQuestion.correctBreed}</strong><p>{currentQuestion.description}</p></div>
+              <div><strong>{currentQuestion.correctBreed}</strong><p>{currentQuestion.description}</p><p>{breedReaction(currentQuestion, selectedAnswer, isTimedOut, currentQuestionIndex)}</p></div>
               <button ref={feedbackButtonRef} type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の写真"}<ArrowRight aria-hidden="true" /></button>
             </div>
           )}
@@ -499,11 +521,11 @@ export function CatBreedQuiz() {
     return (
       <div className="game-start-view">
         <div className="game-intro-mark"><Camera aria-hidden="true" /></div>
-        <h3 ref={setupHeadingRef} tabIndex={-1}>写真をよく見て当てよう</h3>
+        <h3 ref={setupHeadingRef} tabIndex={-1}>猫品種・観察力テスト</h3>
         <p>20品種からランダム出題。{effectiveTimePerQuestion === null ? "時間制限なしで" : `1問${effectiveTimePerQuestion / 1000}秒で`}、迷ったら開閉できるヒントも使えます。</p>
         <div className="game-mode-options">
           {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as QuestionCount)} aria-pressed={questionCount === count}>
-            <strong>{count}問コース</strong><span>{count === 5 ? "まずは気軽に" : "猫博士を目指す"}</span>
+            <strong>{count === 5 ? "5問スプリント" : "10問検定"}</strong><span>{count === 5 ? "特徴を短時間で確認" : "観察記録を更新"}</span>
           </button>)}
         </div>
         <div className="game-record-pill"><Trophy aria-hidden="true" />このコースのベスト <strong>{highScores[recordKeyFor(globalDifficulty, questionCount)] ?? 0}点</strong></div>

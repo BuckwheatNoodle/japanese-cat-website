@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { DIARY_CAT_IDS, DIARY_COLLECTION_IDS } from "@/lib/diary"
 
 export const CONTENT_OVERRIDE_VERSION = 1 as const
 export const CONTENT_OVERRIDE_KIND = "miyuki-cat-content-overrides" as const
@@ -7,6 +8,11 @@ export const CONTENT_OVERRIDE_APPLIED_KEY = "miyuki-cat-content-applied-v1"
 export const MAX_CONTENT_OVERRIDE_CHARACTERS = 500_000
 export const FUTURE_CONTENT_OVERRIDE_MESSAGE = "このデータは、このサイトより新しい保存形式です。内容を守るため、対応する更新版で開くまで編集・反映・読み込み・削除はできません。"
 const STORED_FUTURE_CONTENT_OVERRIDE_MESSAGE = "この端末には、このサイトより新しい形式の編集内容が保存されています。内容を守るため、対応する更新版で開くまで編集・反映・読み込み・削除はできません。"
+
+export const DIARY_OVERRIDE_TRANSFORMATION_FORMS = ["none", ...DIARY_COLLECTION_IDS] as const
+export const DIARY_OVERRIDE_CAT_IDS = DIARY_CAT_IDS
+export type DiaryOverrideTransformationForm = (typeof DIARY_OVERRIDE_TRANSFORMATION_FORMS)[number]
+export type DiaryOverrideCatId = (typeof DIARY_OVERRIDE_CAT_IDS)[number]
 
 const plainText = (label: string, max: number) => z
   .string()
@@ -43,6 +49,57 @@ export const BUILT_IN_DIARY_ASSETS = [
   "/content/diary/2026-08-03.webp",
   "/content/diary/2026-08-02.webp",
   "/content/diary/2026-08-01.webp",
+  "/content/diary/2026-07-31.webp",
+  "/content/diary/2026-07-30.webp",
+  "/content/diary/2026-07-29.webp",
+  "/content/diary/2026-07-28.webp",
+  "/content/diary/2026-07-27.webp",
+  "/content/diary/2026-07-26.webp",
+  "/content/diary/2026-07-25.webp",
+  "/content/diary/2026-07-24.webp",
+  "/content/diary/2026-07-23.webp",
+  "/content/diary/2026-07-22.webp",
+  "/content/diary/2026-07-21.webp",
+  "/content/diary/2026-07-20.webp",
+  "/content/diary/2026-07-19.webp",
+  "/content/diary/2026-07-18.webp",
+  "/content/diary/2026-07-17.webp",
+  "/content/diary/2026-07-16.webp",
+  "/content/diary/2026-07-15.webp",
+  "/content/diary/2026-07-14.webp",
+  "/content/diary/2026-07-13.webp",
+  "/content/diary/2026-07-12.webp",
+  "/content/diary/2026-07-11.webp",
+  "/content/diary/2026-07-10.webp",
+  "/content/diary/2026-07-09.webp",
+  "/content/diary/2026-07-08.webp",
+  "/content/diary/2026-07-07.webp",
+  "/content/diary/2026-07-06.webp",
+  "/content/diary/2026-07-05.webp",
+  "/content/diary/2026-07-04.webp",
+  "/content/diary/2026-07-03.webp",
+  "/content/diary/2026-07-02.webp",
+  "/content/diary/2026-07-01.webp",
+  "/content/diary/2026-06-30.webp",
+  "/content/diary/2026-06-29.webp",
+  "/content/diary/2026-06-28.webp",
+  "/content/diary/2026-06-27.webp",
+  "/content/diary/2026-06-26.webp",
+  "/content/diary/2026-06-25.webp",
+  "/content/diary/2026-06-24.webp",
+  "/content/diary/2026-06-23.webp",
+  "/content/diary/2026-06-22.webp",
+  "/content/diary/2025-08-31.webp",
+  "/content/diary/2025-08-30.webp",
+  "/content/diary/2025-08-29.webp",
+  "/content/diary/2025-08-17.webp",
+  "/content/diary/2025-08-16.webp",
+  "/content/diary/2025-08-15.webp",
+  "/content/diary/2025-08-14.webp",
+  "/content/diary/2025-08-13.webp",
+  "/content/diary/2025-08-12.webp",
+  "/content/diary/2025-08-11.webp",
+  "/content/diary/2025-08-10.webp",
   "/skins/cream-soda/diary/2026-08-11.webp",
   "/skins/cream-soda/diary/2026-08-10.webp",
   "/skins/cream-soda/diary/2026-08-09.webp",
@@ -86,6 +143,11 @@ export const diaryContentOverrideSchema = z.object({
   illustration: diaryIllustrationSchema,
   alt: plainText("画像の説明", 160),
   hidden: z.boolean().default(false),
+  transformationForm: z.enum(DIARY_OVERRIDE_TRANSFORMATION_FORMS).optional(),
+  catIds: z.array(z.enum(DIARY_OVERRIDE_CAT_IDS))
+    .max(DIARY_OVERRIDE_CAT_IDS.length, `猫は${DIARY_OVERRIDE_CAT_IDS.length}匹まで選べます。`)
+    .refine((ids) => new Set(ids).size === ids.length, "同じ猫を重ねて選ぶことはできません。")
+    .optional(),
 })
 
 export const quizContentOverrideSchema = z.object({

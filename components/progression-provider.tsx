@@ -8,6 +8,7 @@ import {
   canPurchaseRoomItem,
   createEventId,
   createInitialAppState,
+  domainEventsHaveSameMeaning,
   getDailyMissionStatuses,
   getLocalDateKey,
   getProgressionWriteBlockReason,
@@ -226,7 +227,7 @@ export function ProgressionProvider({ children }: { children: React.ReactNode })
   const rememberEvent = useCallback((event: DomainEvent) => {
     const existing = eventJournalRef.current.get(event.eventId)
     if (existing) {
-      if (JSON.stringify(existing) !== JSON.stringify(event)) {
+      if (!domainEventsHaveSameMeaning(existing, event)) {
         setStorageWarnings((warnings) => mergeWarnings(warnings, ["同じIDで内容の異なる同期イベントを検出し、後から届いた内容を無視しました。"]))
       }
       return false

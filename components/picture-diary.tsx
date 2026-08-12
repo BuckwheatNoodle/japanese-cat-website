@@ -15,67 +15,8 @@ import { assetPath, getLocalDateKey } from "@/lib/utils"
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"]
 
-const CURRENT_DIARY_SCENES: Readonly<Record<string, { src: string; collectionId: string; alt: string }>> = {
-  "2026-08-12": {
-    src: "/content/diary/2026-08-12.webp",
-    collectionId: "naokun-poop-pirate",
-    alt: "段ボール船を占領する猫たちと、うんち海賊船長になって船首で肉球旗を振るなおくんと美雪",
-  },
-  "2026-08-11": {
-    src: "/content/diary/2026-08-11.webp",
-    collectionId: "naokun-poop-hero",
-    alt: "クッションの山を登る猫たちと、うんち姿で頂上に座って喜ぶなおくんを見守る美雪",
-  },
-  "2026-08-10": {
-    src: "/content/diary/2026-08-10.webp",
-    collectionId: "naokun-poop-chef",
-    alt: "スリッパホテルで眠る猫たちと、ベル係のうんち姿で猫を乗せて喜ぶなおくんと美雪",
-  },
-  "2026-08-09": {
-    src: "/content/diary/2026-08-09.webp",
-    collectionId: "naokun-poop-artist",
-    alt: "算数ノートのそばで巨大なうんち消しゴムになったなおくんを枕にする猫と美雪",
-  },
-  "2026-08-08": {
-    src: "/content/diary/2026-08-08.webp",
-    collectionId: "naokun-poop-ghost",
-    alt: "扇風機で毛がふくらんだ猫たちと、雲のようなうんち姿で浮かぶなおくんと美雪",
-  },
-  "2026-08-07": {
-    src: "/content/diary/2026-08-07.webp",
-    collectionId: "naokun-poop-soda",
-    alt: "すいかの紙帽子をかぶる猫たちと、しま模様の夏うんち姿で歩くなおくんと美雪",
-  },
-  "2026-08-06": {
-    src: "/content/diary/2026-08-06.webp",
-    collectionId: "naokun-poop-gold",
-    alt: "泡ひげの猫たちと、しゃぼん玉だらけのうんち社長になって喜ぶなおくんと美雪",
-  },
-  "2026-08-05": {
-    src: "/content/diary/2026-08-05.webp",
-    collectionId: "naokun-poop-detective",
-    alt: "パズルで眠る猫と、最後のうんち型ピースになって枕にされるなおくんと美雪",
-  },
-  "2026-08-04": {
-    src: "/content/diary/2026-08-04.webp",
-    collectionId: "naokun-poop-ninja",
-    alt: "かくれんぼの部屋で、うんちのおとりになって猫たちに見つかるなおくんと美雪",
-  },
-  "2026-08-03": {
-    src: "/content/diary/2026-08-03.webp",
-    collectionId: "naokun-poop-robot",
-    alt: "テレビのリモコン台になるうんち姿のなおくんを踏んで驚く猫と、笑う美雪",
-  },
-  "2026-08-02": {
-    src: "/content/diary/2026-08-02.webp",
-    collectionId: "naokun-poop-samurai",
-    alt: "そうめんのひげをつけた猫仙人と、うんち弟子になって離れて座るなおくんと美雪",
-  },
-  "2026-08-01": {
-    src: "/content/diary/2026-08-01.webp",
-    collectionId: "naokun-poop-bakery",
-    alt: "空のクッキー缶を囲む猫たちと、うんち門番になって外で喜ぶなおくんと美雪",
-  },
+export type DisplayDiaryEntry = Omit<DiaryEntry, "collectionId"> & {
+  collectionId?: DiaryEntry["collectionId"]
 }
 
 function parseDateKey(dateKey: string) {
@@ -116,22 +57,59 @@ function dateKeyFor(monthKey: string, day: number) {
 }
 
 export function mergeDiaryEntries(overrides: readonly DiaryContentOverride[]) {
-  const merged = new Map(DIARY_ENTRIES.map((entry) => [entry.date, entry]))
+  const merged = new Map<string, DisplayDiaryEntry>(DIARY_ENTRIES.map((entry) => [entry.date, entry]))
   for (const override of overrides) {
     if (override.hidden) {
       merged.delete(override.date)
     } else {
-      merged.set(override.date, override)
+      merged.set(override.date, {
+        date: override.date,
+        title: override.title,
+        body: override.body,
+        miyukiNote: override.miyukiNote,
+        illustration: override.illustration,
+        imagePath: override.illustration,
+        alt: override.alt,
+        collectionId: override.transformationForm && override.transformationForm !== "none"
+          ? override.transformationForm
+          : undefined,
+        catIds: override.catIds ?? [],
+        punchlineType: "surprise-reveal",
+        glossary: [],
+      })
     }
   }
   return [...merged.values()].sort((a, b) => b.date.localeCompare(a.date))
 }
 
+export function diaryReadMetadataSignature(
+  entry: Pick<DisplayDiaryEntry, "catIds" | "collectionId">,
+) {
+  const form = entry.collectionId ?? "none"
+  const cats = [...new Set(entry.catIds)].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)
+  return `${form}--${cats.length > 0 ? cats.join(".") : "no-cats"}`
+}
+
+export function createDiaryReadEvent(
+  entry: Pick<DisplayDiaryEntry, "date" | "catIds" | "collectionId">,
+  actionNow = new Date(),
+) {
+  const actionDateKey = getLocalDateKey(actionNow)
+  const metadataSignature = diaryReadMetadataSignature(entry)
+  return {
+    type: "diary.read" as const,
+    eventId: `diary:${actionDateKey}:${entry.date}:${metadataSignature}`,
+    occurredAt: actionNow.toISOString(),
+    diaryDate: entry.date,
+    catIds: [...entry.catIds],
+    ...(entry.collectionId ? { naokunFormId: entry.collectionId } : {}),
+  }
+}
+
 export function PictureDiary() {
   const { skin } = useSkin()
   const { state, ready, recordEvent } = useProgression()
-  const [entries, setEntries] = useState<DiaryEntry[]>([])
-  const [overriddenDates, setOverriddenDates] = useState<Set<string>>(() => new Set())
+  const [entries, setEntries] = useState<DisplayDiaryEntry[]>([])
   const [displayedMonth, setDisplayedMonth] = useState(DIARY_ENTRIES[0].date.slice(0, 7))
   const [selectedDate, setSelectedDate] = useState("")
   const [overridesReady, setOverridesReady] = useState(false)
@@ -162,12 +140,10 @@ export function PictureDiary() {
         const nextEntries = mergeDiaryEntries(overrides)
         const nextMonths = [...new Set(nextEntries.map((entry) => entry.date.slice(0, 7)))].sort((a, b) => b.localeCompare(a))
         setEntries(nextEntries)
-        setOverriddenDates(new Set(overrides.filter((entry) => !entry.hidden).map((entry) => entry.date)))
         setDisplayedMonth((current) => nextMonths.includes(current) ? current : nextMonths[0] ?? current)
         setSelectedDate((current) => nextEntries.some((entry) => entry.date === current) ? current : nextEntries[0]?.date ?? "")
       } catch {
         setEntries(DIARY_ENTRIES)
-        setOverriddenDates(new Set())
         setDisplayedMonth(DIARY_ENTRIES[0].date.slice(0, 7))
         setSelectedDate(DIARY_ENTRIES[0].date)
       } finally {
@@ -204,21 +180,6 @@ export function PictureDiary() {
   const monthIndex = availableMonths.indexOf(displayedMonth)
   const previousEntry = selectedEntryIndex > 0 ? monthEntries[selectedEntryIndex - 1] : null
   const nextEntry = selectedEntryIndex >= 0 && selectedEntryIndex < monthEntries.length - 1 ? monthEntries[selectedEntryIndex + 1] : null
-  const selectedScene = selectedEntry ? CURRENT_DIARY_SCENES[selectedEntry.date] : undefined
-
-  useEffect(() => {
-    if (!ready || !overridesReady || !selectedEntry) return
-    recordEvent({
-      type: "diary.read",
-      eventId: `diary:${state.daily.date}:${selectedEntry.date}`,
-      occurredAt: new Date().toISOString(),
-      diaryDate: selectedEntry.date,
-      catIds: ["cat-maron"],
-      naokunFormId: selectedEntry.date.startsWith("2026-")
-        ? CURRENT_DIARY_SCENES[selectedEntry.date]?.collectionId ?? "naokun-poop-classic"
-        : undefined,
-    })
-  }, [overridesReady, ready, recordEvent, selectedEntry, state.daily.date])
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) return
@@ -231,7 +192,13 @@ export function PictureDiary() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel()
   }, [])
 
-  const selectEntry = (entry: DiaryEntry, moveToDetail = true) => {
+  const recordDiaryRead = (entry: DisplayDiaryEntry, actionNow = new Date()) => {
+    if (!ready || !overridesReady) return
+    recordEvent(createDiaryReadEvent(entry, actionNow))
+  }
+
+  const selectEntry = (entry: DisplayDiaryEntry, moveToDetail = true) => {
+    recordDiaryRead(entry)
     setSelectedDate(entry.date)
     if (moveToDetail) {
       window.requestAnimationFrame(() => {
@@ -249,18 +216,8 @@ export function PictureDiary() {
     if (nextEntries.length > 0) setSelectedDate(nextEntries.at(-1)!.date)
   }
 
-  const illustration = selectedEntry
-    ? overriddenDates.has(selectedEntry.date) && selectedEntry.illustration.startsWith("/")
-      ? assetPath(selectedEntry.illustration)
-      : selectedScene
-        ? assetPath(selectedScene.src)
-        : skin.assets.diaryIllustrations[selectedEntry.illustration] ?? skin.assets.activityDiary
-    : skin.assets.activityDiary
-  const illustrationAlt = selectedEntry
-    ? overriddenDates.has(selectedEntry.date)
-      ? selectedEntry.alt
-      : selectedScene?.alt ?? selectedEntry.alt
-    : ""
+  const illustration = selectedEntry ? assetPath(selectedEntry.imagePath) : skin.assets.activityDiary
+  const illustrationAlt = selectedEntry?.alt ?? ""
 
   const toggleReadAloud = () => {
     if (!selectedEntry) return
@@ -274,7 +231,15 @@ export function PictureDiary() {
       setSpeechMessage("読み上げを止めました。")
       return
     }
-    const utterance = new SpeechSynthesisUtterance(`${selectedEntry.title}。${selectedEntry.body}。美雪のひとこと。${selectedEntry.miyukiNote}`)
+    recordDiaryRead(selectedEntry)
+    const glossarySpeech = selectedEntry.glossary
+      .map((item) => item.term + "、" + item.reading + "。" + item.meaning)
+      .join("。")
+    const spokenDiary = selectedEntry.title
+      + "。" + selectedEntry.body
+      + "。美雪のひとこと。" + selectedEntry.miyukiNote
+      + (glossarySpeech ? "。ことばのヒント。" + glossarySpeech : "")
+    const utterance = new SpeechSynthesisUtterance(spokenDiary)
     utterance.lang = "ja-JP"
     utterance.volume = Math.max(0.2, state.settings.sfxVolume)
     utterance.onend = () => {
@@ -299,14 +264,14 @@ export function PictureDiary() {
         <div>
           <p className="screen-kicker">MIYUKI&apos;S PICTURE DIARY</p>
           <h2 id="diary-title">美雪の絵日記</h2>
-          <p>カレンダーの肉球から、読みたい日を選んでね。</p>
+          <p>カレンダーで日付を選ぶと、その日の事件記録を読めます。なおくんの変身は物語の中のマスコット表現です。</p>
         </div>
       </div>
 
       <div className="diary-cast-strip" aria-label="絵日記の登場人物">
-        <span><b>美雪</b><small>ツッコミ役</small></span>
-        <span className="is-naokun"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-cloud.webp")} alt="" width={34} height={34} /></i><b>なおくん</b><small>美雪の兄・うんち役が大好き</small></span>
-        <span><b>猫たち</b><small>自由な主役</small></span>
+        <span><b>美雪</b><small>記録・検証・ツッコミ担当</small></span>
+        <span className="is-naokun"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-cloud.webp")} alt="" width={34} height={34} /></i><b>なおくん</b><small>美雪の兄・変身役を自分から希望</small></span>
+        <span><b>猫たち</b><small>事件の主役・無言の審査員</small></span>
       </div>
 
       <section className="diary-calendar" aria-labelledby="calendar-heading">
@@ -371,7 +336,7 @@ export function PictureDiary() {
                       >
                         <span className="calendar-day-number">{day}</span>
                         {entry && <PawPrint className="calendar-paw" aria-hidden="true" />}
-                        {isToday && <span className="calendar-today-label">きょう</span>}
+                        {isToday && <span className="calendar-today-label">今日</span>}
                       </button>
                     </td>
                   )
@@ -410,13 +375,13 @@ export function PictureDiary() {
               sizes="(max-width: 719px) 92vw, 420px"
               priority={selectedEntry.date === DIARY_ENTRIES[0].date}
             />
-            {selectedEntry.date.startsWith("2026-") && (
+            {selectedEntry.collectionId?.startsWith("naokun-poop-") && (
               <span className="diary-poop-sticker"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-classic.webp")} alt="" width={38} height={38} /></i><b>なおくん</b><small>うんち変身中！</small></span>
             )}
           </div>
 
           <div className="diary-entry-copy">
-            <p className="diary-entry-label">きょうの兄・なおくんと猫たち</p>
+            <p className="diary-entry-label">今日の事件関係者：なおくんと猫たち</p>
             <h3 id="diary-entry-title">{selectedEntry.title}</h3>
             <p className="diary-entry-body">{selectedEntry.body}</p>
             {state.settings.readAloud ? (
@@ -433,6 +398,19 @@ export function PictureDiary() {
                 <p>{selectedEntry.miyukiNote}</p>
               </div>
             </div>
+            {selectedEntry.glossary.length > 0 ? (
+              <div className="miyuki-note" aria-label="ことばのヒント">
+                <Sparkles aria-hidden="true" />
+                <div>
+                  <strong>ことばのヒント</strong>
+                  {selectedEntry.glossary.map((item) => (
+                    <p key={selectedEntry.date + "-" + item.term}>
+                      <b>{item.term}（{item.reading}）</b>：{item.meaning}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 

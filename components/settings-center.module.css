@@ -95,7 +95,7 @@
   font-weight: 900;
 }
 
-.panel > h3 { margin-bottom: 9px; padding: 0; }
+.panel > h3 { min-width: 0; flex-wrap: wrap; margin-bottom: 9px; padding: 0; line-height: 1.45; overflow-wrap: anywhere; }
 .panel > legend svg, .panel > h3 svg { width: 19px; height: 19px; color: var(--skin-coral-strong); }
 
 .notice,
@@ -109,7 +109,7 @@
   margin: 0 0 12px;
   padding: 11px 12px;
   border-radius: 15px;
-  font-size: .75rem;
+  font-size: .8rem;
   line-height: 1.55;
 }
 
@@ -143,7 +143,8 @@
 
 .toggleRow > span:first-child { display: grid; gap: 3px; }
 .toggleRow strong { font-size: .82rem; }
-.toggleRow small, .helpText, .selectLabel small { color: var(--skin-ink-soft); font-size: .67rem; line-height: 1.5; }
+.toggleRow small, .selectLabel small { color: var(--skin-ink-soft); font-size: .67rem; line-height: 1.5; }
+.helpText { min-width: 0; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.6; overflow-wrap: anywhere; }
 .toggleRow input { position: absolute; right: 0; width: 52px; height: 44px; margin: 0; opacity: 0; cursor: pointer; }
 
 .switchTrack {
@@ -221,8 +222,8 @@
 
 .selectLabel > span,
 .editorForm label > span,
-.twoColumns label > span,
-.pinLabel > span { font-size: .73rem; font-weight: 900; }
+.twoColumns label > span { font-size: .73rem; font-weight: 900; }
+.pinLabel > span { font-size: .8rem; font-weight: 900; }
 
 .selectLabel select,
 .editorForm input:not([type="checkbox"]):not([type="radio"]),
@@ -288,7 +289,7 @@
   gap: 6px;
   padding: 9px 13px;
   border-radius: 13px;
-  font-size: .72rem;
+  font-size: .8rem;
   font-weight: 900;
 }
 
@@ -310,7 +311,7 @@
 
 .backupPreview h4 { margin: 0 0 8px; font-size: .85rem; }
 .backupPreview dl { display: grid; gap: 5px; margin: 0; }
-.backupPreview dl div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 6px; font-size: .68rem; }
+.backupPreview dl div { display: grid; min-width: 0; grid-template-columns: 88px minmax(0, 1fr); gap: 6px; font-size: .8rem; line-height: 1.5; }
 .backupPreview dt { color: var(--skin-ink-soft); }
 .backupPreview dd { min-width: 0; margin: 0; overflow-wrap: anywhere; font-weight: 800; }
 
@@ -325,28 +326,35 @@
 }
 
 .confirmRow input { width: 21px; height: 21px; margin: 0; accent-color: var(--skin-coral-strong); }
-.confirmRow span { font-size: .69rem !important; line-height: 1.45; }
+.confirmRow span { min-width: 0; font-size: .8rem !important; line-height: 1.5; overflow-wrap: anywhere; }
 
 .parentLink { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 8px; }
 .parentLink > svg { width: 36px; height: 36px; color: var(--skin-coral-strong); }
 .parentLink h3, .parentLink p { margin: 0; }
 .parentLink h3 { font-size: .9rem; }
-.parentLink p { margin-top: 3px; color: var(--skin-ink-soft); font-size: .67rem; line-height: 1.45; }
+.parentLink p { min-width: 0; margin-top: 3px; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
 .parentLink button { grid-column: 1 / -1; }
 
 .localOnly { border: 1px solid var(--skin-line); background: color-mix(in srgb, var(--skin-butter) 26%, white); }
 .localOnly > svg { color: var(--skin-coral-strong); }
 .localOnly strong { font-size: .8rem; }
-.localOnly p { margin: 2px 0 0; color: var(--skin-ink-soft); font-size: .67rem; }
+.localOnly p { min-width: 0; margin: 2px 0 0; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
 
 .pinPanel { max-width: 480px; margin-inline: auto; text-align: center; }
 .pinPanel > svg { width: 38px; height: 38px; color: var(--skin-coral-strong); }
 .pinPanel h3 { margin: 5px 0; font-size: 1rem; }
-.pinPanel p { margin: 0 auto 12px; color: var(--skin-ink-soft); font-size: .7rem; line-height: 1.55; }
-.pinPanel > small { display: block; margin: -4px 0 10px; color: var(--skin-ink-soft); font-size: .64rem; }
-.pinLabel { text-align: left; }
-.pinLabel input { font-size: 1.3rem; font-weight: 900; letter-spacing: .35em; text-align: center; }
+.pinPanel p { min-width: 0; margin: 0 auto 12px; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.6; overflow-wrap: anywhere; }
+.pinPanel > small { display: block; min-width: 0; margin: -4px 0 10px; color: var(--skin-ink-soft); font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pinLabel { min-width: 0; text-align: left; }
+.pinLabel input { min-width: 0; max-width: 100%; font-size: 1.3rem; font-weight: 900; letter-spacing: .35em; text-align: center; }
 .pinPanel .primaryButton { width: 100%; }
+
+.buttonRow > button {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 140px;
+  white-space: normal;
+}
 
 .draftBar {
   display: grid;
@@ -392,6 +400,24 @@
 .answerOption { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 5px; }
 .answerFieldset input[type="radio"] { width: 20px; height: 20px; accent-color: var(--skin-coral); }
 
+.metadataFieldset,
+.metadataSelect,
+.metadataCats,
+.metadataCats label { min-width: 0; }
+.metadataFieldset legend,
+.metadataSelect > span,
+.metadataHelp,
+.metadataCats strong,
+.metadataSelect > .metadataNote,
+.metadataCats .metadataCatState { font-size: .8rem; line-height: 1.5; }
+.metadataHelp,
+.metadataNote,
+.metadataCats strong,
+.metadataCatState { overflow-wrap: anywhere; }
+.metadataHelp { margin: 0; }
+.metadataSelect select { min-width: 0; max-width: 100%; }
+.metadataCats { grid-template-columns: minmax(0, 1fr); }
+
 .quizPreview { margin: 12px 0; padding: 12px; border: 2px dashed var(--skin-line); border-radius: 15px; background: var(--skin-paper-warm); }
 .quizPreview > small { color: var(--skin-coral-strong); font-size: .61rem; font-weight: 900; }
 .quizPreview h3 { margin: 4px 0 9px; font-size: .86rem; line-height: 1.45; }
@@ -406,6 +432,12 @@
 .publishPanel p, .resetPanel p { margin-top: 3px; color: var(--skin-ink-soft); font-size: .67rem; line-height: 1.5; }
 .publishPanel .primaryButton, .resetPanel .dangerButton { width: 100%; }
 .resetPanel { border-color: #d9a595; }
+
+@media (max-width: 359px) {
+  .backupPreview dl div { grid-template-columns: minmax(0, 1fr); gap: 1px; }
+  .buttonRow > button { width: 100%; flex-basis: 100%; }
+  .confirmRow { align-items: start; }
+}
 
 @media (min-width: 640px) {
   .center { padding-top: 22px; }

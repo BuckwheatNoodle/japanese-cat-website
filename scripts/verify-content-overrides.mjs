@@ -8,7 +8,9 @@ import ts from "typescript"
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const sourcePath = path.join(projectRoot, "lib", "content-overrides.ts")
+const diarySourcePath = path.join(projectRoot, "lib", "diary.ts")
 const source = await readFile(sourcePath, "utf8")
+const diarySource = await readFile(diarySourcePath, "utf8")
 const transpiled = ts.transpileModule(source, {
   compilerOptions: {
     target: ts.ScriptTarget.ES2022,
@@ -19,13 +21,35 @@ const transpiled = ts.transpileModule(source, {
 }).outputText
 
 const loadedModule = { exports: {} }
+const loadedDiaryModule = { exports: {} }
 const workspaceRequire = createRequire(path.join(projectRoot, "package.json"))
+vm.runInNewContext(ts.transpileModule(diarySource, {
+  compilerOptions: {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.CommonJS,
+  },
+  fileName: diarySourcePath,
+}).outputText, {
+  module: loadedDiaryModule,
+  exports: loadedDiaryModule.exports,
+  console,
+  Date,
+  JSON,
+  Set,
+  Map,
+  Object,
+  Array,
+  String,
+  Number,
+  Boolean,
+  RegExp,
+}, { filename: diarySourcePath })
 const blockedWindow = {}
 Object.defineProperty(blockedWindow, "localStorage", { get() { throw new Error("blocked") } })
 vm.runInNewContext(transpiled, {
   module: loadedModule,
   exports: loadedModule.exports,
-  require: workspaceRequire,
+  require: (id) => id === "@/lib/diary" ? loadedDiaryModule.exports : workspaceRequire(id),
   console,
   Date,
   JSON,

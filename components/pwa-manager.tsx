@@ -329,8 +329,8 @@ export function PwaManager() {
         <section className="pwa-notice pwa-notice-install pwa-dismissible" data-testid="install-notice">
           <span className="pwa-notice-icon" aria-hidden="true"><Download /></span>
           <div>
-            <strong>ホーム画面において遊ぼう</strong>
-            <span>アプリみたいに、すぐにねこカフェを開けます。</span>
+            <strong>ホーム画面からすぐ開く</strong>
+            <span>この端末に追加すると、ねこカフェへ直接アクセスできます。</span>
           </div>
           <button ref={installTriggerRef} className="pwa-action" type="button" onClick={() => void installApp()}>追加する</button>
           <button type="button" className="pwa-dismiss" aria-label="ホーム画面への追加案内を閉じる" onClick={dismissInstall}>
@@ -353,8 +353,8 @@ export function PwaManager() {
           <strong id="pwa-install-help-title">ホーム画面への追加方法</strong>
           <p>
             {isSafari
-              ? "Safariの共有ボタンを押して、「ホーム画面に追加」を選んでね。"
-              : "ブラウザの共有ボタンやメニューを開いて、「ホーム画面に追加」を選んでね。"}
+              ? "Safariの共有ボタンを押し、「ホーム画面に追加」を選択します。"
+              : "ブラウザの共有ボタンまたはメニューを開き、「ホーム画面に追加」を選択します。"}
           </p>
         </section>
       )}

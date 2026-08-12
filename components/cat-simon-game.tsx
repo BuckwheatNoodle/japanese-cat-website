@@ -20,12 +20,26 @@ const PADS = [
 
 const SPEEDS = [
   { id: "calm", name: "ゆっくり", show: 720, pause: 360, description: "光る時間が長め" },
-  { id: "normal", name: "ふつう", show: 520, pause: 260, description: "おすすめ速度" },
+  { id: "normal", name: "標準", show: 520, pause: 260, description: "基本速度" },
   { id: "fast", name: "はやい", show: 340, pause: 170, description: "反射神経も勝負" },
 ] as const
 
 const presentationMultiplierFor = (mode: GlobalDifficulty) => mode === "gentle" ? 1.8 : mode === "challenge" ? 0.78 : 1
 const recordKeyFor = (mode: GlobalDifficulty, speedId: SpeedId) => `${mode}:${speedId}`
+
+const SIMON_SUCCESS_REACTIONS = [
+  "美雪『正解！』なおくんは一個の順番で、もう優勝パレードを始めました。",
+  "猫たちがしっぽで同じ順番を再現。なおくんのしっぽ役は、本人の腕だそうです。",
+  "ぴったり！ なおくんは最後の色だけ三倍大きな声で発表。音量は採点に入りません。",
+  "猫審査員から肉球スタンプ。なおくんは額へ押してもらう場所を探しています。",
+] as const
+
+function simonResultCopy(level: number) {
+  if (level >= 10) return "美雪『十個以上！』猫たちは大拍手。なおくんは順番を忘れないうちに、勝利ポーズだけ先に保存しました。"
+  if (level >= 6) return "猫たち『かなり覚えたにゃ』。なおくんは色ではなく、自分の決め顔の順番を六個覚えました。"
+  if (level >= 3) return "美雪『いい記録！』なおくんは次の作戦として、全部同じ色を押す案を提出。すぐ却下です。"
+  return "猫たちはもう一度見せる準備OK。なおくんは一色目からアンコールを求めています。ゆっくり再挑戦しよう！"
+}
 
 export function CatSimonGame() {
   const { state, recordEvent, updateSettings } = useProgression()
@@ -38,6 +52,7 @@ export function CatSimonGame() {
   const [lives, setLives] = useState(2)
   const [soundOn, setSoundOn] = useState(true)
   const [sequenceAnnouncement, setSequenceAnnouncement] = useState("")
+  const [sceneMessage, setSceneMessage] = useState("")
   const [runGlobalDifficulty, setRunGlobalDifficulty] = useState<GlobalDifficulty>("standard")
   const [highScores, setHighScores] = useLocalStorage<Record<string, number>>("catSimonHighScoresV3", {}, isFiniteNumberRecord)
   const [recordSaveFailed, setRecordSaveFailed] = useState(false)
@@ -143,6 +158,7 @@ export function CatSimonGame() {
     setLevel(1)
     setLives(2)
     setInputIndex(0)
+    setSceneMessage("")
     setRunGlobalDifficulty(globalDifficulty)
     showSequence(nextSequence, globalDifficulty)
   }
@@ -151,6 +167,7 @@ export function CatSimonGame() {
     if (gameStateRef.current !== "input") return
     gameStateRef.current = "success"
     setGameState("success")
+    setSceneMessage(SIMON_SUCCESS_REACTIONS[(levelRef.current - 1) % SIMON_SUCCESS_REACTIONS.length])
     const nextSequence = [...sequenceRef.current, Math.floor(Math.random() * PADS.length)]
     timeoutRef.current = window.setTimeout(() => {
       sequenceRef.current = nextSequence
@@ -190,6 +207,9 @@ export function CatSimonGame() {
       gameStateRef.current = "retry"
       setLives(livesRef.current)
       setGameState("retry")
+      const expected = PADS[currentSequence[inputIndexRef.current]]?.label ?? "正しい色"
+      const chosen = PADS[padId]?.label ?? "その色"
+      setSceneMessage(`猫たち『いまは${expected}にゃ』。なおくん『${chosen}も応援していました』。美雪『色に応援席はありません』`)
       timeoutRef.current = window.setTimeout(() => showSequence(sequenceRef.current), 900)
     } else {
       clearVisualTimers()
@@ -283,8 +303,15 @@ export function CatSimonGame() {
             <GameStat icon={PawPrint} label="入力" value={`${Math.min(inputIndex + 1, sequence.length)} / ${sequence.length}`} />
           </div>
           <p className="game-live-message" aria-live="polite" aria-atomic="true">
-            {gameState === "showing" ? "よく見て、音も聞いてね" : gameState === "input" ? "同じ順番でタップ！" : gameState === "success" ? "正解！ひとつ増えるよ" : "おしい！もう一度見てね"}
+            {gameState === "showing"
+              ? "よく見て、音も聞いてね"
+              : gameState === "input"
+                ? "同じ順番でタップ！"
+                : gameState === "success"
+                  ? "ラウンドクリア！"
+                  : "もう一度、順番を見てみよう"}
           </p>
+          {sceneMessage ? <p className="game-live-message is-preview">{sceneMessage}</p> : null}
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{sequenceAnnouncement}</p>
           <div className="simon-grid">
             {PADS.map((pad) => {
@@ -307,6 +334,7 @@ export function CatSimonGame() {
           <h3 ref={resultHeadingRef} tabIndex={-1}>レベル {level}</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
           <p>{sequence.length}個の順番まで覚えられたよ。次はもうひとつ先を目指そう！</p>
+          <p>{simonResultCopy(level)}</p>
           <div className="game-result-record"><Trophy aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${speed.name}のベスト`}</span><strong>Lv.{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, speedId)] ?? 0) : Math.max(level, highScores[recordKeyFor(runGlobalDifficulty, speedId)] ?? 0)}</strong></div>
           {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={startGame}><RotateCcw aria-hidden="true" />もう一度遊ぶ</GamePrimaryButton>

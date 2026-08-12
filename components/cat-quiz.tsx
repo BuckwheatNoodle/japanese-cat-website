@@ -56,8 +56,8 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
     correctAnswer: "敵意がない、信頼の証",
   },
   {
-    question: "世界で最も多くのギネス記録を持つ猫の種類は？",
-    options: ["メインクーン", "シャム", "ペルシャ", "特にない"],
+    question: "大きな体と、耳先のふさふさした毛で知られる猫の品種は？",
+    options: ["メインクーン", "シャム", "スフィンクス", "マンチカン"],
     correctAnswer: "メインクーン",
   },
   {
@@ -72,8 +72,8 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
   },
   {
     question: "猫がマタタビに反応する原因となる成分は？",
-    options: ["マタタビン", "ネペタラクトン", "カプサイシン", "カフェイン"],
-    correctAnswer: "ネペタラクトン",
+    options: ["マタタビン", "ネペタラクトール", "カプサイシン", "カフェイン"],
+    correctAnswer: "ネペタラクトール",
   },
   {
     question: "猫の平熱は、人間と比べてどう？",
@@ -121,9 +121,9 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
     correctAnswer: "体を清潔に保つため",
   },
   {
-    question: "猫の聴力は人間の何倍優れていると言われている？",
-    options: ["ほぼ同じ", "約2倍", "約4倍", "約10倍"],
-    correctAnswer: "約4倍",
+    question: "人と猫では、より高い音まで聞き取れるのはどちら？",
+    options: ["人", "猫", "どちらも同じ", "どちらも高い音は聞こえない"],
+    correctAnswer: "猫",
   },
   // 猫の歴史・品種・科学
   {
@@ -157,9 +157,9 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
     correctAnswer: "Felis catus",
   },
   {
-    question: "猫のゴロゴロ音の周波数には、どんな効果があると言われている？",
-    options: ["虫を追い払う", "骨の治癒を促進する", "植物の成長を助ける", "天気を予測する"],
-    correctAnswer: "骨の治癒を促進する",
+    question: "猫のゴロゴロ音が骨の回復を助けるという説は、今どう考えればいい？",
+    options: ["必ず骨を治せる", "まだ研究中で、断定はできない", "完全な作り話", "どの動物にも同じ効果がある"],
+    correctAnswer: "まだ研究中で、断定はできない",
   },
   {
     question: "猫好きの人を指す言葉は何？",
@@ -233,18 +233,69 @@ const ALL_QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ]
 
+const EASY_EXPLANATIONS: Record<string, string> = {
+  "甘味の受容体がないから": "受容体（じゅようたい）は、舌で味を受け取る小さなセンサー。猫には甘さ用のセンサーがほとんどありません。",
+  "A clowder": "clowder（クラウダー）は、複数の猫の集まりを表す英語です。",
+  "体に埋まっている": "鎖骨（さこつ）は胸の上にある骨。猫ではほかの骨に固定されず、筋肉の中にあります。",
+  "メインクーン": "房毛（ふさげ）は、耳先などにまとまって生える長い毛。メインクーンの見分けポイントの一つです。",
+  "ネペタラクトール": "ネペタラクトールは、マタタビに含まれ、猫のすりすりやごろごろ転がる反応を起こす香りの成分です。",
+  "匂いを詳しく分析している時": "フレーメン反応（はんのう）は、口の奥にある特別な器官で匂いを詳しく調べる動きです。",
+  "毛の色を決める遺伝子が性染色体上にあるから": "遺伝子（いでんし）は体の特徴を決める設計図。三毛の色と性別の決まりが深く関係しています。",
+  "網膜の後ろにあるタペタムが光を反射するから": "網膜（もうまく）は目の奥で光を感じる部分。タペタムという反射板が、少ない光をもう一度使います。",
+  "約200度": "視野（しや）は、顔を動かさず見える広さ。猫は人より少し広い範囲を見渡せます。",
+  "フェリセット": "フェリセットは、宇宙へ行ったことで知られるフランスの猫です。",
+  "Felis catus": "学名（がくめい）は世界共通で使う生き物の名前。Felis catus は『フェリス・カトゥス』と読みます。",
+  "猫": "猫は人には聞こえにくい、とても高い音も聞き取れます。獲物の小さな音を見つける助けになります。",
+  "まだ研究中で、断定はできない": "ゴロゴロ音の周波数と体への働きを結びつける説はありますが、『鳴けば骨が治る』とまでは確認されていません。",
+  "自分の匂いをつけるマーキング行動": "マーキングは、自分の匂いをつけて『ここは安心』と確かめる行動です。",
+  "多指症の猫": "多指症（たししょう）は、生まれつき指が一般的な数より多い特徴です。",
+  "生きるために動物性タンパク質が不可欠": "不可欠（ふかけつ）は『なくてはならない』という意味。猫には肉や魚に多い栄養が必要です。",
+  "チャタリング": "チャタリングは、鳥などを見つけた猫が『カカカッ』と小さく鳴く行動です。",
+  "鼻紋（びもん）": "鼻紋（びもん）は、猫の鼻の表面に見える細かな凹凸（おうとつ）の模様です。",
+  "ヘンリーのポケット": "耳の外側にある小さな袋状の部分。正式には縁皮嚢（えんぴのう）とも呼ばれます。",
+  "鎖骨が体に固定されていないから": "鎖骨（さこつ）がほかの骨に固定されていないため、肩を細くして狭い所を通りやすいのです。",
+}
+
+function explanationForQuestion(item: QuizQuestion) {
+  return item.explanation ?? EASY_EXPLANATIONS[item.correctAnswer] ?? "正解を覚えたら、猫博士ノートへ新しい一行を追加しよう。"
+}
+
 // These IDs are persisted by the parent editor. Keep the existing order stable and append new questions.
 export const BUILT_IN_QUIZ_ITEMS: readonly QuizContentOverride[] = ALL_QUIZ_QUESTIONS.map((item, index) => ({
   id: `builtin-cat-${String(index + 1).padStart(3, "0")}`,
   question: item.question,
   options: [...item.options] as QuizContentOverride["options"],
   correctIndex: item.options.indexOf(item.correctAnswer),
-  explanation: item.explanation ?? "",
+  explanation: explanationForQuestion(item),
   hidden: false,
 }))
 
 const TIME_PER_QUESTION = 10000 // 10秒 (ミリ秒)
 const recordKeyFor = (mode: GlobalDifficulty, questionCount: number) => `${mode}:${questionCount}`
+
+const QUIZ_CORRECT_REACTIONS = [
+  "美雪『正解！』なおくんは猫博士の白衣を前後逆に着たまま、先におじぎしました。",
+  "猫審査員が肉球を一回。なおくんは自分の答えではないのに二回おじぎしています。",
+  "ぴったり！ 美雪が博士ノートへ記録する横で、なおくんは表紙に大きく『うんち博士』と追記中。",
+] as const
+
+function quizReaction(question: QuizQuestion, selectedAnswer: string | null, timedOut: boolean, questionIndex: number) {
+  if (timedOut) return "時間切れでも答えを読めば一歩前進。なおくんの珍回答は『時計が速すぎる』でした。猫たちは時計を確認しています。"
+  if (selectedAnswer === question.correctAnswer) return QUIZ_CORRECT_REACTIONS[questionIndex % QUIZ_CORRECT_REACTIONS.length]
+  if (selectedAnswer?.includes("ゼリー")) return "美雪『猫はゼリーではありません』。なおくんはスプーンを隠し、猫たちへ深くおわびしました。"
+  if (selectedAnswer?.includes("電気")) return "猫たち『充電口はありません』。なおくんはコンセントを探すふりをして、そっと席へ戻りました。"
+  if (selectedAnswer?.includes("猫袋")) return "なおくん『猫袋なら、ぼくも入れる？』猫たち『売り切れです』。そもそも正解の名前ではありません。"
+  if (selectedAnswer?.includes("猫は小判が好き")) return "なおくんは小判を猫用おやつと交換しようと交渉中。猫店長『ことわざを最初から読み直してください』"
+  return `なおくんの珍回答も「${selectedAnswer ?? "ひみつ"}」。美雪『同じ間違いなら仲間だね』猫たち『次は解説を読むにゃ』`
+}
+
+function quizResultCopy(correct: number, total: number) {
+  const ratio = total ? correct / total : 0
+  if (ratio === 1) return "全問正解！ 猫たちから博士認定。なおくんは助手認定を待たず、名札だけ自分で作りました。"
+  if (ratio >= 0.8) return "かなりの猫博士！ なおくんは間違えた問題だけ三回説明し、なぜか自分が先生の顔です。"
+  if (ratio >= 0.5) return "半分以上正解！ 美雪の博士ノートが増え、なおくんの珍回答ノートはもっと増えました。"
+  return "今日覚えた答えが次の得点。猫たちは復習席へ、なおくんは最初から勝利席へ座っています。"
+}
 
 function shuffle<T>(items: readonly T[]): T[] {
   const result = [...items]
@@ -487,7 +538,8 @@ export function CatQuiz() {
           <p className="game-result-kicker">クイズ終了！</p>
           <h3 ref={resultHeadingRef} tabIndex={-1}>{correctCount} / {sessionQuestions.length}問正解</h3>
           <div className="game-result-stars" aria-label={`${stars}つ星`}>{[1, 2, 3].map((value) => <Star key={value} className={value <= stars ? "is-on" : ""} aria-hidden="true" />)}</div>
-          <p>{score}点をゲット。答えを読んで、猫博士にまた一歩近づいたね！</p>
+          <p>{score}点。正解数だけでなく、解説まで確認した記録です。</p>
+          <p>{quizResultCopy(correctCount, sessionQuestions.length)}</p>
           <div className="game-result-record"><Clock3 aria-hidden="true" /><span>{recordSaveFailed ? "保存ずみのベスト" : `${runQuestionCount}問コースのベスト`}</span><strong>{recordSaveFailed ? (highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0) : Math.max(score, highScores[recordKeyFor(runGlobalDifficulty, runQuestionCount)] ?? 0)}点</strong></div>
           {recordSaveFailed ? <p role="status">今回の新記録は端末に保存できませんでした。</p> : null}
           <GamePrimaryButton onClick={startQuiz} disabled={availableQuestions.length === 0}><RotateCcw aria-hidden="true" />もう一度挑戦</GamePrimaryButton>
@@ -509,7 +561,7 @@ export function CatQuiz() {
             <GameStat icon={Trophy} label="スコア" value={`${score}点`} />
           </div>
           {effectiveTimePerQuestion === null
-            ? <p className="quiz-untimed-note"><Clock3 aria-hidden="true" />時間制限なし・ゆっくり考えてね</p>
+            ? <p className="quiz-untimed-note"><Clock3 aria-hidden="true" />時間制限なし・根拠を考えて回答</p>
             : <div className="quiz-time-track" aria-label={`残り時間${Math.ceil((timeProgress / 100) * (effectiveTimePerQuestion / 1000))}秒`}><span style={{ width: `${timeProgress}%` }} /></div>}
           <div className="quiz-question-card">
             {isTimedOut && (
@@ -541,8 +593,9 @@ export function CatQuiz() {
             <div className={`quiz-feedback ${selectedAnswer === currentQuestion.correctAnswer ? "is-correct" : "is-wrong"}`} aria-live="polite">
               <div>
                 <strong>{selectedAnswer === currentQuestion.correctAnswer ? "正解！" : "正解はこちら"}</strong>
-                <p>こたえ：{currentQuestion.correctAnswer}</p>
+                <p>答え：{currentQuestion.correctAnswer}</p>
                 {currentQuestion.explanation && <p>{currentQuestion.explanation}</p>}
+                <p>{quizReaction(currentQuestion, selectedAnswer, isTimedOut, currentQuestionIndex)}</p>
               </div>
               <button ref={feedbackButtonRef} type="button" onClick={nextQuestion}>{currentQuestionIndex === sessionQuestions.length - 1 ? "結果を見る" : "次の問題"}<ArrowRight aria-hidden="true" /></button>
             </div>
@@ -554,11 +607,11 @@ export function CatQuiz() {
     return (
       <div className="game-start-view">
         <div className="game-intro-mark"><BrainCircuit aria-hidden="true" /></div>
-        <h3 ref={setupHeadingRef} tabIndex={-1}>猫博士にチャレンジ</h3>
+        <h3 ref={setupHeadingRef} tabIndex={-1}>猫知識検定</h3>
         <p>{availableQuestions.length > 0 ? `${availableQuestions.length}問から${setupQuestionCount}問をランダム出題。` : "いま遊べる問題はありません。おうちの人の編集室で問題を表示すると遊べます。"}{availableQuestions.length > 0 ? `${effectiveTimePerQuestion === null ? "時間制限なしで" : `1問${effectiveTimePerQuestion / 1000}秒で`}、答えたあとは正解を読んでから自分のペースで次へ進めます。` : ""}</p>
         <div className="game-mode-options" aria-label="問題数を選ぶ">
           {[5, 10].map((count) => <button key={count} type="button" className={questionCount === count ? "is-selected" : ""} onClick={() => setQuestionCount(count as QuestionCount)} aria-pressed={questionCount === count}>
-            <strong>{count}問コース</strong><span>{availableQuestions.length > 0 && availableQuestions.length < count ? `いまは${availableQuestions.length}問` : count === 5 ? "さくっと遊ぶ" : "たっぷり挑戦"}</span>
+            <strong>{count === 5 ? "5問スプリント" : "10問検定"}</strong><span>{availableQuestions.length > 0 && availableQuestions.length < count ? `現在は${availableQuestions.length}問` : count === 5 ? "短時間で知識確認" : "記録更新に挑戦"}</span>
           </button>)}
         </div>
         {setupQuestionCount > 0 ? <div className="game-record-pill"><Trophy aria-hidden="true" />{setupQuestionCount}問コースのベスト <strong>{highScores[recordKeyFor(globalDifficulty, setupQuestionCount)] ?? 0}点</strong></div> : null}
@@ -567,5 +620,5 @@ export function CatQuiz() {
     )
   }
 
-  return <GameShell title="にゃんこクイズ" subtitle="猫のふしぎを知って、答えを読んで、猫博士になろう。" icon={BrainCircuit} tone="mint">{renderContent()}</GameShell>
+  return <GameShell title="にゃんこクイズ" subtitle="猫の生態を4択で検証。回答後は根拠となる解説も確認できます。" icon={BrainCircuit} tone="mint">{renderContent()}</GameShell>
 }
