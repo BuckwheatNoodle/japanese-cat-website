@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight, PawPrint, Sparkles, Square, Volume2 } from "lucide-react"
-import { DIARY_ENTRIES, type DiaryEntry } from "@/lib/diary"
+import { DIARY_CAT_BY_ID, DIARY_ENTRIES, type DiaryEntry } from "@/lib/diary"
 import { useSkin } from "@/components/skin-provider"
 import { useProgression } from "@/components/progression-provider"
 import {
@@ -218,6 +218,9 @@ export function PictureDiary() {
 
   const illustration = selectedEntry ? assetPath(selectedEntry.imagePath) : skin.assets.activityDiary
   const illustrationAlt = selectedEntry?.alt ?? ""
+  const selectedCatNames = selectedEntry
+    ? selectedEntry.catIds.map((catId) => DIARY_CAT_BY_ID[catId]?.name).filter(Boolean).join("・")
+    : ""
 
   const toggleReadAloud = () => {
     if (!selectedEntry) return
@@ -271,7 +274,7 @@ export function PictureDiary() {
       <div className="diary-cast-strip" aria-label="絵日記の登場人物">
         <span><b>美雪</b><small>記録・検証・ツッコミ担当</small></span>
         <span className="is-naokun"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-cloud.webp")} alt="" width={34} height={34} /></i><b>なおくん</b><small>美雪の兄・変身役を自分から希望</small></span>
-        <span><b>猫たち</b><small>事件の主役・無言の審査員</small></span>
+        <span><b>いつもの5匹</b><small>マロン・ユキ・ミケ・クロ・トラまる</small></span>
       </div>
 
       <section className="diary-calendar" aria-labelledby="calendar-heading">
@@ -381,7 +384,7 @@ export function PictureDiary() {
           </div>
 
           <div className="diary-entry-copy">
-            <p className="diary-entry-label">今日の事件関係者：なおくんと猫たち</p>
+            <p className="diary-entry-label">今日の猫：{selectedCatNames}</p>
             <h3 id="diary-entry-title">{selectedEntry.title}</h3>
             <p className="diary-entry-body">{selectedEntry.body}</p>
             {state.settings.readAloud ? (

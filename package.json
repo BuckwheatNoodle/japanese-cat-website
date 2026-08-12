@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "next build && node scripts/generate-service-worker.mjs",
+    "build": "next build && node scripts/generate-service-worker.mjs && node scripts/verify-search-exclusion.mjs",
     "check": "tsc --noEmit --incremental false && npm run check:assets && npm run check:progression && npm run check:content && npm run check:coloring && npm run check:diary-collections && npm run check:parent-diary",
     "check:assets": "node scripts/validate-assets.mjs",
     "check:content": "node scripts/verify-content-overrides.mjs",

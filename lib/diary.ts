@@ -19,8 +19,20 @@ export const DIARY_PUNCHLINE_TYPES = [
 
 export type DiaryPunchlineType = (typeof DIARY_PUNCHLINE_TYPES)[number]
 
-export const DIARY_CAT_IDS = ["cat-maron", "cat-yuki", "cat-mike", "cat-kuro", "cat-tora"] as const
-export type DiaryCatId = (typeof DIARY_CAT_IDS)[number]
+export const DIARY_CATS = [
+  { id: "cat-maron", name: "マロン", appearance: "茶トラ", personality: "落ち着いた店長" },
+  { id: "cat-yuki", name: "ユキ", appearance: "白い長毛", personality: "のんびり屋" },
+  { id: "cat-mike", name: "ミケ", appearance: "三毛", personality: "好奇心いっぱい" },
+  { id: "cat-kuro", name: "クロ", appearance: "黒猫", personality: "冷静な観察役" },
+  { id: "cat-tora", name: "トラまる", appearance: "しましま", personality: "元気な挑戦役" },
+] as const
+
+export type DiaryCatId = (typeof DIARY_CATS)[number]["id"]
+export const DIARY_CAT_IDS = DIARY_CATS.map((cat) => cat.id) as [DiaryCatId, ...DiaryCatId[]]
+
+export const DIARY_CAT_BY_ID = Object.fromEntries(
+  DIARY_CATS.map((cat) => [cat.id, cat]),
+) as Readonly<Record<DiaryCatId, (typeof DIARY_CATS)[number]>>
 
 export const DIARY_COLLECTION_IDS = [
   "naokun-poop-classic",
@@ -59,21 +71,80 @@ export type DiaryEntry = {
   illustration: string
   imagePath: string
   alt: string
-  collectionId: DiaryCollectionId
+  collectionId?: DiaryCollectionId
   catIds: readonly DiaryCatId[]
   punchlineType: DiaryPunchlineType
   glossary: readonly DiaryGlossaryItem[]
 }
 
-type DiarySeed = Omit<DiaryEntry, "illustration" | "imagePath">
+type DiarySeed = Omit<DiaryEntry, "illustration" | "imagePath" | "collectionId"> & {
+  collectionId: DiaryCollectionId
+}
 
 function word(term: string, reading: string, meaning: string): DiaryGlossaryItem {
   return { term, reading, meaning }
 }
 
+function routineDiaryTitle(title: string, date: string) {
+  if (date === "2026-07-14") return "合図より早い衣装ショー"
+  return title.replaceAll("うんち", "").replaceAll("のの", "の").trim()
+}
+
+function routineDiaryBody(body: string, date: string) {
+  if (date === "2026-07-14") {
+    return body.replace(
+      "「鈴が鳴る星空魔法で、うんちになあれ」と言う前に、なおくんはもう王道うんちへ変身。",
+      "わたしが合図を出す前に、なおくんは三段マスコットの衣装で決めポーズ。",
+    )
+  }
+
+  const cues = DIARY_SAFE_TRANSFORMATION_CUES.map((cue) => cue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")
+  const cuePattern = `(?:${cues})`
+  const intros = [
+    "なおくんも小道具を抱えて参加し、",
+    "なおくんはその場で係へ立候補し、",
+    "なおくんも自作の衣装で仲間に入り、",
+    "なおくんは待ってましたと役を買って出て、",
+  ]
+  const intro = intros[Number(date.slice(-2)) % intros.length]
+
+  const rewritten = body
+    .replace(new RegExp(`なおくんは[^。]{0,55}?${cuePattern}で[^。]{0,55}?(?:に|へ)変身し、`), intro)
+    .replace(new RegExp(`なおくんは[^。]{0,55}?${cuePattern}で[^。]{0,55}?(?:に|へ)変身。`), intro.replace(/、$/, "。"))
+    .replace(new RegExp(`本人は、?${cuePattern}で[^。]{0,55}?(?:に|へ)変身したと言って`), "本人は衣装を広げて")
+
+  if (date === "2026-08-09") return rewritten.replace("大きすぎて", "巨大すぎて")
+  if (date === "2025-08-17") {
+    return rewritten
+      .replace("小さなうんち姿に変身して", "小さな三段マスコット衣装で")
+      .replace("星がきらめく変身魔法で", "箱に合わせた")
+  }
+  return rewritten
+}
+
+function routineDiaryAlt(alt: string) {
+  return alt
+    .replaceAll("魔法うんち姿のなおくん", "衣装姿のなおくん")
+    .replaceAll("うんち姿のなおくん", "衣装姿のなおくん")
+    .replaceAll("うんち型", "三段型")
+    .replace(/うんち(?=の?なおくん)/g, "衣装")
+}
+
 function diary(seed: DiarySeed): DiaryEntry {
   const imagePath = "/content/diary/" + seed.date + ".webp"
-  return { ...seed, illustration: imagePath, imagePath }
+  if (seed.collectionId !== "naokun-poop-classic") {
+    return { ...seed, illustration: imagePath, imagePath }
+  }
+
+  const { collectionId: _routineForm, ...routineSeed } = seed
+  return {
+    ...routineSeed,
+    title: routineDiaryTitle(seed.title, seed.date),
+    body: routineDiaryBody(seed.body, seed.date),
+    alt: routineDiaryAlt(seed.alt),
+    illustration: imagePath,
+    imagePath,
+  }
 }
 
 export const DIARY_SAFE_TRANSFORMATION_CUES = [
@@ -164,7 +235,7 @@ export const DIARY_ENTRIES: DiaryEntry[] = [
     miyukiNote: "会社でいちばん長いのは、なおくんのあいさつです。",
     alt: "しゃぼん玉の遊び部屋で長いあいさつをするうんち社長のなおくんと、肉球札を上げるマロン、ユキ、クロ、美雪",
     collectionId: "naokun-poop-classic",
-    catIds: ["cat-maron", "cat-yuki", "cat-kuro"],
+    catIds: ["cat-mike", "cat-maron", "cat-yuki", "cat-kuro"],
     punchlineType: "escalation",
     glossary: [word("議題", "ぎだい", "会議でみんなが話し合うテーマ")],
   }),
@@ -786,8 +857,8 @@ export const DIARY_ENTRIES: DiaryEntry[] = [
   }),
 ]
 
-// 日記の役と図鑑カードが同じ場合だけ専用フォームを解放します。
-// 専用カードがない小道具・係の回は、別の衣装を誤解放しないよう王道フォームにまとめます。
+// 日記の挿絵に描かれた元の役を監査する対応表です。
+// 専用フォームの回だけ collectionId を残し、日常回では変身カードを解放しません。
 export const DIARY_COLLECTION_BY_DATE: Readonly<Record<string, DiaryCollectionId>> = {
   "2026-08-12": "naokun-poop-pirate",
   "2026-08-11": "naokun-poop-classic",
@@ -883,24 +954,41 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
     const transformationSentence = entry.body
       .split("。")
       .find((sentence) => sentence.includes("変身") && /うんち[^。]{0,40}(?:に|へ)変身/.test(sentence))
-    if (!transformationSentence) {
-      issues.push(entry.date + " になおくんのうんち姿への変身が明記されていません。")
-    } else if (!DIARY_SAFE_TRANSFORMATION_CUES.some((cue) => transformationSentence.includes(cue))) {
-      issues.push(entry.date + " の変身文に安全な魔法の説明がありません。")
+    if (entry.collectionId) {
+      if (!transformationSentence) {
+        issues.push(entry.date + " の専用フォーム回に、なおくんの変身が明記されていません。")
+      } else if (!DIARY_SAFE_TRANSFORMATION_CUES.some((cue) => transformationSentence.includes(cue))) {
+        issues.push(entry.date + " の変身文に安全な魔法の説明がありません。")
+      }
+    } else if (transformationSentence || DIARY_SAFE_TRANSFORMATION_CUES.some((cue) => entry.body.includes(cue))) {
+      issues.push(entry.date + " の日常回に、定型的な変身展開が残っています。")
     }
     if (/[叩踏殴蹴舐]|猫パンチ|なめ/.test(entry.body + entry.miyukiNote)) {
       issues.push(entry.date + " に強い接触表現があります。")
     }
 
-    if (!DIARY_COLLECTION_IDS.includes(entry.collectionId)) issues.push(entry.date + " の図鑑IDが不正です。")
+    if (entry.collectionId && !DIARY_COLLECTION_IDS.includes(entry.collectionId)) issues.push(entry.date + " の図鑑IDが不正です。")
     const expectedCollectionId = DIARY_COLLECTION_BY_DATE[entry.date]
     if (!expectedCollectionId) {
       issues.push(entry.date + " の図鑑対応が監査されていません。")
+    } else if (expectedCollectionId === "naokun-poop-classic") {
+      if (entry.collectionId) issues.push(entry.date + " の日常回で変身カードが解放されます。")
     } else if (entry.collectionId !== expectedCollectionId) {
-      issues.push(entry.date + " の図鑑IDが変身役と一致しません。")
+      issues.push(entry.date + " の専用フォームが挿絵の役と一致しません。")
     }
     if (entry.catIds.length === 0 || entry.catIds.some((catId) => !DIARY_CAT_IDS.includes(catId))) {
       issues.push(entry.date + " の猫IDが不正です。")
+    }
+    for (const catId of entry.catIds) {
+      const cat = DIARY_CAT_BY_ID[catId]
+      if (cat && !(entry.title + entry.body + entry.alt).includes(cat.name)) {
+        issues.push(entry.date + " の猫ID「" + catId + "」と本文の名前「" + cat.name + "」が一致しません。")
+      }
+    }
+    for (const cat of DIARY_CATS) {
+      if ((entry.title + entry.body + entry.alt).includes(cat.name) && !entry.catIds.includes(cat.id)) {
+        issues.push(entry.date + " に「" + cat.name + "」が登場しますが、猫ID「" + cat.id + "」がありません。")
+      }
     }
 
     if (entry.glossary.length === 0) issues.push(entry.date + " のことばのヒントがありません。")

@@ -37,6 +37,8 @@ vm.runInNewContext(transpiledDiary, {
 const {
   DIARY_COLLECTION_BY_DATE,
   DIARY_COLLECTION_IDS,
+  DIARY_CAT_BY_ID,
+  DIARY_CATS,
   DIARY_ENTRIES,
   DIARY_ENTRY_VALIDATION_ISSUES,
   DIARY_SAFE_TRANSFORMATION_CUES,
@@ -46,34 +48,39 @@ assert.equal(DIARY_ENTRIES.length, 63, "日記は63件必要です")
 assert.equal(Object.keys(DIARY_COLLECTION_BY_DATE).length, 63, "図鑑対応表は63件必要です")
 assert.deepEqual([...DIARY_ENTRY_VALIDATION_ISSUES], [], "日記データの組み込み検証に失敗しました")
 
-const transformationCueCounts = new Map(DIARY_SAFE_TRANSFORMATION_CUES.map((cue) => [cue, 0]))
+let transformationEntryCount = 0
 for (const entry of DIARY_ENTRIES) {
   const matchedCues = DIARY_SAFE_TRANSFORMATION_CUES.filter((cue) => entry.body.includes(cue))
-  assert.equal(matchedCues.length, 1, `${entry.date} の本文には許可済みの変身演出を1種類だけ含めてください`)
-
   const transformationSentence = entry.body
     .split("。")
     .find((sentence) => sentence.includes("変身") && /うんち[^。]{0,40}(?:に|へ)変身/.test(sentence))
-  assert.ok(transformationSentence, `${entry.date} になおくんのうんち姿への明示的な変身がありません`)
-  assert.equal(
-    transformationSentence.includes(matchedCues[0]),
-    true,
-    `${entry.date} の変身演出とうんち姿への変身は同じ文にしてください`,
-  )
+  if (entry.collectionId) {
+    transformationEntryCount += 1
+    assert.equal(matchedCues.length, 1, `${entry.date} の専用変身回には許可済みの演出を1種類だけ含めてください`)
+    assert.ok(transformationSentence, `${entry.date} の専用フォーム回に明示的な変身がありません`)
+    assert.equal(transformationSentence.includes(matchedCues[0]), true, `${entry.date} の変身演出と姿は同じ文にしてください`)
+  } else {
+    assert.equal(matchedCues.length, 0, `${entry.date} の日常回に定型の魔法演出が残っています`)
+    assert.equal(transformationSentence, undefined, `${entry.date} の日常回にうんち変身が残っています`)
+  }
   assert.equal(/におい|汚れ|清潔|あんしん/.test(entry.body), false, `${entry.date} に否定的な衛生説明が残っています`)
-  transformationCueCounts.set(matchedCues[0], transformationCueCounts.get(matchedCues[0]) + 1)
+  for (const catId of entry.catIds) {
+    const cat = DIARY_CAT_BY_ID[catId]
+    assert.ok(cat, `${entry.date} の猫ID ${catId} が正史に存在しません`)
+    assert.equal(
+      (entry.title + entry.body + entry.alt).includes(cat.name),
+      true,
+      `${entry.date} の猫ID ${catId} と名前 ${cat.name} が一致しません`,
+    )
+  }
+  for (const cat of DIARY_CATS) {
+    if ((entry.title + entry.body + entry.alt).includes(cat.name)) {
+      assert.equal(entry.catIds.includes(cat.id), true, `${entry.date} の登場猫 ${cat.name} にID ${cat.id} がありません`)
+    }
+  }
 }
-
-const usedTransformationCues = [...transformationCueCounts.entries()].filter(([, count]) => count > 0)
-const mostUsedTransformationCue = usedTransformationCues.reduce(
-  (mostUsed, current) => current[1] > mostUsed[1] ? current : mostUsed,
-  ["", 0],
-)
-assert.ok(usedTransformationCues.length >= 8, "日記の変身演出は8種類以上必要です")
-assert.ok(
-  mostUsedTransformationCue[1] / DIARY_ENTRIES.length <= 0.25,
-  `最多の変身演出「${mostUsedTransformationCue[0]}」が全体の25%を超えています`,
-)
+assert.ok(transformationEntryCount >= 5, "専用フォームを見せる特別回が少なすぎます")
+assert.ok(transformationEntryCount / DIARY_ENTRIES.length <= 0.2, "なおくんの変身回は日記全体の20%以下にしてください")
 
 const slipperHotelEntry = DIARY_ENTRIES.find((entry) => entry.date === "2026-08-10")
 assert.ok(slipperHotelEntry, "2026-08-10 のスリッパホテル日記がありません")
@@ -89,10 +96,11 @@ for (const entry of DIARY_ENTRIES) {
   const imageStats = await stat(imageFile)
   assert.equal(imageStats.isFile(), true, `${entry.date} の絵日記画像がファイルではありません`)
   assert.ok(imageStats.size > 100_000, `${entry.date} の絵日記画像が空か小さすぎます`)
+  const expectedCollectionId = DIARY_COLLECTION_BY_DATE[entry.date]
   assert.equal(
     entry.collectionId,
-    DIARY_COLLECTION_BY_DATE[entry.date],
-    `${entry.date} の図鑑IDが監査済みの変身役と一致しません`,
+    expectedCollectionId === "naokun-poop-classic" ? undefined : expectedCollectionId,
+    `${entry.date} の専用フォーム有無が監査済みの役と一致しません`,
   )
 }
 
@@ -103,7 +111,7 @@ for (const collectionId of DIARY_COLLECTION_IDS) {
   assert.equal(catalogIds.has(collectionId), true, `${collectionId} が図鑑に存在しません`)
 }
 for (const entry of DIARY_ENTRIES) {
-  assert.equal(catalogIds.has(entry.collectionId), true, `${entry.date} の図鑑IDが図鑑に存在しません`)
+  if (entry.collectionId) assert.equal(catalogIds.has(entry.collectionId), true, `${entry.date} の図鑑IDが図鑑に存在しません`)
 }
 
 const naokunCatalogSource = catalogSource.split("const NAOKUN_TRANSFORMATIONS", 2)[1].split("export const COLLECTION_CATALOG", 1)[0]
@@ -152,7 +160,6 @@ const unsafeFoodCoupling = [
 assert.deepEqual(unsafeFoodCoupling, [], "図鑑になおくんと食品・においを直接結ぶ旧表現が残っています")
 
 console.log(
-  `Diary collection verification passed: 63/63 mappings, ${usedTransformationCues.length} transformation cues, `
-  + `max cue ratio ${mostUsedTransformationCue[1]}/63 (${(mostUsedTransformationCue[1] / DIARY_ENTRIES.length * 100).toFixed(1)}%), `
-  + "and synchronized catalog hints.",
+  `Diary collection verification passed: 63/63 mappings, 5 canonical cats, `
+  + `${transformationEntryCount}/63 dedicated transformation stories, and synchronized catalog hints.`,
 )
