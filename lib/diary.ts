@@ -351,6 +351,75 @@ export const DIARY_REWRITES: Readonly<Record<string, { title?: string; body: str
   },
 }
 
+export const DIARY_CAT_FIRST_ENDINGS: Readonly<Record<string, string>> = {
+  "2026-08-12": "なおくんは海賊うんちのまま出航を続けていましたが、わたしは{cat}と段ボール船を揺らして遊ぶほうが大事です。",
+  "2026-08-11": "救助隊長なおくんはうんち姿でリボンに絡まったままなので、わたしは{cat}とクッション山をもう一つ作ります。",
+  "2026-08-10": "ホテル支配人なおくんはうんちのままスリッパに挟まり、わたしは{cat}とふかふか客室を探しに行きます。",
+  "2026-08-09": "なおくんは宿題うんちのまま答えを待っていましたが、鉛筆より先に{cat}と追いかけっこしたいです。",
+  "2026-08-08": "扇風機うんちになったなおくんは風に向かって回り続け、わたしは{cat}のひげがそよぐところを眺めます。",
+  "2026-08-07": "なおくんのすいか模様うんちは審査対象外にして、わたしは{cat}のしっぽを今日の最優秀デザインに選びました。",
+  "2026-08-06": "しゃぼん玉うんちのなおくんはまだ天井を漂っているので、わたしは{cat}と床の虹をつかまえて遊びます。",
+  "2026-08-05": "なおくんは最後の一片みたいなうんちのままでしたが、パズルより{cat}のおなかをなでるほうが正解です。",
+  "2026-08-04": "かくれんぼ中のなおくんはうんち姿のまますぐ見つかり、わたしは{cat}ともっと難しい隠れ場所を探します。",
+  "2026-08-03": "リモコンうんちのなおくんは停止ボタンを失くしたようですが、わたしは{cat}のごろごろ番組をずっと見ていたいです。",
+  "2026-08-02": "毛糸の賢者なおくんはうんちのまま長い話を始めたので、わたしは{cat}と先に毛糸玉を転がします。",
+  "2026-08-01": "基地司令官なおくんはうんち姿で缶に収まったまま、わたしと{cat}は秘密の猫じゃらし作戦へ出発です。",
+
+  "2026-07-31": "町長なおくんは当選後もうんちのままでしたが、わたしの一票は{cat}との昼寝時間を増やす案に入れます。",
+  "2026-07-30": "安全係なおくんはうんち姿でマットに埋まり、わたしは{cat}といちばん柔らかい着地点を探します。",
+  "2026-07-29": "館長なおくんはうんちのまま写真の説明を続けていますが、わたしは本物の{cat}を百枚撮りたいです。",
+  "2026-07-28": "なおくんのうんち服は特別賞にして棚へ置き、わたしは{cat}の毛並みに似合うリボンを選びます。",
+  "2026-07-27": "おばけ役なおくんはうんち姿のまま自分で怖がり、わたしは{cat}と毛布の城で笑っていました。",
+  "2026-07-26": "車掌なおくんはうんちのまま次の駅を忘れたので、わたしは{cat}と窓際席でおやつ駅を待ちます。",
+  "2026-07-25": "ヒーローなおくんはうんち姿のまま決めポーズ中ですが、わたしは{cat}の華麗なジャンプを応援します。",
+  "2026-07-24": "図書係なおくんはうんちのまま静かにする札を掲げ、わたしは{cat}と絵本の猫を探すことにしました。",
+  "2026-07-23": "紙の波に乗ったなおくんはうんちのまま岸へ着かず、わたしは{cat}と丸めた紙でサッカーをします。",
+  "2026-07-22": "楽団長なおくんはうんち姿で終演の合図を出し忘れ、わたしは{cat}のごろごろ演奏をアンコールします。",
+  "2026-07-21": "釣り名人なおくんはうんちのまま空の糸を見つめ、わたしは{cat}と揺れる先っぽを追いかけます。",
+  "2026-07-20": "カーテン番なおくんはうんち姿で窓辺に残り、わたしは{cat}と光のしま模様を渡って遊びます。",
+  "2026-07-19": "遊び係なおくんはうんちのままルールを増やしましたが、わたしは{cat}と自由にころころしたいです。",
+  "2026-07-18": "宇宙飛行士なおくんはうんち姿で発射台に待機し、わたしは{cat}と段ボール月面へ先に着陸します。",
+  "2026-07-17": "お天気係なおくんはうんちのまま晴れを予報しましたが、わたしは{cat}と日だまりを確かめに行きます。",
+  "2026-07-16": "探偵なおくんはうんち姿で自分の足跡を追い、わたしは{cat}と消えた猫じゃらしを先に見つけます。",
+  "2026-07-15": "撮影監督なおくんはうんちのまま構図に悩み、わたしは{cat}のあくびを主役にして撮りました。",
+  "2026-07-14": "衣装係なおくんはうんち姿で着替えを待っていますが、わたしは{cat}の天然の毛皮がいちばん好きです。",
+  "2026-07-13": "ボウリング球なおくんはうんちのまま溝へ向かい、わたしは{cat}と転がるピンを追いかけます。",
+  "2026-07-12": "城主なおくんはうんち姿で段ボール門を守り、わたしは{cat}と裏口からおやつの国へ入ります。",
+  "2026-07-11": "裁判長なおくんはうんちのまま判決を延ばしたので、わたしは{cat}と無罪の猫じゃらしで遊びます。",
+  "2026-07-10": "時空旅行中のなおくんは未来でもうんちのままで、わたしは今すぐ{cat}と遊べる現在を選びます。",
+  "2026-07-09": "競走選手なおくんはうんち姿でスタート地点に残り、わたしは{cat}と廊下を三往復してきます。",
+  "2026-07-08": "忍者なおくんはうんちのまま全然隠れられず、わたしは{cat}とカーテンの影へそっと消えました。",
+  "2026-07-07": "なおくんは短冊にも『うんちから戻りたい』と書き、わたしは{cat}と毎日遊べますようにと書きました。",
+  "2026-07-06": "司書なおくんはうんち姿で貸出印を握り、わたしは{cat}と猫の冒険の続きを読みます。",
+  "2026-07-05": "博物館の珍品なおくんはうんちのまま展示され、わたしは{cat}の肉球スタンプを特別展示にします。",
+  "2026-07-04": "体操隊長なおくんはうんち姿で一回転に失敗し、わたしは{cat}の伸びをまねして満点を取りました。",
+  "2026-07-03": "手品師なおくんはうんちのまま消えそびれ、わたしは{cat}が箱から飛び出す本物の魔法を見ます。",
+  "2026-07-02": "迷路案内役なおくんはうんち姿で同じ角を回り、わたしは{cat}のしっぽを目印に出口へ進みます。",
+  "2026-07-01": "遊園地係なおくんはうんちのまま開園ベルを鳴らし、わたしは{cat}と段ボール観覧車の一番乗りです。",
+
+  "2026-06-30": "表彰台のなおくんは金色でもうんちのままでしたが、わたしは{cat}のかわいさに特大メダルを贈ります。",
+  "2026-06-29": "猫語通訳なおくんはうんち姿で『にゃ』を誤訳し、わたしは{cat}に直接聞きながら遊ぶことにしました。",
+  "2026-06-28": "だるま役なおくんはうんちのまま本当に動かず、わたしは{cat}とこっそり次の部屋まで走ります。",
+  "2026-06-27": "紙飛行機乗りなおくんはうんち姿で机に着陸し、わたしは{cat}と次の一機を遠くへ飛ばします。",
+  "2026-06-26": "影絵の主役なおくんはうんちの輪郭のまま幕に残り、わたしは{cat}の耳の影を大きく映します。",
+  "2026-06-25": "エレベーター係なおくんはうんち姿で階数を忘れ、わたしは{cat}とおやつのある階で降ります。",
+  "2026-06-24": "スタンプ係なおくんはうんちのまま台紙にはさまり、わたしは{cat}の肉球印を全部集めたいです。",
+  "2026-06-23": "交通整理中のなおくんはうんち姿で赤信号のまま、わたしは{cat}と青い毛糸の道を進みます。",
+  "2026-06-22": "落とし物係なおくんはうんちのまま自分を届け出て、わたしは{cat}の失くしたボールを探します。",
+
+  "2025-08-31": "宿題監督なおくんはうんち姿でタイマーを見張り、わたしは{cat}と五分だけのつもりでずっと遊びました。",
+  "2025-08-30": "影の怪物なおくんはうんちの形のまま壁に残り、わたしは{cat}の大きな耳の影を追いかけます。",
+  "2025-08-29": "踊り子なおくんはうんち姿で同じ場所を回り続け、わたしは{cat}としっぽダンスを踊ります。",
+  "2025-08-17": "箱の管理人なおくんはうんちのまま入口をふさぎ、わたしは{cat}ともっと大きな箱へ引っ越します。",
+  "2025-08-16": "議長なおくんはうんち姿で閉会を忘れましたが、わたしは{cat}と遊ぶ案だけ先に可決しました。",
+  "2025-08-15": "観察係なおくんはうんちのまま鳥を見失い、わたしは{cat}と窓辺で次の羽音を待ちます。",
+  "2025-08-14": "目覚まし係なおくんはうんち姿で先に居眠りし、わたしは{cat}の寝息を聞きながら二度寝します。",
+  "2025-08-13": "迷路案内のなおくんはうんちのまま矢印を間違え、わたしは{cat}と毛糸の近道を駆け抜けます。",
+  "2025-08-12": "宇宙通信士なおくんは月でもうんちのままでしたが、わたしは地球の{cat}と交信して遊びます。",
+  "2025-08-11": "応援団なおくんはうんち姿で一回だけ拍手し、わたしは{cat}の連打をいちばん近くで応援します。",
+  "2025-08-10": "ニュースキャスターなおくんはうんちのまま速報を読み、わたしは{cat}と遊ぶ時間が始まったと発表します。",
+}
+
 function compactDiaryBody(body: string) {
   const sentences = body.split("。").map((sentence) => sentence.trim()).filter(Boolean)
   if (sentences.length <= 3) return body
@@ -371,10 +440,14 @@ function diary(seed: DiarySeed): DiaryEntry {
   const body = rewrite?.body ?? (isRoutineEntry ? routineDiaryBody(seed.body, seed.date) : seed.body)
   const alt = rewrite?.alt ?? (isRoutineEntry ? routineDiaryAlt(seed.alt) : seed.alt)
   const normalizedCatIds = [...new Set(catIds.map((catId) => LEGACY_CAT_ID_MAP[catId]))]
+  const catName = DIARY_CAT_BY_ID[normalizedCatIds[0]]?.name ?? "猫"
+  const catFirstEnding = (DIARY_CAT_FIRST_ENDINGS[seed.date] ?? "なおくんはうんちのままでしたが、わたしは{cat}と遊びたいです。")
+    .replaceAll("{cat}", catName)
+  const compactBody = compactDiaryBody(normalizeDiaryCatNames(body))
   return {
     ...seedCopy,
     title: normalizeDiaryCatNames(title),
-    body: compactDiaryBody(normalizeDiaryCatNames(body)),
+    body: compactBody + catFirstEnding,
     miyukiNote: normalizeDiaryCatNames(seed.miyukiNote),
     alt: normalizeDiaryCatNames(alt),
     catIds: normalizedCatIds,
@@ -1166,11 +1239,13 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
   const issues: string[] = []
   if (entries.length !== 63) issues.push("日記は63件必要です。")
   if (Object.keys(DIARY_COLLECTION_BY_DATE).length !== 63) issues.push("日記の図鑑対応表は63件必要です。")
+  if (Object.keys(DIARY_CAT_FIRST_ENDINGS).length !== 63) issues.push("日記の猫優先オチは63件必要です。")
 
   const dates = new Set<string>()
   const imagePaths = new Set<string>()
   const alts = new Set<string>()
   const punchlineTypes = new Set<DiaryPunchlineType>()
+  const catFirstEndings = new Set<string>()
 
   for (const entry of entries) {
     if (dates.has(entry.date)) issues.push(entry.date + " の日付が重複しています。")
@@ -1185,6 +1260,20 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
     if (!entry.alt.trim()) issues.push(entry.date + " の画像説明が空です。")
     if (alts.has(entry.alt)) issues.push(entry.date + " の画像説明が重複しています。")
     alts.add(entry.alt)
+
+    const endingTemplate = DIARY_CAT_FIRST_ENDINGS[entry.date]
+    const primaryCatName = DIARY_CAT_BY_ID[entry.catIds[0]]?.name
+    if (!endingTemplate || !primaryCatName) {
+      issues.push(entry.date + " の猫優先オチが設定されていません。")
+    } else {
+      const expectedEnding = endingTemplate.replaceAll("{cat}", primaryCatName)
+      if (!entry.body.endsWith(expectedEnding)) issues.push(entry.date + " の本文末尾と猫優先オチが一致しません。")
+      if (!expectedEnding.includes("なおくん") || !expectedEnding.includes("うんち")) {
+        issues.push(entry.date + " の猫優先オチになおくんの現状がありません。")
+      }
+      if (!expectedEnding.includes(primaryCatName)) issues.push(entry.date + " の猫優先オチに主役猫がいません。")
+      catFirstEndings.add(expectedEnding)
+    }
 
     const transformationSentence = entry.body
       .split("。")
@@ -1240,6 +1329,7 @@ export function validateDiaryEntries(entries: readonly DiaryEntry[]) {
   }
 
   if (punchlineTypes.size < 8) issues.push("オチの構造は8種類以上必要です。")
+  if (catFirstEndings.size !== entries.length) issues.push("猫優先オチは全日程で違う文章にしてください。")
   return issues
 }
 

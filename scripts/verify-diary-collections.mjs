@@ -36,6 +36,7 @@ const {
   DIARY_COLLECTION_BY_DATE,
   DIARY_CAT_BY_ID,
   DIARY_CATS,
+  DIARY_CAT_FIRST_ENDINGS,
   DIARY_ENTRIES,
   DIARY_ENTRY_VALIDATION_ISSUES,
   DIARY_REWRITES,
@@ -46,6 +47,7 @@ assert.equal(DIARY_ENTRIES.length, 63, "日記は63件必要です")
 assert.equal(Object.keys(DIARY_COLLECTION_BY_DATE).length, 63, "日記対応表は63件必要です")
 assert.deepEqual([...DIARY_ENTRY_VALIDATION_ISSUES], [], "日記データの組み込み検証に失敗しました")
 assert.equal(Object.keys(DIARY_REWRITES).length, 63, "全63日記に監査済みの完成稿が必要です")
+assert.equal(Object.keys(DIARY_CAT_FIRST_ENDINGS).length, 63, "全63日記に猫優先のオチが必要です")
 assert.equal(
   JSON.stringify(DIARY_CATS.map(({ id, name }) => [id, name])),
   JSON.stringify([["cat-maron", "トラちゃん"], ["cat-kuro", "キキ"], ["cat-yuki", "フワ"]]),
@@ -55,6 +57,7 @@ assert.equal(
 const legacyCatNamePattern = /マロン|ユキ|ミケ|クロ|トラまる/
 let transformationEntryCount = 0
 const dates = new Set()
+const catFirstEndings = new Set()
 
 for (const entry of DIARY_ENTRIES) {
   assert.equal(dates.has(entry.date), false, `${entry.date} が重複しています`)
@@ -68,12 +71,16 @@ for (const entry of DIARY_ENTRIES) {
   assert.equal(new Set(entry.catIds).size, entry.catIds.length, `${entry.date} の猫IDが重複しています`)
 
   const sentences = entry.body.split("。").map((sentence) => sentence.trim()).filter(Boolean)
-  assert.equal(sentences.length, 3, `${entry.date} の本文は状況・なおくん・オチの3文にしてください`)
+  assert.equal(sentences.length, 4, `${entry.date} の本文は状況・なおくん・オチ・猫優先の締めの4文にしてください`)
   assert.ok(sentences.every((sentence) => sentence.length >= 18), `${entry.date} に意味が伝わらない短すぎる文があります`)
-  assert.ok(entry.body.length >= 90 && entry.body.length <= 160, `${entry.date} の本文は90〜160文字にしてください`)
+  assert.ok(entry.body.length >= 125 && entry.body.length <= 230, `${entry.date} の本文は125〜230文字にしてください`)
   assert.ok(DIARY_CATS.some((cat) => sentences[0].includes(cat.name)), `${entry.date} の導入に登場猫がいません`)
   assert.ok(sentences[1].includes("なおくん"), `${entry.date} の2文目になおくんの行動がありません`)
   assert.ok(sentences[1].includes("うんち"), `${entry.date} の2文目に画像のなおくん衣装がありません`)
+  assert.ok(sentences[3].includes("なおくん") && sentences[3].includes("うんち"), `${entry.date} の締めになおくんの現状がありません`)
+  assert.ok(DIARY_CATS.some((cat) => sentences[3].includes(cat.name)), `${entry.date} の締めに遊びたい猫がいません`)
+  assert.ok(DIARY_CAT_FIRST_ENDINGS[entry.date], `${entry.date} の猫優先オチがありません`)
+  catFirstEndings.add(sentences[3])
   assert.ok(entry.alt.includes("なおくん"), `${entry.date} の画像説明になおくんがいません`)
   assert.equal(/(?:仲間に入り|役を買って出て|係へ立候補し)[、。]$/.test(sentences[1]), false, `${entry.date} でなおくんの行動が途中で切れています`)
 
@@ -107,8 +114,9 @@ for (const entry of DIARY_ENTRIES) {
 
 assert.ok(transformationEntryCount >= 5, "専用フォームを見せる特別回が少なすぎます")
 assert.ok(transformationEntryCount / DIARY_ENTRIES.length <= 0.2, "なおくんの変身回は日記全体の20%以下にしてください")
+assert.equal(catFirstEndings.size, DIARY_ENTRIES.length, "猫優先の締めは全日程で違う文章にしてください")
 
 console.log(
-  `Diary verification passed: 63 audited three-part stories, 3 canonical cats, `
+  `Diary verification passed: 63 audited four-part stories, 63 unique cat-first endings, 3 canonical cats, `
   + `Naokun action and punchline in every entry, ${transformationEntryCount}/63 dedicated transformations.`,
 )

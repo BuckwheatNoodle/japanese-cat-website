@@ -112,6 +112,18 @@ function isBroadcastDomainEvent(value: unknown): value is DomainEvent {
       return isShortString(event.itemId)
     case "room.itemRemoved":
       return ["wall", "window", "shelf", "table", "floorLeft", "floorCenter", "floorRight"].includes(String(event.slot))
+    case "diary.favoriteToggled":
+      return isDateKeyValue(event.diaryDate)
+    case "room.menuSaved": {
+      const menu = asRecord(event.menu)
+      return Boolean(menu && isShortString(menu.id)
+        && ["soda", "milk", "berry"].includes(String(menu.base))
+        && ["vanilla", "strawberry", "mint"].includes(String(menu.scoop))
+        && ["cherry", "cookie", "star"].includes(String(menu.topping))
+        && ["ribbon", "paw", "flower"].includes(String(menu.garnish)))
+    }
+    case "request.claimed":
+      return isShortString(event.requestId) && isDateKeyValue(event.requestDate)
     case "story.nodeCompleted":
       return isShortString(event.nodeId) && (event.choiceId === undefined || isShortString(event.choiceId))
     case "settings.updated":

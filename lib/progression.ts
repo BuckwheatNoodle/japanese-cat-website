@@ -1,9 +1,9 @@
 import { z } from "zod"
 
-// Keep the original key for an in-place v1/v2 -> v3 migration. The embedded
-// version prevents an older writer from treating the compact v3 ledger as v1.
+// Keep the original key for an in-place v1-v3 -> v4 migration. The embedded
+// version prevents an older writer from treating the compact v4 ledger as v1.
 export const PROGRESSION_STORAGE_KEY = "miyuki-cat-progress-v1"
-export const PROGRESSION_VERSION = 3 as const
+export const PROGRESSION_VERSION = 4 as const
 export const DAILY_MISSION_ALGORITHM_VERSION = 1 as const
 export const PROGRESSION_BACKUP_KIND = "miyuki-cat-cafe-backup" as const
 export const MAX_BACKUP_CHARACTERS = 2_000_000
@@ -59,6 +59,22 @@ export type CollectionUnlock = {
   sourceId?: string
 }
 
+export type CafeMenuCreation = {
+  id: string
+  base: "soda" | "milk" | "berry"
+  scoop: "vanilla" | "strawberry" | "mint"
+  topping: "cherry" | "cookie" | "star"
+  garnish: "ribbon" | "paw" | "flower"
+  createdAt: string
+}
+
+export type ActivityLogEntry = {
+  type: "game" | "coloring" | "fortune" | "diary" | "room" | "favorite" | "menu" | "request"
+  id: string
+  occurredAt: string
+  value?: number
+}
+
 export type AppStateV1 = {
   version: typeof PROGRESSION_VERSION
   savedAt: string
@@ -77,6 +93,7 @@ export type AppStateV1 = {
     gameHighScores: Record<string, number>
     completedColoringPageIds: string[]
     readDiaryDates: string[]
+    activityLog: ActivityLogEntry[]
   }
   daily: {
     date: string
@@ -93,6 +110,14 @@ export type AppStateV1 = {
   }
   room: {
     equipped: Partial<Record<RoomSlotId, string>>
+    menuCreations: CafeMenuCreation[]
+    featuredMenuId?: string
+  }
+  diary: {
+    favoriteDates: string[]
+  }
+  requests: {
+    claimedIds: string[]
   }
   story: {
     unlockedChapterIds: string[]
@@ -156,6 +181,19 @@ export type DomainEvent =
   | (EventMeta & {
       type: "room.itemRemoved"
       slot: RoomSlotId
+    })
+  | (EventMeta & {
+      type: "diary.favoriteToggled"
+      diaryDate: string
+    })
+  | (EventMeta & {
+      type: "room.menuSaved"
+      menu: Omit<CafeMenuCreation, "createdAt">
+    })
+  | (EventMeta & {
+      type: "request.claimed"
+      requestId: string
+      requestDate: string
     })
   | (EventMeta & {
       type: "story.nodeCompleted"
@@ -402,6 +440,22 @@ const collectionUnlockSchema = z.object({
   sourceId: safeId.optional(),
 })
 
+const activityLogEntrySchema = z.object({
+  type: z.enum(["game", "coloring", "fortune", "diary", "room", "favorite", "menu", "request"]),
+  id: safeId,
+  occurredAt: safeDateTime,
+  value: nonNegativeInteger.optional(),
+})
+
+const cafeMenuCreationSchema = z.object({
+  id: safeId,
+  base: z.enum(["soda", "milk", "berry"]),
+  scoop: z.enum(["vanilla", "strawberry", "mint"]),
+  topping: z.enum(["cherry", "cookie", "star"]),
+  garnish: z.enum(["ribbon", "paw", "flower"]),
+  createdAt: safeDateTime,
+})
+
 const ledgerArchiveSchema = z.string()
   .max(LEDGER_EXACT_ARCHIVE_MAX_LENGTH)
   .refine(isLedgerExactArchive, "Invalid compact ledger archive")
@@ -424,6 +478,7 @@ const appStateSchema = z.object({
     gameHighScores: z.record(nonNegativeInteger).default({}),
     completedColoringPageIds: z.array(safeId).max(500).default([]),
     readDiaryDates: z.array(dateKeySchema).max(1_000).default([]),
+    activityLog: z.array(activityLogEntrySchema).max(200).default([]),
   }),
   daily: z.object({
     date: dateKeySchema,
@@ -440,6 +495,14 @@ const appStateSchema = z.object({
   }),
   room: z.object({
     equipped: z.record(roomSlotSchema, safeId).default({}),
+    menuCreations: z.array(cafeMenuCreationSchema).max(24).default([]),
+    featuredMenuId: safeId.optional(),
+  }),
+  diary: z.object({
+    favoriteDates: z.array(dateKeySchema).max(1_000).default([]),
+  }),
+  requests: z.object({
+    claimedIds: z.array(safeId).max(1_000).default([]),
   }),
   story: z.object({
     unlockedChapterIds: z.array(safeId).max(100).default([]),
@@ -457,7 +520,7 @@ const appStateSchema = z.object({
 
 const backupSchema = z.object({
   kind: z.literal(PROGRESSION_BACKUP_KIND),
-  formatVersion: z.union([z.literal(1), z.literal(2), z.literal(PROGRESSION_VERSION)]),
+  formatVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(PROGRESSION_VERSION)]),
   exportedAt: safeDateTime,
   state: z.unknown(),
 })
@@ -551,7 +614,11 @@ function sanitizeStateReferences(state: AppStateV1): { state: AppStateV1; change
       naokunForms: pickKnownUnlocks(state.collections.naokunForms, NAOKUN_FORM_IDS),
     },
     inventory: { ownedItemIds },
-    room: { equipped },
+    room: {
+      equipped,
+      menuCreations: state.room.menuCreations,
+      ...(state.room.featuredMenuId ? { featuredMenuId: state.room.featuredMenuId } : {}),
+    },
     story: { unlockedChapterIds, completedNodeIds, choices },
     settings: {
       ...state.settings,
@@ -623,6 +690,7 @@ export function createInitialAppState(dateKey = getLocalDateKey(), timestamp = n
       gameHighScores: {},
       completedColoringPageIds: [],
       readDiaryDates: [],
+      activityLog: [],
     },
     daily: {
       date: safeDateKey,
@@ -641,7 +709,10 @@ export function createInitialAppState(dateKey = getLocalDateKey(), timestamp = n
         window: "window-sunny",
         table: "table-creamsoda",
       },
+      menuCreations: [],
     },
+    diary: { favoriteDates: [] },
+    requests: { claimedIds: [] },
     story: {
       unlockedChapterIds: [],
       completedNodeIds: [],
@@ -930,6 +1001,16 @@ function applyReward(state: AppStateV1, rewardId: string, amount: number): AppSt
   }
 }
 
+function appendActivity(
+  state: AppStateV1,
+  activity: ActivityLogEntry,
+): AppStateV1 {
+  const activityLog = [...state.stats.activityLog.filter((entry) => !(entry.type === activity.type && entry.id === activity.id)), activity]
+    .sort((left, right) => left.occurredAt.localeCompare(right.occurredAt))
+    .slice(-200)
+  return { ...state, stats: { ...state.stats, activityLog } }
+}
+
 function unlockCollection(
   state: AppStateV1,
   kind: CollectionKind,
@@ -1034,6 +1115,7 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       }
       state = incrementCurrentMission(state, "play-game")
       state = applyReward(state, `activity:${event.eventId}`, event.won ? 8 : 5)
+      state = appendActivity(state, { type: "game", id: event.gameId, occurredAt, value: score })
       break
     }
     case "coloring.completed": {
@@ -1051,6 +1133,7 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       }
       state = incrementCurrentMission(state, "finish-coloring")
       state = applyReward(state, `coloring:${event.pageId}`, 12)
+      state = appendActivity(state, { type: "coloring", id: event.pageId, occurredAt })
       break
     }
     case "fortune.drawn": {
@@ -1060,6 +1143,7 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       }
       state = incrementCurrentMission(state, "draw-fortune")
       state = applyReward(state, `fortune:${requestedEventDate}`, 6)
+      state = appendActivity(state, { type: "fortune", id: event.fortuneId, occurredAt })
       break
     }
     case "diary.read": {
@@ -1081,6 +1165,7 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       if (event.naokunFormId) {
         state = unlockCollection(state, "naokun-form", event.naokunFormId, occurredAt, `diary:${event.diaryDate}`)
       }
+      state = appendActivity(state, { type: "diary", id: event.diaryDate, occurredAt })
       break
     }
     case "collection.unlocked": {
@@ -1121,14 +1206,51 @@ export function reduceProgression(previousState: AppStateV1, event: DomainEvent)
       if (!item || !state.inventory.ownedItemIds.includes(item.id)) break
       state = {
         ...state,
-        room: { equipped: { ...state.room.equipped, [item.slot]: item.id } },
+        room: { ...state.room, equipped: { ...state.room.equipped, [item.slot]: item.id } },
       }
+      state = appendActivity(state, { type: "room", id: item.id, occurredAt })
       break
     }
     case "room.itemRemoved": {
       const equipped = { ...state.room.equipped }
       delete equipped[event.slot]
-      state = { ...state, room: { equipped } }
+      state = { ...state, room: { ...state.room, equipped } }
+      break
+    }
+    case "diary.favoriteToggled": {
+      if (!isDateKey(event.diaryDate)) break
+      const isFavorite = state.diary.favoriteDates.includes(event.diaryDate)
+      state = {
+        ...state,
+        diary: {
+          favoriteDates: isFavorite
+            ? state.diary.favoriteDates.filter((date) => date !== event.diaryDate)
+            : [...state.diary.favoriteDates, event.diaryDate],
+        },
+      }
+      state = appendActivity(state, { type: "favorite", id: event.diaryDate, occurredAt })
+      break
+    }
+    case "room.menuSaved": {
+      const parsedMenu = cafeMenuCreationSchema.omit({ createdAt: true }).safeParse(event.menu)
+      if (!parsedMenu.success) break
+      const menu: CafeMenuCreation = { ...parsedMenu.data, createdAt: occurredAt }
+      state = {
+        ...state,
+        room: {
+          ...state.room,
+          menuCreations: [...state.room.menuCreations.filter((item) => item.id !== menu.id), menu].slice(-24),
+          featuredMenuId: menu.id,
+        },
+      }
+      state = appendActivity(state, { type: "menu", id: menu.id, occurredAt })
+      break
+    }
+    case "request.claimed": {
+      const request = getCatRequests(state, event.requestDate).find((candidate) => candidate.id === event.requestId)
+      if (!isDateKey(event.requestDate) || event.requestDate !== state.daily.date || !isSafeDomainId(event.requestId) || !request?.completed || request.claimed) break
+      state = { ...state, requests: { claimedIds: [...state.requests.claimedIds, event.requestId] } }
+      state = appendActivity(state, { type: "request", id: event.requestId, occurredAt })
       break
     }
     case "story.nodeCompleted": {
@@ -1178,6 +1300,47 @@ export function canClaimDailyMission(state: AppStateV1, missionId: DailyMissionI
   return { ok: true }
 }
 
+export type CatRequestDefinition = {
+  id: string
+  catId: "cat-maron" | "cat-kuro" | "cat-yuki"
+  catName: "トラちゃん" | "キキ" | "フワ"
+  title: string
+  description: string
+  completed: boolean
+  claimed: boolean
+  reward: "肉球スタンプ"
+}
+
+export function getCatRequests(state: AppStateV1, dateKey = state.daily.date): CatRequestDefinition[] {
+  const key = isDateKey(dateKey) ? dateKey : state.daily.date
+  const happenedOn = (type: ActivityLogEntry["type"]) => state.stats.activityLog.some((entry) => {
+    const occurredAt = new Date(entry.occurredAt)
+    return entry.type === type && !Number.isNaN(occurredAt.getTime()) && getLocalDateKey(occurredAt) === key
+  })
+  const definitions = [
+    {
+      id: `${key}:tora-game`, catId: "cat-maron" as const, catName: "トラちゃん" as const,
+      title: "ゲームの記録を見せて", description: "好きなゲームを1回遊んで、トラちゃんへ結果を報告します。",
+      completed: happenedOn("game"),
+    },
+    {
+      id: `${key}:kiki-diary`, catId: "cat-kuro" as const, catName: "キキ" as const,
+      title: "今日の事件を選んで", description: "日記を1件読み、お気に入りのオチを1つ保存します。",
+      completed: state.diary.favoriteDates.length > 0 && happenedOn("favorite"),
+    },
+    {
+      id: `${key}:fuwa-menu`, catId: "cat-yuki" as const, catName: "フワ" as const,
+      title: "ふわふわメニューを作って", description: "メニュー工房で新しい一皿を完成させます。",
+      completed: happenedOn("menu"),
+    },
+  ]
+  return definitions.map((request) => ({
+    ...request,
+    claimed: state.requests.claimedIds.includes(request.id),
+    reward: "肉球スタンプ",
+  }))
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
@@ -1219,10 +1382,12 @@ function mergeForMigration(raw: Record<string, unknown>, dateKey: string, timest
   const collections = asRecord(raw.collections)
   const inventory = asRecord(raw.inventory)
   const room = asRecord(raw.room)
+  const diary = asRecord(raw.diary)
+  const requests = asRecord(raw.requests)
   const story = asRecord(raw.story)
   const settings = asRecord(raw.settings)
   const ledger = asRecord(raw.ledger)
-  const mergedLedger = raw.version === PROGRESSION_VERSION
+  const mergedLedger = raw.version === PROGRESSION_VERSION || raw.version === 3
     ? { ...initial.ledger, ...(ledger ?? {}) }
     : raw.version === 2
       ? {
@@ -1261,7 +1426,14 @@ function mergeForMigration(raw: Record<string, unknown>, dateKey: string, timest
       naokunForms: { ...initial.collections.naokunForms, ...(asRecord(collections?.naokunForms) ?? {}) },
     },
     inventory: { ...initial.inventory, ...(inventory ?? {}) },
-    room: { ...initial.room, ...(room ?? {}), equipped: { ...initial.room.equipped, ...(asRecord(room?.equipped) ?? {}) } },
+    room: {
+      ...initial.room,
+      ...(room ?? {}),
+      equipped: { ...initial.room.equipped, ...(asRecord(room?.equipped) ?? {}) },
+      menuCreations: Array.isArray(room?.menuCreations) ? room.menuCreations : initial.room.menuCreations,
+    },
+    diary: { ...initial.diary, ...(diary ?? {}) },
+    requests: { ...initial.requests, ...(requests ?? {}) },
     story: { ...initial.story, ...(story ?? {}), choices: { ...initial.story.choices, ...(asRecord(story?.choices) ?? {}) } },
     settings: { ...initial.settings, ...(settings ?? {}) },
     ledger: {

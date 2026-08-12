@@ -86,15 +86,15 @@ test.describe("タブ切替テスト", () => {
 })
 
 test.describe("ホームタブ", () => {
-  test("ねこカフェの案内と遊ぶボタンが表示される", async ({ page }) => {
+  test("ねこカフェの案内とゲームボタンが表示される", async ({ page }) => {
     await page.goto("/")
-    await expect(page.getByRole("heading", { name: "ねこカフェへようこそ" })).toBeAttached()
-    await expect(page.getByRole("button", { name: "いっしょに遊ぼう！" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "美雪のねこカフェ、今日も開店中" })).toBeAttached()
+    await expect(page.getByRole("button", { name: /ゲームを選ぶ/ })).toBeVisible()
   })
 
-  test("ねこカフェパスポートが表示される", async ({ page }) => {
+  test("ねこカフェ活動ログが表示される", async ({ page }) => {
     await page.goto("/")
-    await expect(page.getByRole("heading", { name: "ねこカフェパスポート" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "ねこカフェ活動ログ" })).toBeVisible()
   })
 })
 
@@ -152,7 +152,7 @@ test.describe("なおくん表示範囲と三匹の正史", () => {
     await expect(diary).toContainText("トラちゃん・キキ・フワ")
     await expect(diary).not.toContainText("美雪の兄・変身役")
     const visibleDiaryBody = await diary.locator(".diary-entry-body").first().innerText()
-    expect(visibleDiaryBody.split("。").filter(Boolean)).toHaveLength(3)
+    expect(visibleDiaryBody.split("。").filter(Boolean)).toHaveLength(4)
     expect(visibleDiaryBody).toContain("なおくん")
     expect(visibleDiaryBody).toContain("うんち")
 
@@ -176,6 +176,40 @@ test.describe("なおくん表示範囲と三匹の正史", () => {
     await expect(collectionHero).toBeVisible()
     await expect(collectionHero.locator('img[src*="cat-book-three-cats.webp"]')).toBeVisible()
     expect(browserErrors).toEqual([])
+  })
+})
+
+test.describe("追加コンテンツ", () => {
+  test("日記を検索・絞り込み・ランダム表示できる", async ({ page }) => {
+    await page.goto("/")
+    await openPrimaryTab(page, "diary")
+    const diary = page.getByTestId("diary-content")
+    await expect(diary.getByRole("textbox", { name: "ことばで検索" })).toBeVisible()
+    await expect(diary.getByRole("button", { name: /お気に入りのみ/ })).toBeVisible()
+    await expect(diary.getByRole("button", { name: /ランダムで読む/ })).toBeVisible()
+  })
+
+  test("猫クラブで三匹の活動ファイルを切り替えられる", async ({ page }) => {
+    await page.goto("/#club")
+    const club = page.getByTestId("club-content")
+    await expect(club.getByRole("tab", { name: "しぐさ図鑑" })).toBeVisible()
+    await club.getByRole("tab", { name: "三匹のお願い" }).click()
+    await expect(club).toContainText("トラちゃん")
+    await expect(club).toContainText("キキ")
+    await expect(club).toContainText("フワ")
+    await club.getByRole("tab", { name: "週間新聞" }).click()
+    await expect(club.getByRole("button", { name: "新聞を画像保存" })).toBeVisible()
+  })
+
+  test("カフェ閲覧モードに三匹と画像保存がある", async ({ page }) => {
+    await page.goto("/#club")
+    await page.getByRole("button", { name: /カフェ編集室/ }).click()
+    await expect(page.getByRole("region", { name: "猫カフェ・メニュー工房" })).toBeVisible()
+    await page.getByRole("button", { name: "猫カフェを見る" }).click()
+    await expect(page.getByRole("button", { name: "カフェカードを画像保存" })).toBeVisible()
+    await expect(page.getByRole("img", { name: "茶トラのトラちゃん" })).toBeVisible()
+    await expect(page.getByRole("img", { name: "黒猫のキキ" })).toBeVisible()
+    await expect(page.getByRole("img", { name: "白い長毛猫のフワ" })).toBeVisible()
   })
 })
 

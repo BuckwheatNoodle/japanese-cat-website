@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, PawPrint, Sparkles, Square, Volume2 } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, PawPrint, Search, Shuffle, Sparkles, Square, Volume2 } from "lucide-react"
 import { DIARY_CAT_BY_ID, DIARY_ENTRIES, type DiaryEntry } from "@/lib/diary"
 import { useSkin } from "@/components/skin-provider"
 import { useProgression } from "@/components/progression-provider"
@@ -12,6 +12,7 @@ import {
   type DiaryContentOverride,
 } from "@/lib/content-overrides"
 import { assetPath, getLocalDateKey } from "@/lib/utils"
+import { createEventId } from "@/lib/progression"
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"]
 
@@ -116,6 +117,10 @@ export function PictureDiary() {
   const [todayKey, setTodayKey] = useState("")
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speechMessage, setSpeechMessage] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [catFilter, setCatFilter] = useState<"all" | "cat-maron" | "cat-kuro" | "cat-yuki">("all")
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [readFilter, setReadFilter] = useState<"all" | "read" | "unread">("all")
   const detailRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -180,6 +185,16 @@ export function PictureDiary() {
   const monthIndex = availableMonths.indexOf(displayedMonth)
   const previousEntry = selectedEntryIndex > 0 ? monthEntries[selectedEntryIndex - 1] : null
   const nextEntry = selectedEntryIndex >= 0 && selectedEntryIndex < monthEntries.length - 1 ? monthEntries[selectedEntryIndex + 1] : null
+  const favoriteDates = useMemo(() => new Set(state.diary.favoriteDates), [state.diary.favoriteDates])
+  const filteredEntries = useMemo(() => entries.filter((entry) => {
+    if (favoritesOnly && !favoriteDates.has(entry.date)) return false
+    if (catFilter !== "all" && !entry.catIds.includes(catFilter)) return false
+    const hasRead = state.stats.readDiaryDates.includes(entry.date)
+    if (readFilter === "read" && !hasRead) return false
+    if (readFilter === "unread" && hasRead) return false
+    const query = searchQuery.trim().toLocaleLowerCase("ja-JP")
+    return !query || `${entry.title} ${entry.body}`.toLocaleLowerCase("ja-JP").includes(query)
+  }), [catFilter, entries, favoriteDates, favoritesOnly, readFilter, searchQuery, state.stats.readDiaryDates])
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) return
@@ -214,6 +229,18 @@ export function PictureDiary() {
     const nextEntries = entries.filter((entry) => entry.date.startsWith(nextMonth)).sort((a, b) => a.date.localeCompare(b.date))
     setDisplayedMonth(nextMonth)
     if (nextEntries.length > 0) setSelectedDate(nextEntries.at(-1)!.date)
+  }
+
+  const toggleFavorite = (date: string) => {
+    recordEvent({ type: "diary.favoriteToggled", eventId: createEventId("diary-favorite"), occurredAt: new Date().toISOString(), diaryDate: date })
+  }
+
+  const openRandomEntry = () => {
+    const candidates = filteredEntries.filter((entry) => entry.date !== selectedEntry?.date)
+    const entry = candidates[Math.floor(Math.random() * candidates.length)] ?? filteredEntries[0]
+    if (!entry) return
+    setDisplayedMonth(entry.date.slice(0, 7))
+    selectEntry(entry)
   }
 
   const illustration = selectedEntry ? assetPath(selectedEntry.imagePath) : skin.assets.activityDiary
@@ -270,6 +297,20 @@ export function PictureDiary() {
         <span><b>美雪</b><small>記録・検証・ツッコミ担当</small></span>
         <span><b>いつもの3匹</b><small>トラちゃん・キキ・フワ</small></span>
       </div>
+
+      <section className="diary-library-tools" aria-label="日記を探す">
+        <label><Search aria-hidden="true" /><span>ことばで検索</span><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="例：段ボール、キキ" /></label>
+        <div className="diary-filter-row">
+          <select aria-label="登場する猫で絞り込む" value={catFilter} onChange={(event) => setCatFilter(event.target.value as typeof catFilter)}><option value="all">三匹すべて</option><option value="cat-maron">トラちゃん</option><option value="cat-kuro">キキ</option><option value="cat-yuki">フワ</option></select>
+          <select aria-label="既読状態で絞り込む" value={readFilter} onChange={(event) => setReadFilter(event.target.value as typeof readFilter)}><option value="all">既読・未読すべて</option><option value="unread">未読のみ</option><option value="read">既読のみ</option></select>
+          <button type="button" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly((value) => !value)}><Heart aria-hidden="true" />お気に入りのみ</button>
+          <button type="button" onClick={openRandomEntry} disabled={filteredEntries.length === 0}><Shuffle aria-hidden="true" />ランダムで読む</button>
+        </div>
+        <div className="diary-search-results" aria-live="polite">
+          <strong>{filteredEntries.length}件</strong>
+          {filteredEntries.slice(0, 8).map((entry) => <button key={entry.date} type="button" onClick={() => { setDisplayedMonth(entry.date.slice(0, 7)); selectEntry(entry) }}><time>{entry.date.replaceAll("-", ".")}</time><span>{entry.title}</span>{favoriteDates.has(entry.date) && <Heart aria-label="お気に入り" />}</button>)}
+        </div>
+      </section>
 
       <section className="diary-calendar" aria-labelledby="calendar-heading">
         <div className="diary-calendar-heading">
@@ -366,6 +407,8 @@ export function PictureDiary() {
         <div className="diary-entry-layout">
           <div className="diary-entry-image">
             <Image
+              key={selectedEntry.date}
+              data-diary-date={selectedEntry.date}
               src={illustration}
               alt={illustrationAlt}
               fill
@@ -381,6 +424,7 @@ export function PictureDiary() {
             <p className="diary-entry-label">今日の猫：{selectedCatNames}</p>
             <h3 id="diary-entry-title">{selectedEntry.title}</h3>
             <p className="diary-entry-body">{selectedEntry.body}</p>
+            <button type="button" className="diary-favorite-button" data-active={favoriteDates.has(selectedEntry.date) || undefined} aria-pressed={favoriteDates.has(selectedEntry.date)} onClick={() => toggleFavorite(selectedEntry.date)}><Heart aria-hidden="true" />{favoriteDates.has(selectedEntry.date) ? "お気に入りのオチ" : "このオチをお気に入りにする"}</button>
             {state.settings.readAloud ? (
               <button type="button" className="secondary-action diary-read-aloud" onClick={toggleReadAloud} aria-pressed={isSpeaking}>
                 {isSpeaking ? <Square aria-hidden="true" /> : <Volume2 aria-hidden="true" />}

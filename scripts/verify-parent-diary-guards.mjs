@@ -155,11 +155,13 @@ function localDateKey(date = new Date()) {
 
 const picturePath = path.join(projectRoot, "components", "picture-diary.tsx")
 const pictureSource = await readFile(picturePath, "utf8")
+const serviceWorkerSource = await readProjectFile("scripts/generate-service-worker.mjs")
 const pictureModule = executeCommonJs(
   transpile(pictureSource, picturePath, true),
   picturePath,
   (id) => {
     if (id === "@/lib/diary") return { DIARY_ENTRIES: builtInEntries }
+    if (id === "@/lib/progression") return { createEventId: (prefix) => `${prefix}:test` }
     if (id === "@/lib/utils") return { assetPath: (value) => value, getLocalDateKey: localDateKey }
     if (id === "@/lib/content-overrides") return { CONTENT_OVERRIDE_APPLIED_KEY: "content", readContentOverrides: () => ({ ok: true, value: { diaryEntries: [] } }) }
     if (id === "react") return { useEffect() {}, useMemo: (factory) => factory(), useRef: (value) => ({ current: value }), useState: (value) => [typeof value === "function" ? value() : value, () => {}] }
@@ -298,5 +300,9 @@ assert.match(parentEditorSource, /読んだときの変身と猫（任意）/, "
 assert.match(parentEditorSource, /変身なし（ステッカー・図鑑解放なし）/)
 assert.match(parentEditorSource, /DIARY_OVERRIDE_CAT_IDS\.map/, "正規猫IDの候補だけを選べるようにします")
 assert.match(pictureSource, /selectedEntry\.collectionId\?\.startsWith/, "変身なしの日記ではステッカーを表示しません")
+assert.match(pictureSource, /key=\{selectedEntry\.date\}/, "日付変更時は日記画像を新しい要素として描画します")
+assert.match(pictureSource, /data-diary-date=\{selectedEntry\.date\}/, "表示中の日付と画像をブラウザ検証できるようにします")
+assert.match(serviceWorkerSource, /async function networkFirstImage\(request, networkResponse\)[\s\S]*?return await networkResponse;[\s\S]*?matchNamedCache\(IMAGE_CACHE_NAME, request\)/, "日記画像はオンライン時に最新レスポンスを優先します")
+assert.doesNotMatch(serviceWorkerSource, /async function cacheImage[\s\S]*?if \(cached\) return cached/, "古い画像キャッシュをオンライン時に先出ししてはいけません")
 
 console.log("Parent/diary guard verification passed: explicit diary actions, optional canonical metadata, legacy v1/PIN migration, and session-only backup access.")

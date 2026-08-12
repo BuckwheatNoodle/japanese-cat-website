@@ -152,11 +152,7 @@ async function fetchAndRefreshImage(request) {
   return response;
 }
 
-async function cacheImage(request, networkResponse) {
-  const cached = await matchNamedCache(IMAGE_CACHE_NAME, request);
-
-  if (cached) return cached;
-
+async function networkFirstImage(request, networkResponse) {
   try {
     return await networkResponse;
   } catch (error) {
@@ -192,7 +188,7 @@ self.addEventListener("fetch", (event) => {
   if (request.destination === "image") {
     const networkResponse = fetchAndRefreshImage(request);
     event.waitUntil(networkResponse.then(() => undefined).catch(() => undefined));
-    event.respondWith(cacheImage(request, networkResponse));
+    event.respondWith(networkFirstImage(request, networkResponse));
     return;
   }
 

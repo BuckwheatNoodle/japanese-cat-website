@@ -13,6 +13,7 @@ import {
   Star,
 } from "lucide-react"
 import { ExperienceArtwork } from "@/components/experience-artwork"
+import { CatClubExtras } from "@/components/cat-club-extras"
 import styles from "@/components/experience.module.css"
 import type { ActionCheck } from "@/lib/progression"
 
@@ -369,6 +370,7 @@ export function AdventureHub({
           })}
         </div>
       </section>
+      <CatClubExtras />
     </section>
   )
 }

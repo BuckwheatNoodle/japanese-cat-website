@@ -1,10 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ArrowLeft, Cat, Check, CircleDollarSign, Home, MessageCircle, PackageOpen, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, Camera, Cat, Check, CircleDollarSign, Eye, Home, MessageCircle, PackageOpen, Pencil, Plus, ShoppingBag, Sparkles, Trash2 } from "lucide-react"
 import { ExperienceArtwork } from "@/components/experience-artwork"
+import { CafeMenuMaker } from "@/components/cafe-menu-maker"
+import { useProgression } from "@/components/progression-provider"
 import styles from "@/components/experience.module.css"
 import { ROOM_ITEM_DEFINITIONS, type ActionCheck, type RoomSlotId as ProgressionRoomSlotId } from "@/lib/progression"
+import { downloadTextCard } from "@/lib/download-card"
 
 export type RoomSlotId = ProgressionRoomSlotId
 
@@ -139,7 +142,10 @@ export function RoomStudio({
   onBuyItem,
   onBack,
 }: RoomStudioProps) {
+  const { state } = useProgression()
   const [selectedSlot, setSelectedSlot] = useState<RoomSlotId>("table")
+  const [viewMode, setViewMode] = useState<"edit" | "visit">("edit")
+  const [catMessage, setCatMessage] = useState("三匹がカフェの開店を待っています。")
   const [reaction, setReaction] = useState<RoomReaction>({
     title: "テーブルを選択中",
     lead: "家具を配置すると、美雪と三匹の一言劇が始まります。",
@@ -170,6 +176,16 @@ export function RoomStudio({
     setReaction({ title: `${item?.name ?? "家具"}を配置しました`, ...scene })
   }
 
+  const featuredMenu = state.room.menuCreations.find((menu) => menu.id === state.room.featuredMenuId)
+  const saveRoomImage = () => {
+    const furniture = ROOM_SLOTS.map((slot) => itemById.get(equipped[slot.id] ?? "")?.name).filter(Boolean)
+    downloadTextCard("miyuki-cat-cafe-room.png", "美雪の猫カフェ", [
+      `家具：${furniture.join("・") || "準備中"}`,
+      featuredMenu ? "本日のおすすめ：メニュー工房の新作" : "本日のおすすめ：クリームソーダ",
+      catMessage,
+    ])
+  }
+
   return (
     <section className={styles.experienceScreen} aria-labelledby="room-title">
       <div className={styles.screenToolbar}>
@@ -187,17 +203,23 @@ export function RoomStudio({
         <p>場所を選び、所持している家具を配置します。組み合わせで一言劇も変化します。</p>
       </header>
 
+      <div className={styles.roomModeSwitch} aria-label="猫カフェの表示モード">
+        <button type="button" aria-pressed={viewMode === "edit"} onClick={() => setViewMode("edit")}><Pencil />編集する</button>
+        <button type="button" aria-pressed={viewMode === "visit"} onClick={() => setViewMode("visit")}><Eye />猫カフェを見る</button>
+        {viewMode === "visit" && <button type="button" onClick={saveRoomImage}><Camera />カフェカードを画像保存</button>}
+      </div>
+
       <aside className={styles.roomReaction} role="status" aria-live="polite" aria-atomic="true">
         <span className={styles.roomReactionIcon} aria-hidden="true"><MessageCircle /></span>
         <span className={styles.roomReactionCopy}>
-          <strong>{reaction.title}</strong>
-          <span>{reaction.lead}</span>
-          <span><Cat aria-hidden="true" />{reaction.reply}</span>
+          <strong>{viewMode === "visit" ? "猫カフェ営業中" : reaction.title}</strong>
+          <span>{viewMode === "visit" ? catMessage : reaction.lead}</span>
+          <span><Cat aria-hidden="true" />{viewMode === "visit" ? "猫を押すと、店内でのひとことが変わります。" : reaction.reply}</span>
         </span>
       </aside>
 
       <div className={styles.roomLayout}>
-        <div className={styles.roomCanvas} aria-label="猫カフェのお部屋">
+        <div className={styles.roomCanvas} data-mode={viewMode} aria-label="猫カフェのお部屋">
           <ExperienceArtwork
             src="/content/room/empty-cafe.webp"
             alt="家具を飾れる、クリームソーダ色の猫カフェのお部屋"
@@ -219,7 +241,8 @@ export function RoomStudio({
                 data-selected={isSelected || undefined}
                 aria-pressed={isSelected}
                 aria-label={`${slot.label}。${item ? `${item.name}を置いています` : "何も置いていません"}`}
-                onClick={() => setSelectedSlot(slot.id)}
+                onClick={() => viewMode === "edit" && setSelectedSlot(slot.id)}
+                tabIndex={viewMode === "visit" ? -1 : 0}
               >
                 {item ? (
                   <ExperienceArtwork src={item.artSrc} alt={item.name} className={styles.placedItemArt} />
@@ -229,9 +252,15 @@ export function RoomStudio({
               </button>
             )
           })}
+          {featuredMenu && <span className={styles.featuredMenu} aria-label="メニュー工房で作ったおすすめ"><i data-base={featuredMenu.base} /><b>{featuredMenu.topping === "star" ? "★" : featuredMenu.topping === "cookie" ? "猫" : "●"}</b></span>}
+          {viewMode === "visit" && <div className={styles.roomCats} aria-label="カフェでくつろぐ三匹">
+            <button type="button" data-place={equipped.floorCenter ? "tower" : "table"} onClick={() => setCatMessage(equipped.floorCenter ? "トラちゃんは遊び場の一番高い場所から、店内を元気に見回しています。" : "トラちゃんは新しい家具を一周して、いちばん楽しい席を選びました。")}><ExperienceArtwork src="/content/collections/cats/maron.webp" alt="茶トラのトラちゃん" className={styles.roomCatArt} fit="cover" /><span>トラちゃん</span></button>
+            <button type="button" data-place={equipped.shelf ? "shelf" : "window"} onClick={() => setCatMessage(equipped.shelf ? "キキは棚の並びを確認して、今日も異常なしと小さくうなずきました。" : "キキは窓辺から店内を静かに観察しています。")}><ExperienceArtwork src="/content/collections/cats/kuro.webp" alt="黒猫のキキ" className={styles.roomCatArt} fit="cover" /><span>キキ</span></button>
+            <button type="button" data-place={equipped.floorRight ? "bed" : "rug"} onClick={() => setCatMessage(equipped.floorRight ? "フワは右側のふかふか家具を見つけ、営業中なのにもう目を閉じています。" : "フワは床のいちばん暖かい場所で、しっぽを枕にしています。")}><ExperienceArtwork src="/content/collections/cats/yuki.webp" alt="白い長毛猫のフワ" className={styles.roomCatArt} fit="cover" /><span>フワ</span></button>
+          </div>}
         </div>
 
-        <section className={styles.inventoryPanel} aria-labelledby="inventory-title">
+        {viewMode === "edit" && <section className={styles.inventoryPanel} aria-labelledby="inventory-title">
           <div className={styles.inventoryHeading}>
             <div>
               <p className={styles.kicker}><PackageOpen aria-hidden="true" /> ITEM BOX</p>
@@ -282,8 +311,9 @@ export function RoomStudio({
               )
             })}
           </div>
-        </section>
+        </section>}
       </div>
+      {viewMode === "edit" && <CafeMenuMaker />}
     </section>
   )
 }

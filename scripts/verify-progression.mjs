@@ -54,6 +54,8 @@ const {
   serializeProgressionBackup,
 } = progression
 
+assert.equal(progression.PROGRESSION_VERSION, 4, "追加コンテンツを保存するv4形式を使います")
+
 const eventAt = (eventId, occurredAt, extra) => ({ eventId, occurredAt, ...extra })
 
 assert.equal(domainEventsHaveSameMeaning(
@@ -88,6 +90,28 @@ assert.equal(domainEventsHaveSameMeaning(
   eventAt("game:repeat", "2026-08-12T01:00:00.000Z", { type: "game.completed", gameId: "rescue", score: 10 }),
   eventAt("game:repeat", "2026-08-12T02:00:00.000Z", { type: "game.completed", gameId: "rescue", score: 11 }),
 ), false, "同じIDでもスコアが違うゲームイベントは衝突です")
+
+// New content participates in the same exact event ledger and backup format.
+let extrasState = createInitialAppState("2026-08-12", "2026-08-12T00:00:00.000Z")
+extrasState = reduceProgression(extrasState, eventAt("favorite:test", "2026-08-12T01:00:00.000Z", { type: "diary.favoriteToggled", diaryDate: "2026-08-12" }))
+extrasState = reduceProgression(extrasState, eventAt("menu:test", "2026-08-12T02:00:00.000Z", { type: "room.menuSaved", menu: { id: "menu-test", base: "soda", scoop: "vanilla", topping: "cherry", garnish: "paw" } }))
+extrasState = reduceProgression(extrasState, eventAt("request:test", "2026-08-12T03:00:00.000Z", { type: "request.claimed", requestId: "2026-08-12:fuwa-menu", requestDate: "2026-08-12" }))
+assert.deepEqual([...extrasState.diary.favoriteDates], ["2026-08-12"])
+assert.equal(extrasState.room.menuCreations[0].id, "menu-test")
+assert.equal(extrasState.room.featuredMenuId, "menu-test")
+assert.deepEqual([...extrasState.requests.claimedIds], ["2026-08-12:fuwa-menu"])
+assert.equal(extrasState.stats.activityLog.length, 3)
+assert.equal(extrasState.wallet.nyanCoins, 60, "メニューとお願いはコイン報酬にせず、遊びを通貨稼ぎに変えません")
+const extrasBackup = importProgressionBackup(serializeProgressionBackup(extrasState), "2026-08-12")
+assert.equal(extrasBackup.ok, true)
+if (!extrasBackup.ok) throw new Error("Extras backup import unexpectedly failed")
+assert.deepEqual([...extrasBackup.state.diary.favoriteDates], ["2026-08-12"])
+assert.equal(extrasBackup.state.room.menuCreations[0].id, "menu-test")
+
+const v3Migration = hydrateProgressionState({ ...createInitialAppState("2026-08-12"), version: 3, diary: undefined, requests: undefined, room: { equipped: { table: "table-creamsoda" } }, stats: { ...createInitialAppState("2026-08-12").stats, activityLog: undefined } }, "2026-08-12")
+assert.equal(v3Migration.persistence, "write")
+assert.deepEqual([...v3Migration.state.diary.favoriteDates], [])
+assert.deepEqual([...v3Migration.state.room.menuCreations], [])
 
 // A duplicate from a previous day must be rejected before daily state changes.
 let dailyState = createInitialAppState("2026-08-11", "2026-08-11T01:00:00.000Z")
