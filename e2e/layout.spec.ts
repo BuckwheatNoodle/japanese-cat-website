@@ -152,7 +152,9 @@ test.describe("なおくん表示範囲と三匹の正史", () => {
     await expect(diary).toContainText("トラちゃん・キキ・フワ")
     await expect(diary).not.toContainText("美雪の兄・変身役")
     const visibleDiaryBody = await diary.locator(".diary-entry-body").first().innerText()
-    expect(visibleDiaryBody.split("。").filter(Boolean).length).toBeLessThanOrEqual(3)
+    expect(visibleDiaryBody.split("。").filter(Boolean)).toHaveLength(3)
+    expect(visibleDiaryBody).toContain("なおくん")
+    expect(visibleDiaryBody).toContain("うんち")
 
     await page.goto("/#club")
     await expect(page.getByTestId("club-content")).toBeVisible()

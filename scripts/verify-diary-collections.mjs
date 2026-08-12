@@ -38,12 +38,14 @@ const {
   DIARY_CATS,
   DIARY_ENTRIES,
   DIARY_ENTRY_VALIDATION_ISSUES,
+  DIARY_REWRITES,
   DIARY_SAFE_TRANSFORMATION_CUES,
 } = loadedDiary.exports
 
 assert.equal(DIARY_ENTRIES.length, 63, "日記は63件必要です")
 assert.equal(Object.keys(DIARY_COLLECTION_BY_DATE).length, 63, "日記対応表は63件必要です")
 assert.deepEqual([...DIARY_ENTRY_VALIDATION_ISSUES], [], "日記データの組み込み検証に失敗しました")
+assert.equal(Object.keys(DIARY_REWRITES).length, 63, "全63日記に監査済みの完成稿が必要です")
 assert.equal(
   JSON.stringify(DIARY_CATS.map(({ id, name }) => [id, name])),
   JSON.stringify([["cat-maron", "トラちゃん"], ["cat-kuro", "キキ"], ["cat-yuki", "フワ"]]),
@@ -59,14 +61,21 @@ for (const entry of DIARY_ENTRIES) {
   dates.add(entry.date)
 
   const visibleCopy = entry.title + entry.body + entry.alt
+  assert.ok(DIARY_REWRITES[entry.date], `${entry.date} に監査済みの完成稿がありません`)
   assert.equal(legacyCatNamePattern.test(visibleCopy), false, `${entry.date} に旧猫名が残っています`)
   assert.ok(entry.catIds.length > 0, `${entry.date} に登場猫がいません`)
   assert.ok(entry.catIds.length <= 3, `${entry.date} の登場猫が三匹を超えています`)
   assert.equal(new Set(entry.catIds).size, entry.catIds.length, `${entry.date} の猫IDが重複しています`)
 
   const sentences = entry.body.split("。").map((sentence) => sentence.trim()).filter(Boolean)
-  assert.ok(sentences.length <= 3, `${entry.date} の本文は最大3文にしてください`)
-  assert.ok(entry.body.length <= 210, `${entry.date} の本文が長すぎます`)
+  assert.equal(sentences.length, 3, `${entry.date} の本文は状況・なおくん・オチの3文にしてください`)
+  assert.ok(sentences.every((sentence) => sentence.length >= 18), `${entry.date} に意味が伝わらない短すぎる文があります`)
+  assert.ok(entry.body.length >= 90 && entry.body.length <= 160, `${entry.date} の本文は90〜160文字にしてください`)
+  assert.ok(DIARY_CATS.some((cat) => sentences[0].includes(cat.name)), `${entry.date} の導入に登場猫がいません`)
+  assert.ok(sentences[1].includes("なおくん"), `${entry.date} の2文目になおくんの行動がありません`)
+  assert.ok(sentences[1].includes("うんち"), `${entry.date} の2文目に画像のなおくん衣装がありません`)
+  assert.ok(entry.alt.includes("なおくん"), `${entry.date} の画像説明になおくんがいません`)
+  assert.equal(/(?:仲間に入り|役を買って出て|係へ立候補し)[、。]$/.test(sentences[1]), false, `${entry.date} でなおくんの行動が途中で切れています`)
 
   const matchedCues = DIARY_SAFE_TRANSFORMATION_CUES.filter((cue) => entry.body.includes(cue))
   const transformationSentence = sentences.find((sentence) => sentence.includes("変身") && /うんち[^。]{0,40}(?:に|へ)変身/.test(sentence))
@@ -100,6 +109,6 @@ assert.ok(transformationEntryCount >= 5, "専用フォームを見せる特別�
 assert.ok(transformationEntryCount / DIARY_ENTRIES.length <= 0.2, "なおくんの変身回は日記全体の20%以下にしてください")
 
 console.log(
-  `Diary verification passed: 63 entries, 3 canonical cats, max 3 sentences, `
-  + `${transformationEntryCount}/63 dedicated transformation stories.`,
+  `Diary verification passed: 63 audited three-part stories, 3 canonical cats, `
+  + `Naokun action and punchline in every entry, ${transformationEntryCount}/63 dedicated transformations.`,
 )
