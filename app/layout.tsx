@@ -7,7 +7,7 @@ import { PwaManager } from "@/components/pwa-manager"
 
 export const metadata: Metadata = {
   title: "美雪のねこカフェ｜ゲーム・事件記録・猫図鑑",
-  description: "6種のゲーム攻略、配色デザイン、猫占い、分岐ストーリー、笑える絵日記を収録した美雪のねこカフェ。",
+  description: "6種のゲーム攻略、配色デザイン、猫占い、いつもの三匹図鑑、短い絵日記を収録した美雪のねこカフェ。",
   robots: {
     index: false,
     follow: false,

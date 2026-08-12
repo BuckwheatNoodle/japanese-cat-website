@@ -356,7 +356,7 @@ export function SettingsCenter({ onBack, onOpenParentEditor }: SettingsCenterPro
         <Toggle
           checked={settings.readAloud}
           label="読み上げボタン"
-          note="日記と分岐ストーリーに読み上げボタンを表示します"
+          note="絵日記に読み上げボタンを表示します"
           onChange={(checked) => changeSettings({ readAloud: checked })}
         />
         <button type="button" className={styles.secondaryButton} onClick={testReadAloud}>
