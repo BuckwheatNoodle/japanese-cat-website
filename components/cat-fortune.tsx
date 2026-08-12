@@ -31,14 +31,14 @@ const LUCKY_COLORS = [
 ] as const
 
 const ADVICE = [
-  { main: "「ありがとう」をひとつ伝えると、うれしいことが増えそう。", study: "好きな教科から始めると集中できるよ。", friend: "友だちの話を最後まで聞いてみよう。", play: "みんなでできる遊びがおすすめ。", miyuki: "いい日になりそう。なおくんは先に猫へ三回お礼してるよ。", cat: "猫たちの返事は、しっぽを一回ぴん！" },
-  { main: "少し体を動かすと、元気がもっとわいてくる日。", study: "10分だけ集中してから休けいしよう。", friend: "自分から元気にあいさつしてみよう。", play: "外遊びやリズム遊びがぴったり。", miyuki: "なおくんの準備運動、なぜか最後はうんちポーズ。", cat: "猫たちは見なかったふりで毛づくろい中。" },
-  { main: "急がなくて大丈夫。自分のペースがいちばん。", study: "じっくり考える問題にちょうせんしよう。", friend: "やさしい言葉をひとつ届けてみよう。", play: "読書やお絵かきでのんびりしよう。", miyuki: "のんびり大賛成。なおくんはもう雲うんちで昼寝してるよ。", cat: "ふわふわなので、猫ベッドに仮採用。" },
-  { main: "小さな予定をひとつ決めると、すっきり進めそう。", study: "宿題はできるところから始めよう。", friend: "困っている子がいたら声をかけてみよう。", play: "パズルや工作がおすすめ。", miyuki: "予定表の一番下に『なおくん変身』って勝手に書かれてる。", cat: "猫会議で、今日も全員一致の予定です。" },
-  { main: "きれいな色や形を見つけると、いい気分になれそう。", study: "ノートを好きな色で見やすくまとめよう。", friend: "友だちのすてきなところを伝えてみよう。", play: "ぬりえや飾り作りにぴったり。", miyuki: "虹色を選んだら、なおくんまで七色うんちになりました。", cat: "まぶしいので、猫たちは目を細めています。" },
-  { main: "笑顔が幸運を連れてきてくれる日。", study: "クイズみたいに楽しく覚えてみよう。", friend: "みんなが笑える話をしてみよう。", play: "新しいゲームを考えてみよう。", miyuki: "なおくんが笑わせる係に立候補。もう変身帽子をかぶってるよ。", cat: "開始前なのに、猫席は満員です。" },
-  { main: "昨日できなかったことに、もう一度挑戦してみよう。", study: "少しむずかしい問題をひとつ選ぼう。", friend: "思っていることをやさしく伝えてみよう。", play: "やったことのない遊びに挑戦。", miyuki: "失敗しても大丈夫。なおくんは変身を三回失敗して全部楽しそう。", cat: "四回目は猫みみうんちを希望します。" },
-  { main: "思いやりの気持ちが、幸運を運んでくれる日。", study: "分からないところはだれかに聞いてみよう。", friend: "ひとりの子がいたら声をかけてみよう。", play: "みんなが楽しめる遊びを選ぼう。", miyuki: "やさしい日だね。なおくんは猫へ特等席をゆずりました。", cat: "その席、うんちクッション付きならもっと最高。" },
+  { main: "「ありがとう」をひとつ伝えると、うれしいことが増えそう。", study: "好きな教科から始めると集中できるよ。", friend: "友だちの話を最後まで聞いてみよう。", play: "みんなでできる遊びがおすすめ。", miyuki: "いい日になりそう。なおくんは先に猫へ三回お礼してるよ。", cat: "猫たちの返事は、しっぽを一回ぴん！", image: "/content/fortune/gratitude.webp", imageAlt: "美雪が猫に花を渡して感謝を伝えるイラスト" },
+  { main: "少し体を動かすと、元気がもっとわいてくる日。", study: "10分だけ集中してから休けいしよう。", friend: "自分から元気にあいさつしてみよう。", play: "外遊びやリズム遊びがぴったり。", miyuki: "なおくんの準備運動、なぜか最後はうんちポーズ。", cat: "猫たちは見なかったふりで毛づくろい中。", image: "/content/fortune/energy.webp", imageAlt: "美雪と猫たちが元気に体を動かすイラスト" },
+  { main: "急がなくて大丈夫。自分のペースがいちばん。", study: "じっくり考える問題にちょうせんしよう。", friend: "やさしい言葉をひとつ届けてみよう。", play: "読書やお絵かきでのんびりしよう。", miyuki: "のんびり大賛成。なおくんはもう雲うんちで昼寝してるよ。", cat: "ふわふわなので、猫ベッドに仮採用。", image: "/content/fortune/own-pace.webp", imageAlt: "猫たちが読書やお絵かきをしてのんびり過ごすイラスト" },
+  { main: "小さな予定をひとつ決めると、すっきり進めそう。", study: "宿題はできるところから始めよう。", friend: "困っている子がいたら声をかけてみよう。", play: "パズルや工作がおすすめ。", miyuki: "予定表の一番下に『なおくん変身』って勝手に書かれてる。", cat: "猫会議で、今日も全員一致の予定です。", image: "/content/fortune/small-plan.webp", imageAlt: "美雪と猫たちが絵カードで小さな予定を立てるイラスト" },
+  { main: "きれいな色や形を見つけると、いい気分になれそう。", study: "ノートを好きな色で見やすくまとめよう。", friend: "友だちのすてきなところを伝えてみよう。", play: "ぬりえや飾り作りにぴったり。", miyuki: "虹色を選んだら、なおくんまで七色うんちになりました。", cat: "まぶしいので、猫たちは目を細めています。", image: "/content/fortune/colors.webp", imageAlt: "猫たちがきれいな虹と色とりどりの形を描くイラスト" },
+  { main: "笑顔が幸運を連れてきてくれる日。", study: "クイズみたいに楽しく覚えてみよう。", friend: "みんなが笑える話をしてみよう。", play: "新しいゲームを考えてみよう。", miyuki: "なおくんが笑わせる係に立候補。もう変身帽子をかぶってるよ。", cat: "開始前なのに、猫席は満員です。", image: "/content/fortune/laughter.webp", imageAlt: "美雪と猫たちが新しいゲームを考えて笑うイラスト" },
+  { main: "昨日できなかったことに、もう一度挑戦してみよう。", study: "少しむずかしい問題をひとつ選ぼう。", friend: "思っていることをやさしく伝えてみよう。", play: "やったことのない遊びに挑戦。", miyuki: "失敗しても大丈夫。なおくんは変身を三回失敗して全部楽しそう。", cat: "四回目は猫みみうんちを希望します。", image: "/content/fortune/try-again.webp", imageAlt: "仲間に応援されながら輪くぐりに再挑戦する猫のイラスト" },
+  { main: "思いやりの気持ちが、幸運を運んでくれる日。", study: "分からないところはだれかに聞いてみよう。", friend: "ひとりの子がいたら声をかけてみよう。", play: "みんなが楽しめる遊びを選ぼう。", miyuki: "やさしい日だね。なおくんは猫へ特等席をゆずりました。", cat: "その席、うんちクッション付きならもっと最高。", image: "/content/fortune/kindness.webp", imageAlt: "猫たちが窓辺の特等席とクッションを譲り合うイラスト" },
 ] as const
 
 const NAOKUN_VISITS = [
@@ -181,6 +181,14 @@ export function CatFortune() {
                 <Star key={index} className={index < fortune.stars ? "is-on" : ""} aria-hidden="true" />
               ))}
             </div>
+            <div className="fortune-result-art">
+              <Image
+                src={assetPath(fortune.advice.image)}
+                alt={fortune.advice.imageAlt}
+                fill
+                sizes="(max-width: 700px) calc(100vw - 72px), 520px"
+              />
+            </div>
             <p className="fortune-main">{fortune.advice.main}</p>
           </div>
 
@@ -229,6 +237,20 @@ export function CatFortune() {
       )}
 
       <style jsx>{`
+        .fortune-result-art {
+          position: relative;
+          overflow: hidden;
+          width: min(100%, 520px);
+          aspect-ratio: 4 / 3;
+          margin: 16px auto 0;
+          border: 2px solid color-mix(in srgb, var(--skin-line) 82%, white);
+          border-radius: 20px;
+          background: var(--skin-paper-warm);
+          box-shadow: 0 5px 0 color-mix(in srgb, var(--skin-line) 25%, transparent);
+        }
+        .fortune-result-art :global(img) {
+          object-fit: cover;
+        }
         .fortune-banter {
           display: grid;
           gap: 8px;
