@@ -50,8 +50,23 @@ vm.runInNewContext(transpiled, {
   Symbol,
 }, { filename: sourcePath })
 
-const { advanceColoringCompletionTracker } = loadedModule.exports
+const { advanceColoringCompletionTracker, renderSvg } = loadedModule.exports
 assert.equal(typeof advanceColoringCompletionTracker, "function")
+assert.equal(typeof renderSvg, "function")
+
+const renderedSvg = renderSvg({
+  id: "render-check",
+  title: "描画確認",
+  difficulty: "easy",
+  difficultyLabel: "入門",
+  description: "",
+  svg: '<svg role="img"><path data-name="背景" d="M0 0h10v10H0Z" fill="white"/><circle data-name="丸" cx="5" cy="5" r="2" fill="white"/></svg>',
+}, { 丸: "#f17469" })
+
+assert.equal((renderedSvg.match(/role="button"/g) ?? []).length, 2)
+assert.match(renderedSvg, /<path[^>]*aria-label="描画確認の背景をぬる"\/>/)
+assert.match(renderedSvg, /<circle[^>]*fill="#f17469"[^>]*aria-label="描画確認の丸をぬる"\/>/)
+assert.match(renderedSvg, /<svg role="group">/)
 
 const runStep = (tracker, pageId, percent) => advanceColoringCompletionTracker(tracker, pageId, percent)
 
