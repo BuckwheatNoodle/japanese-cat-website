@@ -101,17 +101,18 @@ for (const requiredRule of ["ゲスト猫", "公式3匹と誤認しない", "識
 
 const diarySource = await readFile(diarySourcePath, "utf8")
 const sourceDates = [...diarySource.matchAll(/date:\s*"(\d{4}-\d{2}-\d{2})"/g)].map((match) => match[1]).sort()
-assert.equal(sourceDates.length, 63, "日記データは63件必要です")
-assert.equal(new Set(sourceDates).size, 63, "日記データの日付が重複しています")
+const expectedEntryCount = 83
+assert.equal(sourceDates.length, expectedEntryCount, `日記データは${expectedEntryCount}件必要です`)
+assert.equal(new Set(sourceDates).size, expectedEntryCount, "日記データの日付が重複しています")
 
 const imageFiles = (await readdir(diaryImageRoot))
   .filter((file) => file.endsWith(".webp"))
   .sort()
-assert.equal(imageFiles.length, 63, "日記画像は63枚必要です")
+assert.equal(imageFiles.length, expectedEntryCount, `日記画像は${expectedEntryCount}枚必要です`)
 assert.deepEqual(imageFiles, sourceDates.map((date) => `${date}.webp`), "日記データと画像ファイルの日付が一致しません")
 
 for (const imageFile of imageFiles) {
   await verifySquareWebp(path.join(diaryImageRoot, imageFile), `日記画像 ${imageFile}`)
 }
 
-console.log("Diary character asset check passed: 3 canonical references and 63 square diary WEBPs match the visual guide.")
+console.log(`Diary character asset check passed: 3 canonical references and ${expectedEntryCount} square diary WEBPs match the visual guide.`)

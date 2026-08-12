@@ -43,11 +43,12 @@ const {
   DIARY_SAFE_TRANSFORMATION_CUES,
 } = loadedDiary.exports
 
-assert.equal(DIARY_ENTRIES.length, 63, "日記は63件必要です")
-assert.equal(Object.keys(DIARY_COLLECTION_BY_DATE).length, 63, "日記対応表は63件必要です")
+const expectedEntryCount = 83
+assert.equal(DIARY_ENTRIES.length, expectedEntryCount, `日記は${expectedEntryCount}件必要です`)
+assert.equal(Object.keys(DIARY_COLLECTION_BY_DATE).length, expectedEntryCount, `日記対応表は${expectedEntryCount}件必要です`)
 assert.deepEqual([...DIARY_ENTRY_VALIDATION_ISSUES], [], "日記データの組み込み検証に失敗しました")
-assert.equal(Object.keys(DIARY_REWRITES).length, 63, "全63日記に監査済みの完成稿が必要です")
-assert.equal(Object.keys(DIARY_CAT_FIRST_ENDINGS).length, 63, "全63日記に猫優先のオチが必要です")
+assert.equal(Object.keys(DIARY_REWRITES).length, expectedEntryCount, `全${expectedEntryCount}日記に監査済みの完成稿が必要です`)
+assert.equal(Object.keys(DIARY_CAT_FIRST_ENDINGS).length, expectedEntryCount, `全${expectedEntryCount}日記に猫優先のオチが必要です`)
 assert.equal(
   JSON.stringify(DIARY_CATS.map(({ id, name }) => [id, name])),
   JSON.stringify([["cat-maron", "トラちゃん"], ["cat-kuro", "キキ"], ["cat-yuki", "フワ"]]),
@@ -117,6 +118,6 @@ assert.ok(transformationEntryCount / DIARY_ENTRIES.length <= 0.2, "なおくん�
 assert.equal(catFirstEndings.size, DIARY_ENTRIES.length, "猫優先の締めは全日程で違う文章にしてください")
 
 console.log(
-  `Diary verification passed: 63 audited four-part stories, 63 unique cat-first endings, 3 canonical cats, `
-  + `Naokun action and punchline in every entry, ${transformationEntryCount}/63 dedicated transformations.`,
+  `Diary verification passed: ${expectedEntryCount} audited four-part stories, ${expectedEntryCount} unique cat-first endings, 3 canonical cats, `
+  + `Naokun action and punchline in every entry, ${transformationEntryCount}/${expectedEntryCount} dedicated transformations.`,
 )
