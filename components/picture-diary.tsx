@@ -316,7 +316,7 @@ export function PictureDiary() {
         <div>
           <p className="screen-kicker">MIYUKI&apos;S PICTURE DIARY</p>
           <h2 id="diary-title">美雪の絵日記</h2>
-          <p>カレンダーで日付を選ぶと、美雪と三匹の猫の日々を短い記録で読めます。</p>
+          <p>なおくんの大事件より猫が大事。美雪の短いひとこと日記です。</p>
         </div>
       </div>
 
@@ -428,7 +428,7 @@ export function PictureDiary() {
         <article ref={detailRef} className="diary-entry-card" tabIndex={-1} aria-labelledby="diary-entry-title">
         <div className="diary-entry-topline">
           <time dateTime={selectedEntry.date}>{formatFullDate(selectedEntry.date)}</time>
-          <span><Sparkles aria-hidden="true" /> 美雪・なおくん・猫の観察日記</span>
+          <span><Sparkles aria-hidden="true" /> 美雪のひとこと日記</span>
         </div>
 
         <div className="diary-entry-layout">
@@ -440,18 +440,15 @@ export function PictureDiary() {
               alt={illustrationAlt}
               fill
               sizes="(max-width: 719px) 92vw, 420px"
-              priority={selectedEntry.date === DIARY_ENTRIES[0].date}
+              priority
             />
-            {selectedEntry.collectionId?.startsWith("naokun-poop-") && (
-              <span className="diary-poop-sticker"><i aria-hidden="true"><Image src={assetPath("/content/collections/naokun/poop-classic.webp")} alt="" width={38} height={38} /></i><b>なおくん</b><small>うんち変身中！</small></span>
-            )}
           </div>
 
           <div className="diary-entry-copy">
             <p className="diary-entry-label">今日の猫：{selectedCatNames}</p>
             <h3 id="diary-entry-title">{selectedEntry.title}</h3>
             <p className="diary-entry-body">{selectedEntry.body}</p>
-            <button type="button" className="diary-favorite-button" data-active={favoriteDates.has(selectedEntry.date) || undefined} aria-pressed={favoriteDates.has(selectedEntry.date)} onClick={() => toggleFavorite(selectedEntry.date)}><Heart aria-hidden="true" />{favoriteDates.has(selectedEntry.date) ? "お気に入りのオチ" : "このオチをお気に入りにする"}</button>
+            <button type="button" className="diary-favorite-button" data-active={favoriteDates.has(selectedEntry.date) || undefined} aria-pressed={favoriteDates.has(selectedEntry.date)} onClick={() => toggleFavorite(selectedEntry.date)}><Heart aria-hidden="true" />{favoriteDates.has(selectedEntry.date) ? "お気に入りの日記" : "この日記をお気に入りにする"}</button>
             {state.settings.readAloud ? (
               <button type="button" className="secondary-action diary-read-aloud" onClick={toggleReadAloud} aria-pressed={isSpeaking}>
                 {isSpeaking ? <Square aria-hidden="true" /> : <Volume2 aria-hidden="true" />}

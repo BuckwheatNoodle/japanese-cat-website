@@ -95,7 +95,16 @@ for (const cat of canonicalCats) {
   await verifySquareWebp(anchorPath, `${cat.name}の参照画像`)
 }
 
-for (const requiredRule of ["ゲスト猫", "公式3匹と誤認しない", "識別アクセサリー", "本文で名前を呼ぶ猫と画像内の役割が一致"]) {
+for (const requiredRule of [
+  "ゲスト猫",
+  "公式3匹と誤認しない",
+  "識別アクセサリー",
+  "本文で名前を呼ぶ猫と画像内の役割が一致",
+  "顔のないうんち",
+  "人間の顔",
+  "猫が主役",
+  "罫線ノート",
+]) {
   assert.ok(guide.includes(requiredRule), `ガイドに必須ルール「${requiredRule}」がありません`)
 }
 
